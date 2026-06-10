@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barcha Kurslar — EduUz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <style>
+    /* courses specific styles */
+    .page-header { background: var(--ink); color: white; padding: 48px 40px; }
+    .page-title { font-size: 32px; margin-bottom: 8px; color: white; }
+    .breadcrumb { font-size: 13px; color: var(--muted-2); }
+    .breadcrumb a { color: var(--blue-mid); text-decoration: none; }
+    
+    .catalog-container { display: flex; align-items: flex-start; gap: 32px; padding: 40px; }
+    
+    /* Sidebar */
+    .sidebar { width: 260px; flex-shrink: 0; position: sticky; top: 88px; }
+    .filter-group { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 24px; }
+    .filter-group-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; font-family: 'Plus Jakarta Sans', sans-serif;}
+    .filter-item { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 14px; color: var(--ink-2); cursor: pointer; }
+    .filter-item input[type="checkbox"], .filter-item input[type="radio"] { accent-color: var(--blue); width: 16px; height: 16px; cursor: pointer; }
+    
+    .range-slider { width: 100%; margin: 10px 0; accent-color: var(--blue); }
+    .range-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+    
+    .clear-filters { color: var(--rose); font-size: 13px; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 10px; }
+    
+    /* Main Content */
+    .main-content { flex: 1; }
+    .sort-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .results-count { font-size: 14px; color: var(--muted); font-weight: 500; }
+    .sort-select { padding: 8px 12px; border: 1px solid var(--border-2); border-radius: 8px; font-size: 14px; outline: none; font-family: 'Inter'; background: var(--white); }
+    
+    .courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; }
+    
+    /* Course Card specific mapping from index */
+    .course-card{background:var(--white);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s;display:flex;flex-direction:column}
+    .course-card:hover{transform:translateY(-3px);box-shadow:0 10px 32px rgba(37,99,235,0.1);border-color:var(--blue-mid)}
+    .course-thumb{height:140px;display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
+    .thumb-blue{background:linear-gradient(135deg,#EFF6FF,#DBEAFE)}
+    .thumb-green{background:linear-gradient(135deg,#ECFDF5,#D1FAE5)}
+    .course-badge-abs{position:absolute;top:12px;right:12px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px}
+    .badge-free{background:var(--green);color:#fff}
+    .badge-paid{background:rgba(15,23,42,0.65);color:#fff;backdrop-filter:blur(6px)}
+    .course-body{padding:16px;display:flex;flex-direction:column;gap:8px;flex:1}
+    .course-cat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em; color:var(--blue);}
+    .course-title{font-size:15px;font-weight:600;color:var(--ink);line-height:1.4;flex:1}
+    .course-instructor{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+    .avatar-xs{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0; background:#DBEAFE;color:#1D4ED8;}
+    .course-foot{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:0.5px solid var(--border);margin-top:auto}
+    .rating{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:600;color:var(--ink)}
+    .star{color:var(--amber)}
+    .course-price{font-size:15px; font-weight:700; color:var(--ink);}
+    .course-price.free{color:var(--green);}
+    
+    /* Pagination */
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 48px; }
+    .page-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; color: var(--ink-2); text-decoration: none; transition: all 0.2s; }
+    .page-btn:hover { background: var(--surface-2); }
+    .page-btn.active { background: var(--blue); color: white; border-color: var(--blue); }
+    
+    @media(max-width: 900px) {
+      .catalog-container { flex-direction: column; }
+      .sidebar { width: 100%; position: static; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="nav">
+    <a class="nav-logo" href="index.html"><span class="logo-dot"></span>EduUz</a>
+    <div class="nav-links">
+      <a href="courses.html" class="active">Kurslar</a>
+      <a href="index.html#teachers">O'qituvchilar</a>
+      <a href="index.html#faq">FAQ</a>
+    </div>
+    <div style="display:flex;gap:8px">
+      <a href="auth.html" class="btn-secondary">Kirish</a>
+      <a href="auth.html" class="btn-primary">Ro'yxatdan o'tish</a>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="breadcrumb"><a href="index.html">Bosh sahifa</a> <i class="ti ti-chevron-right" style="font-size:10px;margin:0 4px"></i> Barcha kurslar</div>
+    <h1 class="page-title">Barcha kurslar</h1>
+    <p style="color:var(--muted-2); font-size:15px;">Eng yaxshi ustozlardan sifatli bilim oling</p>
+  </header>
+
+  <!-- Main Catalog -->
+  <div class="catalog-container">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <!-- Search inside sidebar for larger screens -->
+      <div class="form-group">
+        <input type="text" class="form-control" placeholder="Kurs nomini qidirish..." id="sidebarSearch">
+      </div>
+      
+      <div class="filter-group">
+        <div class="filter-group-title">Kategoriya</div>
+        <label class="filter-item"><input type="checkbox" checked> 💻 Dasturlash (124)</label>
+        <label class="filter-item"><input type="checkbox"> 🗣️ Tillar (87)</label>
+        <label class="filter-item"><input type="checkbox"> 🎨 Dizayn (63)</label>
+        <label class="filter-item"><input type="checkbox"> 📊 Biznes (45)</label>
+        <label class="filter-item"><input type="checkbox"> 🔢 Matematika (38)</label>
+        <label class="filter-item"><input type="checkbox"> 📸 Multimedia (29)</label>
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-group-title">Daraja</div>
+        <label class="filter-item"><input type="radio" name="level" checked> Barcha darajalar</label>
+        <label class="filter-item"><input type="radio" name="level"> Boshlang'ich</label>
+        <label class="filter-item"><input type="radio" name="level"> O'rta</label>
+        <label class="filter-item"><input type="radio" name="level"> Yuqori</label>
+      </div>
+
+      <div class="filter-group">
+        <div class="filter-group-title">Narx</div>
+        <label class="filter-item" style="margin-bottom:16px;"><input type="checkbox"> Faqat bepul kurslar</label>
+        <input type="range" class="range-slider" min="0" max="1000000" value="500000" step="50000">
+        <div class="range-labels">
+          <span>0</span>
+          <span>500,000+ so'm</span>
+        </div>
+      </div>
+      
+      <div class="filter-group" style="border:none;">
+        <div class="filter-group-title">Reyting</div>
+        <label class="filter-item"><input type="checkbox"> ★★★★☆ va undan yuqori</label>
+        <a href="#" class="clear-filters">Filterni tozalash</a>
+      </div>
+    </aside>
+
+    <!-- Content -->
+    <main class="main-content">
+      <div class="sort-bar">
+        <div class="results-count">124 ta kurs topildi</div>
+        <select class="sort-select">
+          <option>Eng mashhur</option>
+          <option>Yangi qo'shilganlar</option>
+          <option>Eng yuqori baho</option>
+          <option>Arzon → Qimmat</option>
+          <option>Qimmat → Arzon</option>
+        </select>
+      </div>
+
+      <div class="courses-grid">
+        <!-- Card 1 -->
+        <a href="course-detail.html" style="text-decoration:none;">
+          <div class="course-card">
+            <div class="course-thumb thumb-blue">
+              🐍
+              <span class="course-badge-abs badge-free">Bepul</span>
+            </div>
+            <div class="course-body">
+              <div class="course-cat">Dasturlash</div>
+              <div class="course-title">Python — noldan professional darajaga</div>
+              <div class="course-instructor">
+                <span class="avatar-xs">AK</span> Alisher Karimov
+              </div>
+              <div class="course-foot">
+                <div class="rating"><span class="star">★</span> 4.9 <span style="color:var(--muted)">(1.2k)</span></div>
+                <div class="course-price free">Bepul</div>
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <!-- Card 2 -->
+        <a href="course-detail.html" style="text-decoration:none;">
+          <div class="course-card">
+            <div class="course-thumb thumb-green">
+              🗣️
+              <span class="course-badge-abs badge-paid">Premium</span>
+            </div>
+            <div class="course-body">
+              <div class="course-cat" style="color:var(--green)">Tillar</div>
+              <div class="course-title">IELTS 7.0+ olish uchun to'liq intensiv kurs</div>
+              <div class="course-instructor">
+                <span class="avatar-xs" style="background:#D1FAE5;color:#065F46">DN</span> Dilnoza Nazarova
+              </div>
+              <div class="course-foot">
+                <div class="rating"><span class="star">★</span> 4.8 <span style="color:var(--muted)">(876)</span></div>
+                <div class="course-price">299 000 so'm</div>
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <!-- Repeat more cards for demo -->
+        <!-- Card 3 -->
+        <a href="course-detail.html" style="text-decoration:none;">
+          <div class="course-card">
+            <div class="course-thumb" style="background:linear-gradient(135deg,#FFFBEB,#FEF3C7)">
+              📊
+              <span class="course-badge-abs badge-paid">Premium</span>
+            </div>
+            <div class="course-body">
+              <div class="course-cat" style="color:var(--amber)">Biznes</div>
+              <div class="course-title">Startap va biznes yuritish asoslari 2024</div>
+              <div class="course-instructor">
+                <span class="avatar-xs" style="background:#FEF3C7;color:#92400E">JU</span> Jasur Umarov
+              </div>
+              <div class="course-foot">
+                <div class="rating"><span class="star">★</span> 4.7 <span style="color:var(--muted)">(542)</span></div>
+                <div class="course-price">199 000 so'm</div>
+              </div>
+            </div>
+          </div>
+        </a>
+        
+        <!-- Add more empty cards or copy them to simulate grid -->
+        <a href="course-detail.html" style="text-decoration:none;">
+          <div class="course-card">
+            <div class="course-thumb" style="background:linear-gradient(135deg,#FAF5FF,#EDE9FE)">
+              🎨
+            </div>
+            <div class="course-body">
+              <div class="course-cat" style="color:var(--purple)">Dizayn</div>
+              <div class="course-title">UI/UX — Figma dan amaliy loyihagacha</div>
+              <div class="course-instructor">
+                <span class="avatar-xs" style="background:#EDE9FE;color:#5B21B6">SX</span> Sarvinoz Xoliqova
+              </div>
+              <div class="course-foot">
+                <div class="rating"><span class="star">★</span> 4.9 <span style="color:var(--muted)">(724)</span></div>
+                <div class="course-price">349 000 so'm</div>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination">
+        <a href="#" class="page-btn"><i class="ti ti-chevron-left"></i></a>
+        <a href="#" class="page-btn active">1</a>
+        <a href="#" class="page-btn">2</a>
+        <a href="#" class="page-btn">3</a>
+        <span style="color:var(--muted);">...</span>
+        <a href="#" class="page-btn">8</a>
+        <a href="#" class="page-btn"><i class="ti ti-chevron-right"></i></a>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-col" style="max-width: 280px;">
+      <a href="index.html" class="footer-logo" style="text-decoration:none;"><span class="logo-dot"></span> EduUz</a>
+      <p style="line-height:1.6;">O'zbekistonning eng zamonaviy online ta'lim platformasi. Istalgan vaqtda, istalgan joyda o'rganing.</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Platforma</div>
+      <div class="footer-links">
+        <a href="courses.html">Kurslar</a>
+        <a href="#">O'qituvchilar</a>
+        <a href="#">Narxlar</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Kompaniya</div>
+      <div class="footer-links">
+        <a href="#">Haqimizda</a>
+        <a href="#">Aloqa</a>
+        <a href="#">Ish o'rinlari</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Ijtimoiy tarmoqlar</div>
+      <div class="footer-links">
+        <a href="#">Telegram</a>
+        <a href="#">Instagram</a>
+        <a href="#">YouTube</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 EduUz. Barcha huquqlar himoyalangan.</span>
+      <div style="display:flex;gap:16px;">
+        <a href="#" style="color:var(--muted);text-decoration:none;">Shartlar</a>
+        <a href="#" style="color:var(--muted);text-decoration:none;">Maxfiylik siyosati</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/js/toast.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script>
+    // Sticky Nav
+    const nav = document.querySelector('.nav');
+    window.addEventListener('scroll', () => {
+      nav.classList.toggle('scrolled', window.scrollY > 30);
+    });
+
+    // Dummy filter logic
+    const searchInput = document.getElementById('sidebarSearch');
+    searchInput.addEventListener('input', (e) => {
+      // Logic for filtering
+    });
+  </script>
+</body>
+</html>

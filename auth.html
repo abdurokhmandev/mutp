@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login / Register — EduUz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <style>
+    body { background: var(--surface); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
+    
+    .auth-card { background: var(--white); border-radius: 20px; overflow: hidden; display: flex; max-width: 960px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.08); }
+    
+    /* Left Side - Branding */
+    .auth-left { background: var(--ink); color: white; padding: 48px; width: 45%; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+    .auth-left-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at top right, rgba(37,99,235,0.2), transparent 60%); z-index: 0; }
+    .auth-left-content { position: relative; z-index: 1; }
+    .auth-logo { display: flex; align-items: center; gap: 8px; font-size: 24px; font-weight: 700; color: white; text-decoration: none; margin-bottom: 64px; font-family: 'Plus Jakarta Sans', sans-serif;}
+    .auth-title { font-size: 32px; font-weight: 600; margin-bottom: 24px; line-height: 1.2; font-family: 'Plus Jakarta Sans', sans-serif;}
+    .auth-benefits { list-style: none; margin-bottom: 64px; }
+    .auth-benefits li { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; font-size: 15px; color: rgba(255,255,255,0.8); }
+    .check-icon { color: var(--green); }
+    
+    .quote-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; }
+    .quote-text { font-style: italic; font-size: 14px; color: rgba(255,255,255,0.9); margin-bottom: 12px; }
+    .quote-author { display: flex; align-items: center; gap: 10px; }
+    .q-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+    .q-name { font-size: 13px; font-weight: 600; }
+    
+    /* Right Side - Forms */
+    .auth-right { padding: 48px 64px; width: 55%; display: flex; flex-direction: column; justify-content: center; }
+    .tabs { display: flex; gap: 24px; margin-bottom: 32px; border-bottom: 1px solid var(--border); }
+    .tab { padding-bottom: 12px; font-size: 16px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+    .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+    
+    .form-container { display: none; }
+    .form-container.active { display: block; animation: fadeIn 0.3s ease; }
+    
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .role-select { display: flex; gap: 12px; margin-bottom: 24px; }
+    .role-card { flex: 1; border: 1px solid var(--border-2); border-radius: 10px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface); }
+    .role-card.active { border-color: var(--blue); background: var(--blue-light); box-shadow: 0 4px 12px rgba(37,99,235,0.1); }
+    .role-icon { font-size: 24px; margin-bottom: 8px; }
+    .role-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+    
+    .pwd-strength { height: 4px; border-radius: 2px; background: var(--border); margin-top: 8px; overflow: hidden; display: flex; }
+    .pwd-bar { height: 100%; transition: width 0.3s, background 0.3s; width: 0; }
+    .pwd-text { font-size: 12px; margin-top: 4px; color: var(--muted); text-align: right; }
+    
+    .btn-full { width: 100%; padding: 12px; font-size: 15px; margin-top: 8px; }
+    
+    .divider-text { display: flex; align-items: center; text-align: center; margin: 24px 0; color: var(--muted); font-size: 13px; }
+    .divider-text::before, .divider-text::after { content: ''; flex: 1; border-bottom: 1px solid var(--border); }
+    .divider-text span { padding: 0 10px; }
+    
+    .btn-google { background: white; border: 1px solid var(--border-2); color: var(--ink); width: 100%; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 0.15s; }
+    .btn-google:hover { background: var(--surface-2); }
+    
+    @media(max-width: 900px) {
+      .auth-card { flex-direction: column; }
+      .auth-left { width: 100%; padding: 32px; }
+      .auth-right { width: 100%; padding: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-card">
+    <div class="auth-left">
+      <div class="auth-left-bg"></div>
+      <div class="auth-left-content">
+        <a href="index.html" class="auth-logo"><span class="logo-dot" style="background:white;"></span> EduUz</a>
+        <h1 class="auth-title">O'zbekistonning ta'lim kelajagiga xush kelibsiz</h1>
+        <ul class="auth-benefits">
+          <li><i class="ti ti-check check-icon"></i> 340+ sifatli video kurslar</li>
+          <li><i class="ti ti-check check-icon"></i> Eng yaxshi ustozlar bilan ishlash</li>
+          <li><i class="ti ti-check check-icon"></i> Rasmiy sertifikatlar</li>
+        </ul>
+        <div class="quote-box">
+          <div class="quote-text">"Python kursini tugallaganimdan so'ng, 3 oyda o'z loyihamni yozdim. Juda foydali platforma!"</div>
+          <div class="quote-author">
+            <div class="q-avatar">ZM</div>
+            <div class="q-name">Zafar Mirzayev</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="auth-right">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('login')">Kirish</div>
+        <div class="tab" onclick="switchTab('register')">Ro'yxatdan o'tish</div>
+      </div>
+      
+      <!-- Login Form -->
+      <div id="loginForm" class="form-container active">
+        <div class="form-group">
+          <label class="form-label">Email manzilingiz</label>
+          <input type="email" class="form-control" id="loginEmail" placeholder="Misol uchun: email@domain.com">
+        </div>
+        <div class="form-group" style="position:relative;">
+          <div style="display:flex; justify-content:space-between;">
+            <label class="form-label">Parol</label>
+            <a href="#" style="font-size:12px; color:var(--blue); text-decoration:none; font-weight:500;">Parolni unutdim?</a>
+          </div>
+          <input type="password" class="form-control" id="loginPassword" placeholder="Parolingizni kiriting">
+          <i class="ti ti-eye" style="position:absolute; right:12px; top:36px; cursor:pointer; color:var(--muted-2);"></i>
+        </div>
+        <button class="btn-primary btn-full" onclick="handleLogin()">Tizimga kirish</button>
+        
+        <div class="divider-text"><span>yoki</span></div>
+        <button class="btn-google">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Google bilan kirish
+        </button>
+      </div>
+
+      <!-- Register Form -->
+      <div id="registerForm" class="form-container">
+        <div class="role-select">
+          <div class="role-card active" onclick="setRole('student', this)">
+            <div class="role-icon">👨‍🎓</div>
+            <div class="role-name">O'quvchi</div>
+          </div>
+          <div class="role-card" onclick="setRole('teacher', this)">
+            <div class="role-icon">👨‍🏫</div>
+            <div class="role-name">Ustoz</div>
+          </div>
+        </div>
+        
+        <div style="display:flex; gap:16px;">
+          <div class="form-group" style="flex:1;">
+            <label class="form-label">Ism</label>
+            <input type="text" class="form-control" id="regName" placeholder="Ismingiz">
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label class="form-label">Familiya</label>
+            <input type="text" class="form-control" id="regSurname" placeholder="Familiyangiz">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" id="regEmail" placeholder="Emailingiz">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Parol</label>
+          <input type="password" class="form-control" id="regPassword" placeholder="Kamida 8 ta belgi" oninput="checkPassword(this.value)">
+          <div class="pwd-strength"><div class="pwd-bar" id="pwdBar"></div></div>
+          <div class="pwd-text" id="pwdText"></div>
+        </div>
+        
+        <button class="btn-primary btn-full" onclick="handleRegister()">Ro'yxatdan o'tish</button>
+      </div>
+      
+    </div>
+  </div>
+
+  <script src="assets/js/toast.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script>
+    let currentRole = 'student';
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.form-container').forEach(f => f.classList.remove('active'));
+      
+      if(tab === 'login') {
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        document.getElementById('loginForm').classList.add('active');
+      } else {
+        document.querySelectorAll('.tab')[1].classList.add('active');
+        document.getElementById('registerForm').classList.add('active');
+      }
+    }
+
+    function setRole(role, el) {
+      currentRole = role;
+      document.querySelectorAll('.role-card').forEach(r => r.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function checkPassword(val) {
+      const bar = document.getElementById('pwdBar');
+      const text = document.getElementById('pwdText');
+      if (val.length === 0) { bar.style.width = '0'; text.innerText = ''; return; }
+      
+      let strength = 0;
+      if (val.length > 5) strength += 33;
+      if (val.length > 8 && /[A-Z]/.test(val)) strength += 33;
+      if (/[0-9]/.test(val) && /[^A-Za-z0-9]/.test(val)) strength += 34;
+      
+      bar.style.width = strength + '%';
+      if (strength <= 33) { bar.style.background = 'var(--rose)'; text.innerText = 'Zaif'; }
+      else if (strength <= 66) { bar.style.background = 'var(--amber)'; text.innerText = 'O\'rtacha'; }
+      else { bar.style.background = 'var(--green)'; text.innerText = 'Kuchli'; }
+    }
+
+    function handleLogin() {
+      const email = document.getElementById('loginEmail').value;
+      const pass = document.getElementById('loginPassword').value;
+      if(Auth.login(email, pass)) {
+        setTimeout(() => { window.location.href = 'dashboard-student.html'; }, 1000);
+      }
+    }
+
+    function handleRegister() {
+      const name = document.getElementById('regName').value;
+      const email = document.getElementById('regEmail').value;
+      const pass = document.getElementById('regPassword').value;
+      if(Auth.register(name, email, pass, currentRole)) {
+        setTimeout(() => {
+          if(currentRole === 'teacher') window.location.href = 'dashboard-teacher.html';
+          else window.location.href = 'dashboard-student.html';
+        }, 1000);
+      }
+    }
+  </script>
+</body>
+</html>

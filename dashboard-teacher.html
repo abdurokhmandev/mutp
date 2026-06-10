@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ustoz Kabineti — EduUz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: var(--surface); }
+    
+    .dashboard-header { background: var(--ink); padding: 40px; color: white; display: flex; justify-content: space-between; align-items: flex-end; }
+    .welcome-text { font-size: 28px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 8px; }
+    
+    .stats-row { display: flex; gap: 24px; margin-top: -32px; padding: 0 40px; position: relative; z-index: 10; }
+    .stat-card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 24px; flex: 1; display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+    .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .stat-info h3 { font-size: 24px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+    .stat-info p { font-size: 13px; color: var(--muted); }
+    
+    .dashboard-content { padding: 40px; display: grid; grid-template-columns: 2fr 1fr; gap: 32px; }
+    
+    .card { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+    .card-title { font-size: 18px; font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; color: var(--ink); }
+    
+    /* Table */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th, .data-table td { padding: 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .data-table th { color: var(--muted); font-weight: 500; font-size: 13px; }
+    .data-table tr:hover td { background: var(--surface); }
+    
+    .badge { padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 500; }
+    .badge-active { background: var(--green-light); color: var(--green); }
+    .badge-pending { background: var(--amber-light); color: var(--amber); }
+    
+    /* Students list */
+    .student-list { display: flex; flex-direction: column; gap: 16px; }
+    .student-item { display: flex; align-items: center; gap: 12px; }
+    .st-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
+    .st-info h4 { font-size: 14px; color: var(--ink); margin-bottom: 2px; }
+    .st-info p { font-size: 12px; color: var(--muted); }
+    .st-progress { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--green); }
+
+    @media(max-width: 900px) {
+      .stats-row { flex-direction: column; padding: 20px; margin-top: 0; }
+      .dashboard-content { grid-template-columns: 1fr; padding: 20px; }
+      .data-table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a class="nav-logo" href="index.html"><span class="logo-dot" style="background:var(--purple)"></span>EduUz Ustoz</a>
+    <div class="nav-links">
+      <a href="#">Kurslarim</a>
+      <a href="#">To'lovlar</a>
+      <a href="profile.html">Profilim</a>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <a href="create-course.html" class="btn-primary"><i class="ti ti-plus"></i> Yangi kurs</a>
+      <div class="avatar-xs" style="width:36px;height:36px;font-size:14px;background:var(--purple-light);color:var(--purple);cursor:pointer;" onclick="window.location.href='profile.html'">AK</div>
+    </div>
+  </nav>
+
+  <div class="dashboard-header">
+    <div>
+      <h1 class="welcome-text">Ustoz paneli</h1>
+      <p style="color:rgba(255,255,255,0.7);font-size:15px;">Xush kelibsiz, Alisher Karimov!</p>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#EFF6FF;color:#2563EB"><i class="ti ti-users"></i></div>
+      <div class="stat-info"><h3>2,340</h3><p>Jami o'quvchilar</p></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#FAF5FF;color:#7C3AED"><i class="ti ti-video"></i></div>
+      <div class="stat-info"><h3>8</h3><p>Kurslar</p></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#FFFBEB;color:#F59E0B"><i class="ti ti-star"></i></div>
+      <div class="stat-info"><h3>4.9</h3><p>O'rtacha reyting</p></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#ECFDF5;color:#10B981"><i class="ti ti-cash"></i></div>
+      <div class="stat-info"><h3 style="font-size:20px;">1,240,000</h3><p>Bu oy daromad</p></div>
+    </div>
+  </div>
+
+  <div class="dashboard-content">
+    
+    <!-- Left Column -->
+    <div style="display:flex; flex-direction:column; gap:32px;">
+      
+      <!-- Courses Table -->
+      <div class="card">
+        <h2 class="card-title">Mening kurslarim</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Kurs nomi</th>
+              <th>O'quvchilar</th>
+              <th>Reyting</th>
+              <th>Daromad</th>
+              <th>Holat</th>
+              <th>Amallar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:500;">Python — noldan professionalgacha</td>
+              <td>1,240</td>
+              <td>★ 4.9</td>
+              <td>4.2M</td>
+              <td><span class="badge badge-active">Faol</span></td>
+              <td><a href="create-course.html" style="color:var(--blue);text-decoration:none;">Tahrirlash</a></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500;">Django bilan Backend</td>
+              <td>800</td>
+              <td>★ 4.8</td>
+              <td>2.1M</td>
+              <td><span class="badge badge-active">Faol</span></td>
+              <td><a href="create-course.html" style="color:var(--blue);text-decoration:none;">Tahrirlash</a></td>
+            </tr>
+            <tr>
+              <td style="font-weight:500;">FastAPI asoslari</td>
+              <td>0</td>
+              <td>-</td>
+              <td>0</td>
+              <td><span class="badge badge-pending">Kutilmoqda</span></td>
+              <td><a href="create-course.html" style="color:var(--blue);text-decoration:none;">Tahrirlash</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Chart -->
+      <div class="card">
+        <h2 class="card-title">Daromad (so'nggi 6 oy)</h2>
+        <canvas id="revenueChart" height="100"></canvas>
+      </div>
+
+    </div>
+
+    <!-- Right Column -->
+    <div style="display:flex; flex-direction:column; gap:32px;">
+      
+      <!-- Recent Students -->
+      <div class="card">
+        <h2 class="card-title">So'nggi o'quvchilar</h2>
+        <div class="student-list">
+          <div class="student-item">
+            <div class="st-avatar" style="background:#DBEAFE;color:#1D4ED8;">ZM</div>
+            <div class="st-info"><h4>Zafar Mirzayev</h4><p>Python kursi</p></div>
+            <div class="st-progress">64%</div>
+          </div>
+          <div class="student-item">
+            <div class="st-avatar" style="background:#ECFDF5;color:#065F46;">NK</div>
+            <div class="st-info"><h4>Nodira Karimova</h4><p>Django kursi</p></div>
+            <div class="st-progress">12%</div>
+          </div>
+          <div class="student-item">
+            <div class="st-avatar" style="background:#FEF3C7;color:#92400E;">BQ</div>
+            <div class="st-info"><h4>Bobur Qodirov</h4><p>Python kursi</p></div>
+            <div class="st-progress">0%</div>
+          </div>
+        </div>
+        <button class="btn-secondary" style="width:100%;margin-top:24px;">Barchasini ko'rish</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    // Chart.js init
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun'],
+        datasets: [{
+          label: 'Daromad (so\'m)',
+          data: [500000, 800000, 650000, 1100000, 950000, 1240000],
+          backgroundColor: '#3B82F6',
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: '#E2E8F0' }, border: { display: false } },
+          x: { grid: { display: false }, border: { display: false } }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

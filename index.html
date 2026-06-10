@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduUz — O'zbekistonning Online Ta'lim Platformasi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+/* ── ASOS ── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#2563EB; --blue-light:#EFF6FF; --blue-mid:#DBEAFE; --blue-dark:#1D4ED8;
+  --green:#10B981; --green-light:#ECFDF5; --green-mid:#D1FAE5;
+  --amber:#F59E0B; --amber-light:#FFFBEB;
+  --purple:#7C3AED; --purple-light:#FAF5FF;
+  --rose:#E11D48;
+  --ink:#0F172A; --ink-2:#1E293B; --ink-3:#334155;
+  --muted:#64748B; --muted-2:#94A3B8;
+  --border:#E2E8F0; --border-2:#CBD5E1;
+  --surface:#F8FAFC; --surface-2:#F1F5F9;
+  --white:#FFFFFF;
+}
+body{font-family:'Inter',sans-serif;color:var(--ink);background:var(--white);overflow-x:hidden}
+
+/* ── NAV ── */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 40px;border-bottom:0.5px solid var(--border);position:sticky;top:0;background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);z-index:200;transition:box-shadow 0.2s}
+.nav.scrolled{box-shadow:0 1px 16px rgba(15,23,42,0.07)}
+.nav-logo{display:flex;align-items:center;gap:8px;font-size:20px;font-weight:600;color:var(--ink);text-decoration:none;letter-spacing:-0.01em}
+.logo-dot{width:10px;height:10px;border-radius:50%;background:var(--blue);display:inline-block}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-links a{color:var(--muted);text-decoration:none;cursor:pointer;padding:6px 12px;border-radius:7px;font-size:14px;font-weight:500;transition:color 0.15s,background 0.15s}
+.nav-links a:hover{color:var(--ink);background:var(--surface-2)}
+.btn-primary{background:var(--blue);color:#fff;border:none;padding:9px 20px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:background 0.15s}
+.btn-primary:hover{background:var(--blue-dark)}
+.btn-secondary{background:transparent;border:0.5px solid var(--border-2);color:var(--ink);padding:9px 20px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:background 0.15s}
+.btn-secondary:hover{background:var(--surface-2)}
+
+/* ── HERO ── */
+.hero{padding:72px 40px 56px;max-width:720px;position:relative}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:6px;background:var(--blue-light);border:0.5px solid var(--blue-mid);border-radius:99px;padding:5px 14px;font-size:12px;font-weight:500;color:var(--blue);margin-bottom:24px}
+.hero-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.hero-title{font-size:clamp(36px,5vw,52px);font-weight:600;line-height:1.12;letter-spacing:-0.025em;margin-bottom:20px;color:var(--ink)}
+.hero-title .accent{color:var(--blue)}
+.hero-title .accent-g{color:var(--green)}
+.hero-sub{font-size:17px;color:var(--muted);line-height:1.65;max-width:560px;margin-bottom:32px}
+.hero-actions{display:flex;align-items:center;gap:12px;margin-bottom:44px;flex-wrap:wrap}
+.btn-hero{background:var(--blue);color:#fff;border:none;padding:13px 26px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;transition:background 0.15s,transform 0.1s,box-shadow 0.15s;box-shadow:0 4px 18px rgba(37,99,235,0.25)}
+.btn-hero:hover{background:var(--blue-dark);transform:translateY(-1px);box-shadow:0 8px 26px rgba(37,99,235,0.32)}
+.btn-hero:active{transform:scale(0.98)}
+.btn-hero-ghost{background:transparent;border:0.5px solid var(--border-2);color:var(--ink);padding:13px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:8px;transition:border-color 0.15s,background 0.15s}
+.btn-hero-ghost:hover{border-color:var(--blue);background:var(--blue-light);color:var(--blue)}
+.play-circle{width:26px;height:26px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center}
+.hero-stats{display:flex;gap:0;flex-wrap:wrap;border:0.5px solid var(--border);border-radius:14px;overflow:hidden;width:fit-content;background:var(--white);box-shadow:0 2px 12px rgba(15,23,42,0.05)}
+.stat-item{display:flex;flex-direction:column;gap:3px;padding:18px 28px;border-right:0.5px solid var(--border)}
+.stat-item:last-child{border-right:none}
+.stat-num{font-size:22px;font-weight:600;color:var(--ink);letter-spacing:-0.01em}
+.stat-label{font-size:12px;color:var(--muted)}
+
+/* ── SHARED SECTION ── */
+.section{padding:64px 40px}
+.section-label{font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px}
+.section-title{font-size:clamp(24px,3vw,32px);font-weight:600;color:var(--ink);letter-spacing:-0.02em;line-height:1.2;margin-bottom:8px}
+.section-sub{font-size:15px;color:var(--muted);line-height:1.6;margin-bottom:36px}
+.section-header-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:8px}
+.link-more{font-size:13px;font-weight:600;color:var(--blue);text-decoration:none;display:flex;align-items:center;gap:4px;cursor:pointer;padding-bottom:4px;border-bottom:1.5px solid transparent;transition:border-color 0.15s}
+.link-more:hover{border-color:var(--blue)}
+.divider{height:0.5px;background:var(--border);margin:0 40px}
+
+/* ── SEARCH/FILTER BAR (yangi) ── */
+.filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:28px;flex-wrap:wrap}
+.search-wrap{flex:1;min-width:200px;max-width:320px;position:relative}
+.search-wrap input{width:100%;padding:9px 12px 9px 36px;border:0.5px solid var(--border-2);border-radius:9px;font-size:14px;color:var(--ink);background:var(--surface);outline:none;transition:border-color 0.15s,box-shadow 0.15s;font-family:'Inter',sans-serif}
+.search-wrap input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,0.1)}
+.search-wrap .si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted-2);font-size:16px}
+.filter-chip{padding:7px 14px;border-radius:99px;border:0.5px solid var(--border-2);font-size:13px;font-weight:500;color:var(--muted);background:var(--white);cursor:pointer;transition:all 0.15s}
+.filter-chip:hover,.filter-chip.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.filter-chip.active{box-shadow:0 2px 8px rgba(37,99,235,0.2)}
+
+/* ── COURSE CARDS ── */
+.courses-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+.course-card{background:var(--white);border:0.5px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s;display:flex;flex-direction:column}
+.course-card:hover{transform:translateY(-3px);box-shadow:0 10px 32px rgba(37,99,235,0.1);border-color:var(--blue-mid)}
+.course-thumb{height:128px;display:flex;align-items:center;justify-content:center;font-size:40px;position:relative}
+.thumb-blue{background:linear-gradient(135deg,#EFF6FF,#DBEAFE)}
+.thumb-green{background:linear-gradient(135deg,#ECFDF5,#D1FAE5)}
+.thumb-amber{background:linear-gradient(135deg,#FFFBEB,#FEF3C7)}
+.thumb-purple{background:linear-gradient(135deg,#FAF5FF,#EDE9FE)}
+.thumb-rose{background:linear-gradient(135deg,#FFF1F2,#FFE4E6)}
+.thumb-sky{background:linear-gradient(135deg,#F0F9FF,#BAE6FD)}
+.course-badge-abs{position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px}
+.badge-free{background:var(--green);color:#fff}
+.badge-paid{background:rgba(15,23,42,0.65);color:#fff;backdrop-filter:blur(6px)}
+.course-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:7px;flex:1}
+.course-cat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em}
+.course-cat-blue{color:var(--blue)} .course-cat-green{color:#059669}
+.course-cat-amber{color:#D97706} .course-cat-purple{color:var(--purple)}
+.course-cat-rose{color:var(--rose)} .course-cat-sky{color:#0284C7}
+.course-title{font-size:14px;font-weight:600;color:var(--ink);line-height:1.4;flex:1}
+.course-instructor{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.avatar-xs{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.course-foot{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:0.5px solid var(--border);margin-top:auto}
+.rating{display:flex;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--ink)}
+.star{color:var(--amber)}
+.course-lessons{font-size:11px;color:var(--muted-2)}
+.progress-bar-wrap{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:6px}
+.progress-bar-fill{height:100%;background:var(--blue);border-radius:2px;transition:width 0.6s ease}
+
+/* ── FEATURES ── */
+.features-section{background:var(--surface)}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+.feature-card{background:var(--white);border-radius:12px;padding:20px;border:0.5px solid var(--border);transition:border-color 0.2s,box-shadow 0.2s}
+.feature-card:hover{border-color:var(--blue-mid);box-shadow:0 4px 18px rgba(37,99,235,0.07)}
+.feature-icon{width:38px;height:38px;border-radius:9px;background:var(--blue-light);display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:20px;color:var(--blue)}
+.feature-icon.fi-green{background:var(--green-light);color:var(--green)}
+.feature-icon.fi-amber{background:var(--amber-light);color:var(--amber)}
+.feature-icon.fi-purple{background:var(--purple-light);color:var(--purple)}
+.feature-title{font-size:14px;font-weight:600;margin-bottom:6px;color:var(--ink)}
+.feature-text{font-size:13px;color:var(--muted);line-height:1.55}
+
+/* ── HOW IT WORKS (yangi) ── */
+.steps-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:0;position:relative}
+.step-dash{position:absolute;top:22px;left:48px;right:48px;height:1px;background:repeating-linear-gradient(90deg,var(--border) 0,var(--border) 6px,transparent 6px,transparent 14px);z-index:0}
+.step{position:relative;z-index:1;padding-right:16px}
+.step-num{width:44px;height:44px;border-radius:50%;background:var(--blue);color:#fff;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:18px;border:3px solid var(--white);box-shadow:0 0 0 1.5px var(--blue-mid)}
+.step-title{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.step-text{font-size:13px;color:var(--muted);line-height:1.55}
+
+/* ── TEACHERS (yangi) ── */
+.teachers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
+.teacher-mini-card{background:var(--white);border:0.5px solid var(--border);border-radius:14px;padding:20px;text-align:center;cursor:pointer;transition:transform 0.18s,box-shadow 0.18s,border-color 0.18s}
+.teacher-mini-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(37,99,235,0.09);border-color:var(--blue-mid)}
+.teacher-avatar-lg{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;margin:0 auto 12px;border:2px solid var(--border)}
+.teacher-mini-name{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:3px}
+.teacher-mini-role{font-size:12px;color:var(--muted);margin-bottom:12px}
+.teacher-mini-stats{display:flex;justify-content:center;gap:16px}
+.tms{display:flex;flex-direction:column;align-items:center;gap:1px}
+.tms-num{font-size:14px;font-weight:600;color:var(--blue)}
+.tms-label{font-size:11px;color:var(--muted-2)}
+
+/* ── TEACHER CTA ── */
+.teacher-section{background:var(--ink);padding:56px 40px;border-radius:20px;margin:0 24px;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.teacher-section .section-label{color:var(--green)}
+.teacher-title{font-size:28px;font-weight:600;color:#fff;line-height:1.25;margin-bottom:12px;letter-spacing:-0.015em}
+.teacher-sub{font-size:15px;color:rgba(255,255,255,0.55);line-height:1.65;margin-bottom:24px}
+.teacher-perks{display:flex;flex-direction:column;gap:12px;margin-bottom:28px}
+.perk{display:flex;align-items:center;gap:10px;font-size:14px;color:rgba(255,255,255,0.8)}
+.perk-check{width:20px;height:20px;border-radius:50%;background:rgba(16,185,129,0.2);border:1px solid rgba(16,185,129,0.45);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;color:var(--green)}
+.btn-teacher{display:inline-flex;align-items:center;gap:7px;background:#fff;color:var(--ink);border:none;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:background 0.15s}
+.btn-teacher:hover{background:var(--surface-2)}
+.teacher-card{background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:16px;padding:24px}
+.teacher-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#3B82F6,#8B5CF6);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;margin-bottom:14px}
+.teacher-name{font-size:16px;font-weight:600;color:#fff;margin-bottom:3px}
+.teacher-role{font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:18px}
+.teacher-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.t-stat{background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 14px}
+.t-stat-num{font-size:18px;font-weight:600;color:#fff;margin-bottom:2px}
+.t-stat-label{font-size:11px;color:rgba(255,255,255,0.4)}
+
+/* ── TESTIMONIALS (yangi) ── */
+.testimonials-section{background:var(--surface)}
+.testimonials-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.testimonial-card{background:var(--white);border:0.5px solid var(--border);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:14px}
+.t-stars{color:var(--amber);font-size:14px;letter-spacing:2px}
+.t-text{font-size:14px;color:var(--ink-3);line-height:1.65;font-style:italic;flex:1}
+.t-author{display:flex;align-items:center;gap:10px;padding-top:14px;border-top:0.5px solid var(--border)}
+.t-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.t-name{font-size:13px;font-weight:600;color:var(--ink)}
+.t-meta{font-size:12px;color:var(--muted);margin-top:1px}
+
+/* ── FAQ (yangi) ── */
+.faq-list{display:flex;flex-direction:column;gap:10px;max-width:720px}
+.faq-item{border:0.5px solid var(--border);border-radius:12px;overflow:hidden}
+.faq-q{width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;font-size:15px;font-weight:500;color:var(--ink);background:var(--white);cursor:pointer;border:none;text-align:left;gap:12px;transition:background 0.15s}
+.faq-q:hover{background:var(--surface)}
+.faq-icon{width:22px;height:22px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;color:var(--muted);transition:transform 0.2s,background 0.15s}
+.faq-item.open .faq-icon{transform:rotate(45deg);background:var(--blue-light);color:var(--blue)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding 0.2s}
+.faq-a-inner{padding:0 20px 16px;font-size:14px;color:var(--muted);line-height:1.7}
+.faq-item.open .faq-a{max-height:200px}
+
+/* ── CTA ── */
+.cta-section{padding:64px 40px;text-align:center;background:var(--blue-light);border-radius:20px;margin:0 24px 64px}
+.cta-title{font-size:clamp(26px,4vw,36px);font-weight:600;color:var(--ink);letter-spacing:-0.02em;margin-bottom:12px}
+.cta-sub{font-size:16px;color:var(--muted);margin-bottom:32px;line-height:1.6}
+.cta-buttons{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
+
+/* ── FOOTER ── */
+.footer{border-top:0.5px solid var(--border);padding:28px 40px;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--muted);flex-wrap:wrap;gap:16px}
+.footer-logo{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:600;color:var(--ink)}
+.footer-links{display:flex;gap:20px}
+.footer-links a{color:var(--muted);text-decoration:none;transition:color 0.15s}
+.footer-links a:hover{color:var(--ink)}
+
+/* ── REVEAL ANIMATION ── */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity 0.5s ease,transform 0.5s ease}
+.reveal.visible{opacity:1;transform:none}
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+  .nav{padding:14px 20px}
+  .nav-links{display:none}
+  .hero{padding:52px 20px 44px}
+  .hero-stats{flex-direction:column;width:100%}
+  .stat-item{border-right:none!important;border-bottom:0.5px solid var(--border);padding:14px 20px}
+  .stat-item:last-child{border-bottom:none}
+  .section{padding:48px 20px}
+  .divider{margin:0 20px}
+  .teacher-section{grid-template-columns:1fr;margin:0 12px;padding:36px 22px;gap:28px}
+  .cta-section{margin:0 12px 48px;padding:44px 22px}
+  .footer{padding:22px 20px;flex-direction:column;align-items:flex-start;gap:12px}
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav class="nav" id="mainNav">
+  <a class="nav-logo" href="index.html">
+    <span class="logo-dot"></span>
+    EduUz
+  </a>
+  <div class="nav-links">
+    <a href="courses.html">Kurslar</a>
+    <a href="#teachers">O'qituvchilar</a>
+    <a href="#features">Imkoniyatlar</a>
+    <a href="#faq">FAQ</a>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn-secondary" onclick="window.location.href='auth.html'">Kirish</button>
+    <button class="btn-primary" onclick="window.location.href='auth.html'">Bepul boshlash</button>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-eyebrow">
+    <span class="hero-eyebrow-dot"></span>
+    O'zbekistonning №1 ta'lim platformasi
+  </div>
+  <h1 class="hero-title">
+    Bilim oling<br>
+    <span class="accent">istalgan joyda</span>,<br>
+    <span class="accent-g">istalgan vaqtda</span>
+  </h1>
+  <p class="hero-sub">Eng yaxshi ustozlardan video darslar, jonli Zoom mashg'ulotlari va amaliy kurslar. O'zbekcha, ruscha, inglizcha — barcha yo'nalishlar bir joyda.</p>
+  <div class="hero-actions">
+    <button class="btn-hero" onclick="window.location.href='auth.html'">
+      Bepul boshlash
+      <i class="ti ti-arrow-right"></i>
+    </button>
+    <button class="btn-hero-ghost">
+      <div class="play-circle">
+        <i class="ti ti-player-play-filled" style="font-size:10px;color:#fff;margin-left:1px"></i>
+      </div>
+      Qanday ishlaydi
+    </button>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-item">
+      <span class="stat-num" data-count="12000" data-suffix="+">12,000+</span>
+      <span class="stat-label">Faol o'quvchilar</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num" data-count="340" data-suffix="+">340+</span>
+      <span class="stat-label">Kurslar</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num" data-count="180" data-suffix="+">180+</span>
+      <span class="stat-label">O'qituvchilar</span>
+    </div>
+    <div class="stat-item" style="border-right:none">
+      <span class="stat-num">4.8 ★</span>
+      <span class="stat-label">O'rtacha baho</span>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── COURSES ── -->
+<section class="section reveal" id="courses">
+  <div class="section-header-row">
+    <div>
+      <div class="section-label">Mashhur kurslar</div>
+      <h2 class="section-title" style="margin-bottom:0">Eng ko'p o'qiladigan kurslar</h2>
+    </div>
+    <a class="link-more" href="courses.html">Barchasini ko'rish <i class="ti ti-arrow-right" style="font-size:13px"></i></a>
+  </div>
+  <p class="section-sub">Har bir yo'nalishdan eng sifatli kurslarni tanlang</p>
+
+  <!-- Filter bar (yangi) -->
+  <div class="filter-bar">
+    <div class="search-wrap">
+      <i class="ti ti-search si"></i>
+      <input type="text" placeholder="Kurs qidirish..." id="courseSearch">
+    </div>
+    <button class="filter-chip active" data-cat="all">Barchasi</button>
+    <button class="filter-chip" data-cat="dasturlash">Dasturlash</button>
+    <button class="filter-chip" data-cat="tillar">Tillar</button>
+    <button class="filter-chip" data-cat="dizayn">Dizayn</button>
+    <button class="filter-chip" data-cat="biznes">Biznes</button>
+    <button class="filter-chip" data-cat="math">Matematika</button>
+  </div>
+
+  <div class="courses-grid" id="coursesGrid">
+    <div class="course-card" data-cat="dasturlash">
+      <div class="course-thumb thumb-blue">
+        🐍
+        <span class="course-badge-abs badge-free">Bepul</span>
+      </div>
+      <div class="course-body">
+        <div class="course-cat course-cat-blue">Dasturlash</div>
+        <div class="course-title">Python — noldan professional darajaga</div>
+        <div class="course-instructor">
+          <span class="avatar-xs" style="background:#DBEAFE;color:#1D4ED8">AK</span>
+          <span>Alisher Karimov</span>
+        </div>
+        <div class="course-foot">
+          <div class="rating"><span class="star">★</span> 4.9 <span class="course-lessons">(1,240)</span></div>
+          <span class="course-lessons">48 dars</span>
+        </div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="course-card" data-cat="tillar">
+      <div class="course-thumb thumb-green">
+        🗣️
+        <span class="course-badge-abs badge-paid">299 000 so'm</span>
+      </div>
+      <div class="course-body">
+        <div class="course-cat course-cat-green">Tillar</div>
+        <div class="course-title">IELTS 7.0+ olish uchun to'liq kurs</div>
+        <div class="course-instructor">
+          <span class="avatar-xs" style="background:#D1FAE5;color:#065F46">DN</span>
+          <span>Dilnoza Nazarova</span>
+        </div>
+        <div class="course-foot">
+          <div class="rating"><span class="star">★</span> 4.8 <span class="course-lessons">(876)</span></div>
+          <span class="course-lessons">64 dars</span>
+        </div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="course-card" data-cat="biznes">
+      <div class="course-thumb thumb-amber">
+        📊
+        <span class="course-badge-abs badge-paid">199 000 so'm</span>
+      </div>
+      <div class="course-body">
+        <div class="course-cat course-cat-amber">Biznes</div>
+        <div class="course-title">Startap va biznes yuritish asoslari</div>
+        <div class="course-instructor">
+          <span class="avatar-xs" style="background:#FEF3C7;color:#92400E">JU</span>
+          <span>Jasur Umarov</span>
+        </div>
+        <div class="course-foot">
+          <div class="rating"><span class="star">★</span> 4.7 <span class="course-lessons">(542)</span></div>
+          <span class="course-lessons">36 dars</span>
+        </div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="course-card" data-cat="dizayn">
+      <div class="course-thumb thumb-purple">
+        🎨
+        <span class="course-badge-abs badge-paid">349 000 so'm</span>
+      </div>
+      <div class="course-body">
+        <div class="course-cat course-cat-purple">Dizayn</div>
+        <div class="course-title">UI/UX — Figma dan amaliy loyihagacha</div>
+        <div class="course-instructor">
+          <span class="avatar-xs" style="background:#EDE9FE;color:#5B21B6">SX</span>
+          <span>Sarvinoz Xoliqova</span>
+        </div>
+        <div class="course-foot">
+          <div class="rating"><span class="star">★</span> 4.9 <span class="course-lessons">(724)</span></div>
+          <span class="course-lessons">52 dars</span>
+        </div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="course-card" data-cat="math">
+      <div class="course-thumb thumb-rose">
+        🔢
+        <span class="course-badge-abs badge-free">Bepul</span>
+      </div>
+      <div class="course-body">
+        <div class="course-cat course-cat-rose">Matematika</div>
+        <div class="course-title">DTM matematika — testlarga to'liq tayyorlanish</div>
+        <div class="course-instructor">
+          <span class="avatar-xs" style="background:#FFE4E6;color:#9F1239">BT</span>
+          <span>Bobur Toshmatov</span>
+        </div>
+        <div class="course-foot">
+          <div class="rating"><span class="star">★</span> 4.8 <span class="course-lessons">(2,100)</span></div>
+          <span class="course-lessons">80 dars</span>
+        </div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="course-card" data-cat="dasturlash">
+      <div class="course-thumb thumb-sky">
+        ⚡
+        <span class="course-badge-abs badge-paid">249 000 so'm</span>
+      </div>
+      <div class="course-body">
+        <div class="course-cat course-cat-sky">Dasturlash</div>
+        <div class="course-title">JavaScript va React — zamonaviy web ishlab chiqish</div>
+        <div class="course-instructor">
+          <span class="avatar-xs" style="background:#BAE6FD;color:#0369A1">OR</span>
+          <span>Otabek Rahimov</span>
+        </div>
+        <div class="course-foot">
+          <div class="rating"><span class="star">★</span> 4.9 <span class="course-lessons">(1,680)</span></div>
+          <span class="course-lessons">72 dars</span>
+        </div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── HOW IT WORKS (yangi bo'lim) ── -->
+<section class="section reveal">
+  <div class="section-label">Qanday ishlaydi</div>
+  <h2 class="section-title">4 qadamda boshlang</h2>
+  <p class="section-sub">Ro'yxatdan o'tishdan birinchi sertifikatgacha</p>
+  <div class="steps-wrap">
+    <div class="step-dash"></div>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title">Ro'yxatdan o'ting</div>
+      <div class="step-text">Email yoki Google orqali 30 soniyada hisob yarating — bepul.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title">Kurs tanlang</div>
+      <div class="step-text">340+ kurs ichidan o'zingizga mos yo'nalishni toping.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title">O'qing va mashq qiling</div>
+      <div class="step-text">Video, jonli dars yoki PDF materiallar orqali o'rganing.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-title">Sertifikat oling</div>
+      <div class="step-text">Kursni yakunlab, rasmiy sertifikatni yuklab oling.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── FEATURES ── -->
+<section class="section features-section reveal" id="features">
+  <div class="section-label">Nima uchun EduUz?</div>
+  <h2 class="section-title">Boshqa platformalardan farqi</h2>
+  <p class="section-sub">O'zbekiston o'quvchisi uchun maxsus yaratilgan imkoniyatlar</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="ti ti-device-floppy"></i></div>
+      <div class="feature-title">Video joy eslab qoladi</div>
+      <div class="feature-text">Qaytib kirganingizda dars to'xtatgan joyingizdan davom etadi.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-green"><i class="ti ti-wifi-off"></i></div>
+      <div class="feature-title">Oflayn ishlaydi</div>
+      <div class="feature-text">Internet bo'lmasa ham avval ko'rilgan darslarni ochish mumkin.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="ti ti-video"></i></div>
+      <div class="feature-title">Jonli darslar</div>
+      <div class="feature-text">Zoom orqali ustoz bilan to'g'ridan-to'g'ri savol-javob imkoni.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-amber"><i class="ti ti-certificate"></i></div>
+      <div class="feature-title">Sertifikat</div>
+      <div class="feature-text">Kurs yakunida rasmiy sertifikat oling, LinkedIn ga qo'shing.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-green"><i class="ti ti-credit-card"></i></div>
+      <div class="feature-title">Payme · Click · Uzcard</div>
+      <div class="feature-text">O'zbekistonning barcha to'lov tizimlarida qulay to'lov.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-purple"><i class="ti ti-users"></i></div>
+      <div class="feature-title">To'liq o'zbek tilida</div>
+      <div class="feature-text">Interfeys va kurslarning aksariyati ona tilimizda.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="ti ti-eye"></i></div>
+      <div class="feature-title">Bepul preview</div>
+      <div class="feature-text">Har kursda 2–3 ta darsni ro'yxatdan o'tmasdan bepul ko'ring.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-amber"><i class="ti ti-chart-bar"></i></div>
+      <div class="feature-title">Ustoz analitikasi</div>
+      <div class="feature-text">O'qituvchilar o'z kurslarining statistikasini real vaqtda kuzatadi.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── TOP TEACHERS (yangi bo'lim) ── -->
+<section class="section reveal" id="teachers">
+  <div class="section-header-row">
+    <div>
+      <div class="section-label">Eng yaxshi ustozlar</div>
+      <h2 class="section-title" style="margin-bottom:0">Top o'qituvchilar</h2>
+    </div>
+    <a class="link-more" href="courses.html">Barchasini ko'rish <i class="ti ti-arrow-right" style="font-size:13px"></i></a>
+  </div>
+  <p class="section-sub">Platformadagi eng yuqori baholik ustozlar</p>
+  <div class="teachers-grid">
+    <div class="teacher-mini-card">
+      <div class="teacher-avatar-lg" style="background:#DBEAFE;color:#1D4ED8">AK</div>
+      <div class="teacher-mini-name">Alisher Karimov</div>
+      <div class="teacher-mini-role">Python · Django</div>
+      <div class="teacher-mini-stats">
+        <div class="tms"><span class="tms-num">2,340</span><span class="tms-label">O'quvchi</span></div>
+        <div class="tms"><span class="tms-num">4.9★</span><span class="tms-label">Baho</span></div>
+        <div class="tms"><span class="tms-num">8</span><span class="tms-label">Kurs</span></div>
+      </div>
+    </div>
+    <div class="teacher-mini-card">
+      <div class="teacher-avatar-lg" style="background:#D1FAE5;color:#065F46">DN</div>
+      <div class="teacher-mini-name">Dilnoza Nazarova</div>
+      <div class="teacher-mini-role">IELTS · Ingliz tili</div>
+      <div class="teacher-mini-stats">
+        <div class="tms"><span class="tms-num">1,876</span><span class="tms-label">O'quvchi</span></div>
+        <div class="tms"><span class="tms-num">4.8★</span><span class="tms-label">Baho</span></div>
+        <div class="tms"><span class="tms-num">5</span><span class="tms-label">Kurs</span></div>
+      </div>
+    </div>
+    <div class="teacher-mini-card">
+      <div class="teacher-avatar-lg" style="background:#EDE9FE;color:#5B21B6">SX</div>
+      <div class="teacher-mini-name">Sarvinoz Xoliqova</div>
+      <div class="teacher-mini-role">UI/UX · Figma</div>
+      <div class="teacher-mini-stats">
+        <div class="tms"><span class="tms-num">1,540</span><span class="tms-label">O'quvchi</span></div>
+        <div class="tms"><span class="tms-num">4.9★</span><span class="tms-label">Baho</span></div>
+        <div class="tms"><span class="tms-num">4</span><span class="tms-label">Kurs</span></div>
+      </div>
+    </div>
+    <div class="teacher-mini-card">
+      <div class="teacher-avatar-lg" style="background:#FFE4E6;color:#9F1239">BT</div>
+      <div class="teacher-mini-name">Bobur Toshmatov</div>
+      <div class="teacher-mini-role">Matematika · DTM</div>
+      <div class="teacher-mini-stats">
+        <div class="tms"><span class="tms-num">3,100</span><span class="tms-label">O'quvchi</span></div>
+        <div class="tms"><span class="tms-num">4.8★</span><span class="tms-label">Baho</span></div>
+        <div class="tms"><span class="tms-num">6</span><span class="tms-label">Kurs</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── TEACHER CTA ── -->
+<section style="padding:64px 0">
+  <div class="teacher-section reveal">
+    <div>
+      <div class="section-label">O'qituvchilar uchun</div>
+      <h2 class="teacher-title">Kurs yarating — daromad oling</h2>
+      <p class="teacher-sub">Bilimingizni minglab o'quvchilarga yetkazing. Har bir sotuvdan <strong style="color:#fff">70%</strong> siz olasiz.</p>
+      <div class="teacher-perks">
+        <div class="perk"><div class="perk-check">✓</div>Video yoki Zoom orqali dars bering</div>
+        <div class="perk"><div class="perk-check">✓</div>Tekin yoki pullik kurs qo'ying</div>
+        <div class="perk"><div class="perk-check">✓</div>O'quvchilar statistikasini real vaqtda ko'ring</div>
+        <div class="perk"><div class="perk-check">✓</div>Daromadingizni har hafta Payme orqali oling</div>
+      </div>
+      <button class="btn-teacher" onclick="window.location.href='auth.html'">O'qituvchi bo'lish <i class="ti ti-arrow-right"></i></button>
+    </div>
+    <div class="teacher-card">
+      <div class="teacher-avatar">AK</div>
+      <div class="teacher-name">Alisher Karimov</div>
+      <div class="teacher-role">Python & Django · Toshkent</div>
+      <div class="teacher-stats">
+        <div class="t-stat"><div class="t-stat-num">2,340</div><div class="t-stat-label">O'quvchilar</div></div>
+        <div class="t-stat"><div class="t-stat-num">8</div><div class="t-stat-label">Kurslar</div></div>
+        <div class="t-stat"><div class="t-stat-num">4.9★</div><div class="t-stat-label">Reyting</div></div>
+        <div class="t-stat"><div class="t-stat-num">4.2M</div><div class="t-stat-label">Daromad (so'm)</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TESTIMONIALS (yangi bo'lim) ── -->
+<section class="section testimonials-section reveal">
+  <div class="section-label">O'quvchilar fikri</div>
+  <h2 class="section-title">Ular nima deydi?</h2>
+  <p class="section-sub">Haqiqiy o'quvchilarning haqiqiy tajribasi</p>
+  <div class="testimonials-grid">
+    <div class="testimonial-card">
+      <div class="t-stars">★★★★★</div>
+      <div class="t-text">"Python kursini tugallaganimdan so'ng, 3 oyda o'z loyihamni yozdim. Alisher ustoz juda tushunarli tushuntiradi, har bir savolimga javob berdi."</div>
+      <div class="t-author">
+        <div class="t-avatar" style="background:#DBEAFE;color:#1D4ED8">ZM</div>
+        <div><div class="t-name">Zafar Mirzayev</div><div class="t-meta">Toshkent · Python kursi</div></div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="t-stars">★★★★★</div>
+      <div class="t-text">"IELTS da 7.5 oldim! Dilnoza opaning darslari Udemy dagi kurslardan ancha yaxshi — o'zbekcha tushuntirishlar juda qulay bo'ldi."</div>
+      <div class="t-author">
+        <div class="t-avatar" style="background:#D1FAE5;color:#065F46">NK</div>
+        <div><div class="t-name">Nodira Karimova</div><div class="t-meta">Samarqand · IELTS kursi</div></div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="t-stars">★★★★★</div>
+      <div class="t-text">"Video to'xtatgan joyni eslab qolishi menga juda qulay — vaqtim bo'lmasa to'xtataman, keyinroq davom etaman. Shu xususiyat uchun rahmat!"</div>
+      <div class="t-author">
+        <div class="t-avatar" style="background:#EDE9FE;color:#5B21B6">BX</div>
+        <div><div class="t-name">Bobur Xasanov</div><div class="t-meta">Farg'ona · UI/UX kursi</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── FAQ (yangi bo'lim) ── -->
+<section class="section reveal" id="faq">
+  <div class="section-label">Savollar</div>
+  <h2 class="section-title">Ko'p so'raladigan savollar</h2>
+  <p class="section-sub">Javob topa olmagan bo'lsangiz, biz bilan bog'laning</p>
+  <div class="faq-list">
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        EduUz da ro'yxatdan o'tish pullikmi?
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">Yo'q, ro'yxatdan o'tish va ko'plab kurslarni ko'rish butunlay bepul. Faqat ayrim premium kurslar uchun to'lov kerak bo'ladi.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Sertifikat haqiqiy hujjat sifatida qabul qilinadimi?
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">EduUz sertifikatlari LinkedIn profilingizga qo'shilishi mumkin. Ko'plab O'zbekiston kompaniyalari platformamizni tan oladi. Sertifikatda kurs nomi, muddati va o'qituvchi imzosi bo'ladi.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Men ham o'qituvchi bo'la olamanmi?
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">Albatta! Istalgan yo'nalishda bilimi bor har kim o'qituvchi bo'lishi mumkin. Ro'yxatdan o'ting, kurs yarating va o'quvchilarga yeting. Har bir sotuvdan 70% siz olasiz.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Darslarni telefonda ko'rish mumkinmi?
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">Ha, EduUz barcha qurilmalar uchun moslashtirilgan. Telefon, planshet yoki kompyuterdan qulay foydalanishingiz mumkin. Ilovamiz tez orada App Store va Google Play da chiqadi.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Qanday to'lov usullari bor?
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">Payme, Click, Uzcard va Humo orqali to'lov qabul qilinadi. Xorijiy Visa/Mastercard kartalari ham qabul qilinadi.</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── CTA ── -->
+<section style="padding:64px 0">
+  <div class="cta-section reveal">
+    <h2 class="cta-title">Bugun boshlang — bepul</h2>
+    <p class="cta-sub">Ro'yxatdan o'ting va birinchi kursni bepul ko'ring. Kredit karta kerak emas.</p>
+    <div class="cta-buttons">
+      <button class="btn-hero" onclick="window.location.href='auth.html'">Bepul boshlash <i class="ti ti-arrow-right"></i></button>
+      <button class="btn-hero-ghost" onclick="window.location.href='auth.html'">O'qituvchi bo'lish</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer class="footer">
+  <div class="footer-logo">
+    <span class="logo-dot"></span> EduUz
+  </div>
+  <div class="footer-links">
+    <a href="courses.html">Kurslar</a>
+    <a href="index.html#teachers">O'qituvchilar</a>
+    <a href="#">Shartlar</a>
+    <a href="#">Maxfiylik</a>
+    <a href="#">Aloqa</a>
+  </div>
+  <span>© 2025 EduUz. Barcha huquqlar himoyalangan.</span>
+</footer>
+
+<script>
+// ── SCROLL NAV ──
+const nav = document.getElementById('mainNav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 30);
+});
+
+// ── REVEAL ──
+const reveals = document.querySelectorAll('.reveal');
+const ro = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.08 });
+reveals.forEach(el => ro.observe(el));
+
+// ── COUNTER ──
+function runCounter(el) {
+  const target = parseInt(el.dataset.count);
+  const suffix = el.dataset.suffix || '';
+  let start = 0;
+  const dur = 1600;
+  const step = ts => {
+    if (!start) start = ts;
+    const p = Math.min((ts - start) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.floor(ease * target).toLocaleString('uz-UZ') + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+const statsObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      document.querySelectorAll('[data-count]').forEach(runCounter);
+      statsObs.disconnect();
+    }
+  });
+}, { threshold: 0.5 });
+const heroStats = document.querySelector('.hero-stats');
+if (heroStats) statsObs.observe(heroStats);
+
+// ── COURSE FILTER ──
+const chips = document.querySelectorAll('.filter-chip');
+const cards = document.querySelectorAll('.course-card');
+const searchInput = document.getElementById('courseSearch');
+
+function filterCourses() {
+  const active = document.querySelector('.filter-chip.active')?.dataset.cat || 'all';
+  const q = searchInput.value.toLowerCase();
+  cards.forEach(card => {
+    const catMatch = active === 'all' || card.dataset.cat === active;
+    const textMatch = !q || card.querySelector('.course-title').textContent.toLowerCase().includes(q);
+    card.style.display = (catMatch && textMatch) ? '' : 'none';
+  });
+}
+
+chips.forEach(chip => {
+  chip.addEventListener('click', () => {
+    chips.forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    filterCourses();
+  });
+});
+searchInput.addEventListener('input', filterCourses);
+
+// ── FAQ ──
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+</script>
+</body>
+</html>
