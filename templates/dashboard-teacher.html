@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ustoz CRM — MUTP</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F8F8F7;
+      --surface: #FFFFFF;
+      --border: rgba(0,0,0,0.08);
+      --border-md: rgba(0,0,0,0.12);
+      --text: #1A1A18;
+      --text-2: #6B6B67;
+      --text-3: #A0A09A;
+      --purple: #534AB7;
+      --purple-light: #EEEDFE;
+      --green: #0F6E56;
+      --green-light: #E1F5EE;
+      --green-mid: #1D9E75;
+      --amber: #854F0B;
+      --amber-light: #FAEEDA;
+      --duo-green: #58CC02;
+      --duo-green-dark: #46A302;
+      --duo-green-bg: #D7FFB8;
+      --duo-green-light: #89E219;
+      --red: #A32D2D;
+      --red-light: #FCEBEB;
+      --red-mid: #E24B4A;
+      --teal-light: #EAF3DE;
+      --teal: #3B6D11;
+      --teal-mid: #639922;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+    .crm { display: flex; height: 100vh; min-height: 700px; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: 220px; background: var(--surface); border-right: 2px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; }
+    .logo { padding: 0 20px 20px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--border); margin-bottom: 8px; }
+    .logo-mark { width: 28px; height: 28px; background: var(--purple); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; }
+    .logo-text { font-size: 14px; font-weight: 500; color: var(--text); }
+    .nav-section { font-size: 11px; color: var(--text-3); padding: 16px 20px 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; font-size: 13px; color: var(--text-2); cursor: pointer; border-left: 2px solid transparent; transition: all .15s; text-decoration: none; }
+    .nav-item:hover { background: var(--bg); color: var(--text); }
+    .nav-item.active { background: var(--bg); color: var(--purple); border-left-color: var(--purple); font-weight: 500; }
+    .nav-item i { font-size: 16px; width: 18px; flex-shrink: 0; }
+    .sidebar-bottom { margin-top: auto; padding: 16px 20px; border-top: 2px solid var(--border); }
+    .teacher-card { display: flex; align-items: center; gap: 10px; }
+    .av-sm { width: 32px; height: 32px; border-radius: 50%; background: var(--purple-light); color: var(--purple); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; }
+    .teacher-name { font-size: 13px; font-weight: 500; }
+    .teacher-role { font-size: 11px; color: var(--text-2); }
+
+    /* ── Main ── */
+    .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    .topbar { background: var(--surface); border-bottom: 2px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .page-title { font-size: 16px; font-weight: 700; }
+    .page-sub { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .btn-add { background: var(--duo-green); color: #fff; border: none; border-radius: 16px; padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 0 var(--duo-green-dark); }
+    .btn-add:hover { background: var(--duo-green-dark); }
+    .btn-icon { background: transparent; border: 2px solid var(--border-md); border-radius: 16px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-2); font-size: 16px; position: relative; }
+    .btn-icon:hover { background: var(--bg); }
+    .notif-dot { position: absolute; top: 6px; right: 7px; width: 6px; height: 6px; background: #D85A30; border-radius: 50%; }
+    .content { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── Metrics ── */
+    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .metric { background: var(--surface); border: 2px solid var(--border); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+    .metric-header { display: flex; align-items: center; justify-content: space-between; }
+    .metric-icon { width: 34px; height: 34px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+    .metric-badge { font-size: 11px; padding: 3px 8px; border-radius: 99px; font-weight: 500; }
+    .badge-up { background: var(--teal-light); color: var(--teal); }
+    .badge-warn { background: var(--amber-light); color: var(--amber); }
+    .metric-val { font-size: 22px; font-weight: 700; line-height: 1; }
+    .metric-label { font-size: 12px; color: var(--text-2); }
+
+    /* ── Two Column ── */
+    .two-col { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+    .left-col { display: flex; flex-direction: column; gap: 20px; }
+    .right-col { display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── Card ── */
+    .card { background: var(--surface); border: 2px solid var(--border); border-radius: 16px; overflow: hidden; }
+    .card-head { padding: 14px 20px; border-bottom: 2px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-head-title { font-size: 14px; font-weight: 700; }
+    .tab-row { display: flex; gap: 0; }
+    .tab { padding: 6px 14px; font-size: 12px; cursor: pointer; color: var(--text-2); border-bottom: 2px solid transparent; transition: all .15s; }
+    .tab.on { color: var(--purple); border-bottom-color: var(--purple); font-weight: 500; }
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; }
+    thead th { padding: 10px 20px; font-size: 11px; color: var(--text-2); text-align: left; background: var(--bg); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; }
+    tbody tr { border-bottom: 2px solid var(--border); cursor: pointer; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover td { background: var(--bg); }
+    tbody td { padding: 12px 20px; font-size: 13px; vertical-align: middle; }
+    .course-name { display: flex; align-items: center; gap: 10px; }
+    .course-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .course-meta { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+    .rating { display: flex; align-items: center; gap: 4px; font-size: 13px; }
+    .pill { padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 500; }
+    .pill-green { background: var(--teal-light); color: var(--teal); }
+    .pill-amber { background: var(--amber-light); color: var(--amber); }
+    .action-link { color: var(--purple); font-size: 12px; cursor: pointer; background: none; border: none; padding: 0; }
+
+    /* ── Students ── */
+    .student-list { padding: 0 20px; }
+    .student-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 2px solid var(--border); }
+    .student-item:last-child { border-bottom: none; }
+    .st-av { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; }
+    .st-name { font-size: 13px; font-weight: 500; }
+    .st-course { font-size: 11px; color: var(--text-2); }
+    .prog-wrap { width: 60px; text-align: right; }
+    .prog-pct { font-size: 11px; font-weight: 500; }
+    .prog-bar { height: 4px; border-radius: 99px; background: var(--bg); margin-top: 4px; overflow: hidden; }
+    .prog-fill { height: 100%; border-radius: 99px; }
+
+    /* ── Activity ── */
+    .activity-list { padding: 0 20px; }
+    .activity-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 2px solid var(--border); align-items: flex-start; }
+    .activity-item:last-child { border-bottom: none; }
+    .act-ico { width: 30px; height: 30px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+    .act-text { font-size: 13px; line-height: 1.4; }
+    .act-time { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+
+    /* ── Chart ── */
+    .chart-wrap { padding: 16px 20px; }
+    .legend { display: flex; gap: 16px; margin-bottom: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-2); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+    /* ── Link btn ── */
+    .link-btn { background: none; border: none; font-size: 12px; color: var(--purple); cursor: pointer; }
+
+    @media (max-width: 1100px) {
+      .two-col { grid-template-columns: 1fr; }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 720px) {
+      .sidebar { display: none; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+      .content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div class="crm">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark"><i class="ti ti-school"></i></div>
+      <span class="logo-text">MUTP Ustoz</span>
+    </div>
+    <span class="nav-section">Asosiy</span>
+    <a class="nav-item active" href="/dashboard-teacher.html"><i class="ti ti-layout-dashboard"></i>Boshqaruv</a>
+    <a class="nav-item" href="/create-course.html"><i class="ti ti-video"></i>Kurslarim</a>
+    <a class="nav-item" href="#students-section"><i class="ti ti-users"></i>O'quvchilar</a>
+    <a class="nav-item" href="#chart-section"><i class="ti ti-chart-bar"></i>Tahlil</a>
+    <span class="nav-section">Sahifalar</span>
+    <a class="nav-item" href="/index.html"><i class="ti ti-home"></i>Bosh sahifa</a>
+    <a class="nav-item" href="/courses.html"><i class="ti ti-books"></i>Kurslar</a>
+    <a class="nav-item" href="/profile.html"><i class="ti ti-user"></i>Profil</a>
+    <div class="sidebar-bottom">
+      <div class="teacher-card">
+        <div class="av-sm" data-user-avatar>?</div>
+        <div>
+          <div class="teacher-name" data-user-name>Yuklanmoqda...</div>
+          <div class="teacher-role">O'qituvchi</div>
+        </div>
+      </div>
+      <button onclick="Auth.logout()" style="margin-top:10px;background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;width:100%;color:var(--text-2)">Chiqish</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="dashboard-header">
+        <div class="page-title">Boshqaruv paneli</div>
+        <p class="page-sub">Yuklanmoqda...</p>
+      </div>
+      <div class="topbar-right">
+        <div class="btn-icon"><i class="ti ti-search"></i></div>
+        <div class="btn-icon"><i class="ti ti-bell"></i><span class="notif-dot"></span></div>
+        <a href="/create-course.html" class="btn-add" style="text-decoration:none"><i class="ti ti-plus"></i>Yangi kurs</a>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Metrics (stats-row for JS compatibility) -->
+      <div class="metrics-grid stats-row">
+        <div class="metric stat-info">
+          <div class="metric-header">
+            <div class="metric-icon" style="background:var(--purple-light);color:var(--purple)"><i class="ti ti-users"></i></div>
+          </div>
+          <h3 class="metric-val">—</h3>
+          <div class="metric-label">Jami o'quvchilar</div>
+        </div>
+        <div class="metric stat-info">
+          <div class="metric-header">
+            <div class="metric-icon" style="background:var(--green-light);color:var(--green)"><i class="ti ti-video"></i></div>
+          </div>
+          <h3 class="metric-val">—</h3>
+          <div class="metric-label">Faol kurslar</div>
+        </div>
+        <div class="metric stat-info">
+          <div class="metric-header">
+            <div class="metric-icon" style="background:var(--amber-light);color:var(--amber)"><i class="ti ti-star"></i></div>
+          </div>
+          <h3 class="metric-val">—</h3>
+          <div class="metric-label">O'rtacha reyting</div>
+        </div>
+        <div class="metric stat-info">
+          <div class="metric-header">
+            <div class="metric-icon" style="background:var(--teal-light);color:var(--teal)"><i class="ti ti-cash"></i></div>
+          </div>
+          <h3 class="metric-val" style="font-size:18px">—</h3>
+          <div class="metric-label">Bu oy daromad (so'm)</div>
+        </div>
+      </div>
+
+      <!-- Two column -->
+      <div class="two-col">
+        <div class="left-col">
+
+          <!-- Courses table -->
+          <div class="card">
+            <div class="card-head">
+              <span class="card-head-title">Kurslarim</span>
+              <a href="/create-course.html" style="font-size:12px;color:var(--purple);text-decoration:none">+ Yangi kurs</a>
+            </div>
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Kurs</th>
+                  <th>O'quvchi</th>
+                  <th>Reyting</th>
+                  <th>Daromad</th>
+                  <th>Holat</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="6" style="text-align:center;color:var(--text-2);padding:32px">Yuklanmoqda...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Chart -->
+
+          <!-- Chart -->
+          <div class="card" id="chart-section">
+            <div class="card-head">
+              <span class="card-head-title">Daromad dinamikasi</span>
+            </div>
+            <div class="chart-wrap">
+              <div class="legend">
+                <span class="legend-item"><span class="legend-dot" style="background:#534AB7"></span>Daromad (100K so'm)</span>
+                <span class="legend-item"><span class="legend-dot" style="background:#1D9E75;border:1px dashed #1D9E75;background:transparent"></span>O'quvchilar (×100)</span>
+              </div>
+              <div style="position:relative;width:100%;height:200px">
+                <canvas id="revenueChart" role="img" aria-label="Yanvar-iyun daromad va o'quvchilar o'sishi grafigi">Daromad: Yan 800K, Fev 950K, Mar 1.1M, Apr 1.0M, May 1.15M, Iyun 1.24M.</canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="right-col">
+
+          <!-- Students -->
+          <div class="card" id="students-section">
+            <div class="card-head">
+              <span class="card-head-title">So'nggi o'quvchilar</span>
+            </div>
+            <div class="student-list">
+              <p style="padding:20px;color:var(--text-2);font-size:13px">Yuklanmoqda...</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/toast.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/dashboard-teacher.js"></script>
+</body>
+</html>

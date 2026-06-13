@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>O'quvchi Kabineti — MUTP</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F8F8F7;
+      --surface: #FFFFFF;
+      --border: rgba(0,0,0,0.08);
+      --border-md: rgba(0,0,0,0.12);
+      --text: #1A1A18;
+      --text-2: #6B6B67;
+      --text-3: #A0A09A;
+      --purple: #534AB7;
+      --purple-light: #EEEDFE;
+      --green: #0F6E56;
+      --green-light: #E1F5EE;
+      --green-mid: #1D9E75;
+      --amber: #854F0B;
+      --amber-light: #FAEEDA;
+      --duo-green: #58CC02;
+      --duo-green-dark: #46A302;
+      --duo-green-bg: #D7FFB8;
+      --duo-green-light: #89E219;
+      --red: #A32D2D;
+      --red-light: #FCEBEB;
+      --red-mid: #E24B4A;
+      --teal-light: #EAF3DE;
+      --teal: #3B6D11;
+      --teal-mid: #639922;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+    .crm { display: flex; height: 100vh; min-height: 700px; }
+
+    /* ── Sidebar ── */
+    .sidebar { width: 220px; background: var(--surface); border-right: 2px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; }
+    .logo { padding: 0 20px 20px; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--border); margin-bottom: 8px; }
+    .logo-mark { width: 28px; height: 28px; background: var(--duo-green); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; }
+    .logo-text { font-size: 14px; font-weight: 700; color: var(--text); }
+    .nav-section { font-size: 11px; color: var(--text-3); padding: 16px 20px 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; font-size: 13px; color: var(--text-2); cursor: pointer; border-left: 2px solid transparent; transition: all .15s; text-decoration: none; }
+    .nav-item:hover { background: var(--bg); color: var(--text); }
+    .nav-item.active { background: var(--bg); color: var(--duo-green); border-left-color: var(--duo-green); font-weight: 700; }
+    .nav-item i { font-size: 16px; width: 18px; flex-shrink: 0; }
+    .sidebar-bottom { margin-top: auto; padding: 16px 20px; border-top: 2px solid var(--border); }
+    .student-card { display: flex; align-items: center; gap: 10px; }
+    .av-sm { width: 32px; height: 32px; border-radius: 50%; background: var(--duo-green-bg); color: var(--duo-green); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; border: 2px solid var(--duo-green); }
+    .student-name { font-size: 13px; font-weight: 500; }
+    .student-role { font-size: 11px; color: var(--text-2); }
+
+    /* ── Main ── */
+    .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    .topbar { background: var(--surface); border-bottom: 2px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .page-title { font-size: 16px; font-weight: 700; }
+    .page-sub { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .btn-add { background: var(--duo-green); color: #fff; border: none; border-radius: 16px; padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 0 var(--duo-green-dark); text-decoration: none; }
+    .btn-add:hover { background: var(--duo-green-dark); }
+    .btn-icon { background: transparent; border: 2px solid var(--border-md); border-radius: 16px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-2); font-size: 16px; position: relative; }
+    .btn-icon:hover { background: var(--bg); }
+    .content { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── Metrics (stats-row for JS) ── */
+    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .metric { background: var(--surface); border: 2px solid var(--border); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+    .metric-header { display: flex; align-items: center; justify-content: space-between; }
+    .metric-icon { width: 34px; height: 34px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+    .metric-val { font-size: 22px; font-weight: 700; line-height: 1; }
+    .metric-label { font-size: 12px; color: var(--text-2); }
+
+    /* ── Two Column ── */
+    .two-col { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+    .left-col { display: flex; flex-direction: column; gap: 20px; }
+    .right-col { display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── Card ── */
+    .card { background: var(--surface); border: 2px solid var(--border); border-radius: 16px; overflow: hidden; padding: 20px; }
+    .card-head { padding: 14px 20px; border-bottom: 2px solid var(--border); display: flex; align-items: center; justify-content: space-between; margin: -20px -20px 20px; }
+    .card-head-title { font-size: 14px; font-weight: 700; }
+
+    /* Continue cards scroll */
+    .continue-cards { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: none; }
+    .continue-cards::-webkit-scrollbar { display: none; }
+    .c-card { min-width: 280px; border: 2px solid var(--border); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: var(--surface); }
+    .c-top { display: flex; gap: 12px; }
+    .c-thumb { width: 48px; height: 48px; border-radius: 12px; background: var(--duo-green-bg); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+    .c-info h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; line-height: 1.3; color: var(--text); }
+    .c-info p { font-size: 12px; color: var(--text-2); }
+    .c-progress-text { display: flex; justify-content: space-between; font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+    .c-progress-bar { height: 4px; background: var(--bg); border-radius: 2px; overflow: hidden; }
+    .c-progress-fill { height: 100%; background: var(--duo-green); }
+
+    /* Activity Graph */
+    .activity-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .act-day { aspect-ratio: 1; border-radius: 4px; background: var(--bg); }
+    .act-day.l1 { background: #D4EDDA; }
+    .act-day.l2 { background: #82D89A; }
+    .act-day.l3 { background: #58CC02; }
+    .act-day.l4 { background: #3E8E00; }
+    .act-labels { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 8px; text-align: center; font-size: 11px; color: var(--text-2); }
+
+    /* Certificates */
+    .cert-list { display: flex; flex-direction: column; gap: 12px; }
+    .cert-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; border: 2px solid var(--amber-light); border-left: 4px solid var(--amber); border-radius: 16px; background: #FFFBEC; }
+    .cert-item .ti { font-size: 20px; color: var(--amber); }
+
+    .btn-primary { background: var(--duo-green); color: #fff; border: none; border-radius: 16px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; box-shadow: 0 4px 0 var(--duo-green-dark); display: inline-block; }
+    .btn-primary:hover { background: var(--duo-green-dark); }
+    
+    .btn-secondary { background: var(--surface); border: 2px solid var(--border-md); border-radius: 16px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; text-align: center; text-decoration: none; color: var(--text-2); display: inline-block; }
+    .btn-secondary:hover { background: var(--bg); }
+
+    @media (max-width: 1100px) {
+      .two-col { grid-template-columns: 1fr; }
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 720px) {
+      .sidebar { display: none; }
+      .content { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+<div id="toast-container"></div>
+
+<div class="crm">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-mark"><i class="ti ti-school"></i></div>
+      <span class="logo-text">MUTP O'quvchi</span>
+    </div>
+    <span class="nav-section">Asosiy</span>
+    <a class="nav-item active" href="/dashboard-student.html"><i class="ti ti-layout-dashboard"></i>Dashboard</a>
+    <a class="nav-item" href="/courses.html"><i class="ti ti-books"></i>Kurs sotib olish</a>
+    <span class="nav-section">Sahifalar</span>
+    <a class="nav-item" href="/"><i class="ti ti-home"></i>Bosh sahifa</a>
+    <a class="nav-item" href="/profile.html"><i class="ti ti-user"></i>Profilim</a>
+    <div class="sidebar-bottom">
+      <div class="student-card">
+        <div class="av-sm" data-user-avatar>?</div>
+        <div>
+          <div class="student-name" data-user-name>Yuklanmoqda...</div>
+          <div class="student-role">O'quvchi</div>
+        </div>
+      </div>
+      <button onclick="Auth.logout()" style="margin-top:10px;background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;width:100%;color:var(--text-2)">Chiqish</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="page-title welcome-text">Boshqaruv paneli</div>
+        <p class="page-sub">O'rganishni davom ettiramizmi?</p>
+      </div>
+      <div class="topbar-right">
+        <a href="/courses.html" class="btn-add"><i class="ti ti-plus"></i>Yangi darsga yozilish</a>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- Metrics row -->
+      <div class="metrics-grid stats-row">
+        <div class="metric stat-info">
+          <div class="metric-header">
+            <div class="metric-icon" style="background:var(--purple-light);color:var(--purple)"><i class="ti ti-books"></i></div>
+          </div>
+          <h3 class="metric-val">—</h3>
+          <div class="metric-label">Jami kurslar</div>
+        </div>
+        <div class="metric stat-info">
+          <div class="metric-header">
+            <div class="metric-icon" style="background:var(--green-light);color:var(--green)"><i class="ti ti-circle-check"></i></div>
+          </div>
+          <h3 class="metric-val">—</h3>
+          <div class="metric-label">Yakunlangan</div>
+        </div>
+        <div class="metric stat-info">
+          <div class="metric-header">
+            <div class="metric-icon" style="background:var(--amber-light);color:var(--amber)"><i class="ti ti-clock"></i></div>
+          </div>
+          <h3 class="metric-val">—</h3>
+          <div class="metric-label">Umumiy vaqt</div>
+        </div>
+        <div class="metric stat-info">
+          <div class="metric-header">
+            <div class="metric-icon" style="background:var(--teal-light);color:var(--teal)"><i class="ti ti-certificate"></i></div>
+          </div>
+          <h3 class="metric-val">—</h3>
+          <div class="metric-label">Sertifikatlar</div>
+        </div>
+      </div>
+
+      <!-- Two column -->
+      <div class="two-col">
+        <div class="left-col">
+          <!-- Continue cards -->
+          <div class="card">
+            <div class="card-head">
+              <span class="card-head-title">O'qishni davom ettirish</span>
+            </div>
+            <div class="continue-cards">
+              <p style="color:var(--text-2);font-size:13px">Yuklanmoqda...</p>
+            </div>
+          </div>
+
+          <!-- Enrollments list -->
+          <div class="card">
+            <div class="card-head">
+              <span class="card-head-title">Mening kurslarim</span>
+            </div>
+            <div data-enrollments-list style="display:flex; flex-direction:column; gap:16px;">
+              <p style="color:var(--text-2);font-size:13px">Yuklanmoqda...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="right-col">
+          <!-- Activity Graph -->
+          <div class="card">
+            <div class="card-head">
+              <span class="card-head-title">Haftalik faollik</span>
+            </div>
+            <div class="activity-grid">
+              <div class="act-day"></div>
+              <div class="act-day"></div>
+              <div class="act-day"></div>
+              <div class="act-day"></div>
+              <div class="act-day"></div>
+              <div class="act-day"></div>
+              <div class="act-day"></div>
+            </div>
+            <div class="act-labels">
+              <span>D</span><span>S</span><span>C</span><span>P</span><span>J</span><span>S</span><span>Y</span>
+            </div>
+          </div>
+
+          <!-- Certificates -->
+          <div class="card">
+            <div class="card-head">
+              <span class="card-head-title">Sertifikatlarim</span>
+            </div>
+            <div class="cert-list">
+              <p style="color:var(--text-2);font-size:13px">Yuklanmoqda...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/toast.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/dashboard-student.js"></script>
+</body>
+</html>

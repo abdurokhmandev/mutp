@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profilim — MUTP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <style>
+    body { background: var(--surface); }
+    
+    .profile-cover { height: 160px; background: linear-gradient(135deg, #58CC02, #89E219); position: relative; }
+    
+    .profile-container { max-width: 1000px; margin: 0 auto; padding: 0 40px; position: relative; }
+    
+    .profile-header { display: flex; justify-content: space-between; align-items: flex-end; margin-top: -40px; margin-bottom: 32px; }
+    .avatar-wrapper { position: relative; }
+    .profile-avatar { width: 100px; height: 100px; border-radius: 50%; border: 4px solid var(--white); background: var(--duo-green-light); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: var(--duo-green-dark); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .profile-name { font-size: 28px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; margin-top: 12px; margin-bottom: 4px; color: var(--ink); }
+    .role-badge { display: inline-block; padding: 4px 12px; background: var(--purple-light); color: var(--purple); border-radius: 99px; font-size: 13px; font-weight: 700; }
+    
+    .profile-layout { display: flex; gap: 40px; margin-bottom: 64px; }
+    .sidebar { width: 280px; flex-shrink: 0; }
+    .main-content { flex: 1; }
+    
+    /* Sidebar info */
+    .bio-text { font-size: 14px; color: var(--ink-2); line-height: 1.6; margin-bottom: 24px; }
+    .info-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .info-item { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-2); }
+    .info-item .ti { color: var(--muted); font-size: 18px; }
+    .social-links { display: flex; gap: 12px; }
+    .social-icon { width: 36px; height: 36px; border-radius: 50%; background: var(--white); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--ink); text-decoration: none; transition: 0.2s; }
+    .social-icon:hover { background: var(--surface-2); color: var(--duo-green); }
+    
+    /* Tabs */
+    .tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+    .tab { padding-bottom: 12px; font-size: 15px; font-weight: 700; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s; }
+    .tab.active { color: var(--duo-green); border-bottom-color: var(--duo-green); }
+    
+    /* Courses Grid */
+    .p-courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+    
+    /* Modal */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 1000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+    .modal-overlay.active { display: flex; opacity: 1; }
+    .modal-card { background: var(--white); border-radius: 16px; width: 100%; max-width: 500px; padding: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); transform: translateY(20px); transition: transform 0.3s; }
+    .modal-overlay.active .modal-card { transform: translateY(0); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .modal-title { font-size: 20px; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; }
+    
+    @media(max-width: 768px) {
+      .profile-layout { flex-direction: column; }
+      .sidebar { width: 100%; }
+      .profile-header { flex-direction: column; align-items: flex-start; gap: 16px; margin-top: -30px; }
+      .profile-container { padding: 0 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a class="nav-logo" href="index.html"><span class="logo-dot"></span>MUTP</a>
+    <div class="nav-links">
+      <a href="courses.html">Kurslar</a>
+      <a href="#" id="dashboardLink">Kabinetim</a>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-secondary" onclick="Auth.logout()">Chiqish</button>
+    </div>
+  </nav>
+
+  <div class="profile-cover"></div>
+  
+  <div class="profile-container">
+    <div class="profile-header">
+      <div style="display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap;">
+        <div class="avatar-wrapper">
+          <div class="profile-avatar">ZM</div>
+        </div>
+        <div style="margin-bottom:4px;">
+          <h1 class="profile-name">Zafar Mirzayev</h1>
+          <span class="role-badge">O'quvchi</span>
+        </div>
+      </div>
+      <div>
+        <button class="btn-secondary" onclick="openModal()"><i class="ti ti-edit"></i> Tahrirlash</button>
+      <button class="btn-secondary" data-logout style="margin-left:8px;">Chiqish</button>
+      </div>
+    </div>
+    
+    <div class="profile-layout">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <p class="bio-text">Dasturlashga qiziqaman, hozirda Python va Backend texnologiyalarini o'rganmoqdaman. Kelajakda kuchli dasturchi bo'lish maqsadim.</p>
+        
+        <div class="info-list">
+          <div class="info-item"><i class="ti ti-mail"></i> <span data-profile-email>—</span></div>
+          <div class="info-item"><i class="ti ti-calendar"></i> MUTP a'zosi</div>
+          <div class="info-item"><i class="ti ti-books"></i> 3 ta kursda o'qiydi</div>
+        </div>
+      </aside>
+      
+      <!-- Main -->
+      <main class="main-content">
+        <div class="tabs">
+          <div class="tab active">Haqida</div>
+          <div class="tab">Sertifikatlar (2)</div>
+        </div>
+        
+        <h3 style="font-family:'Plus Jakarta Sans'; margin-bottom:16px;">Mening kurslarim</h3>
+        <div class="p-courses-grid">
+          <p style="color:var(--muted)">Yuklanmoqda...</p>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">Profilni tahrirlash</h2>
+        <i class="ti ti-x" style="font-size:24px; color:var(--muted); cursor:pointer;" onclick="closeModal()"></i>
+      </div>
+      
+      <div style="display:flex; gap:16px; margin-bottom:20px;">
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">Ism</label>
+          <input type="text" id="editFirstName" class="form-control">
+        </div>
+        <div class="form-group" style="flex:1;">
+          <label class="form-label">Familiya</label>
+          <input type="text" id="editLastName" class="form-control">
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Bio</label>
+        <textarea id="editBio" class="form-control" rows="3"></textarea>
+      </div>
+
+      <!-- O'qituvchi uchun tahrirlash maydonlari -->
+      <div id="teacherEditFields" style="display:none; margin-top:16px;">
+        <div class="form-group">
+          <label class="form-label">Mutaxassislik</label>
+          <input type="text" id="editSpecialization" class="form-control" placeholder="Mutaxassisligingiz">
+        </div>
+        <div style="display:flex; gap:16px; margin-bottom:20px;">
+          <div class="form-group" style="flex:1;">
+            <label class="form-label">Tajriba (yillar)</label>
+            <input type="number" id="editExperience" class="form-control" min="0">
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label class="form-label">Bank Kartasi</label>
+            <input type="text" id="editBankCard" class="form-control" maxlength="16" placeholder="8600...">
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Telefon</label>
+        <input type="text" id="editPhone" class="form-control" placeholder="+998901234567">
+      </div>
+      
+      <button class="btn-primary" style="width:100%; margin-top:16px;" onclick="ProfilePage.saveProfile()">Saqlash</button>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-col" style="max-width: 280px;">
+      <a href="index.html" class="footer-logo" style="text-decoration:none;"><span class="logo-dot"></span> MUTP</a>
+    </div>
+    <div class="footer-bottom"><span>© 2025 MUTP.</span></div>
+  </footer>
+
+  <script src="assets/js/toast.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/courses.js"></script>
+  <script src="assets/js/profile.js"></script>
+</body>
+</html>

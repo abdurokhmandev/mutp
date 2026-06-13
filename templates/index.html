@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MUTP — Milliy Ustozlar Ta'lim Platformasi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="assets/css/base.css">
+<style>
+/* Darslik.uz — Index page specific overrides (minimal) */
+.logo-dot::after { content: "D"; }
+</style>
+</head>
+<body>
+
+<!-- ── NAVBAR ── -->
+<nav class="nav" id="mainNav">
+  <a class="nav-logo" href="index.html">
+    <span class="logo-dot"></span>
+    MUTP
+  </a>
+  <div class="nav-links">
+    <a href="courses.html">Kurslar</a>
+    <a href="#teachers">O'qituvchilar</a>
+    <a href="#features">Imkoniyatlar</a>
+    <a href="#faq">FAQ</a>
+  </div>
+  <div id="nav-auth" style="display:flex;gap:8px">
+    <a href="/auth.html?tab=login" class="btn-secondary">Kirish</a>
+    <a href="/auth.html?role=student&tab=register" class="btn-primary">Bepul boshlash</a>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-eyebrow">
+    <span class="hero-eyebrow-dot"></span>
+    O'zbekistonning №1 ta'lim platformasi
+  </div>
+  <h1 class="hero-title">
+    Bilim oling<br>
+    <span class="accent">istalgan joyda</span>,<br>
+    <span class="accent-g">istalgan vaqtda</span>
+  </h1>
+  <p class="hero-sub">Eng yaxshi ustozlardan video darslar, jonli Zoom mashg'ulotlari va amaliy kurslar. O'zbekcha, ruscha, inglizcha — barcha yo'nalishlar bir joyda.</p>
+  <div class="hero-actions">
+    <a href="/auth.html?role=student" class="btn-hero" style="text-decoration:none">
+      Bepul boshlash
+      <i class="ti ti-arrow-right"></i>
+    </a>
+    <a href="#how-it-works" class="btn-hero-ghost" style="text-decoration:none; display:flex; align-items:center; gap:8px;">
+      <div class="play-circle">
+        <i class="ti ti-player-play-filled" style="font-size:10px;color:#fff;margin-left:1px"></i>
+      </div>
+      Qanday ishlaydi
+    </a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-item">
+      <span class="stat-num" data-count="12000" data-suffix="+">12,000+</span>
+      <span class="stat-label">Faol o'quvchilar</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num" data-count="340" data-suffix="+">340+</span>
+      <span class="stat-label">Kurslar</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-num" data-count="180" data-suffix="+">180+</span>
+      <span class="stat-label">O'qituvchilar</span>
+    </div>
+    <div class="stat-item" style="border-right:none">
+      <span class="stat-num">4.8 ★</span>
+      <span class="stat-label">O'rtacha baho</span>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── COURSES ── -->
+<section class="section reveal" id="courses">
+  <div class="section-header-row">
+    <div>
+      <div class="section-label">Mashhur kurslar</div>
+      <h2 class="section-title" style="margin-bottom:0">Eng ko'p o'qiladigan kurslar</h2>
+    </div>
+    <a class="link-more" href="courses.html">Barchasini ko'rish <i class="ti ti-arrow-right" style="font-size:13px"></i></a>
+  </div>
+  <p class="section-sub">Har bir yo'nalishdan eng sifatli kurslarni tanlang</p>
+
+  <!-- Filter bar (yangi) -->
+  <div class="filter-bar">
+    <div class="search-wrap">
+      <i class="ti ti-search si"></i>
+      <input type="text" placeholder="Kurs qidirish..." id="courseSearch">
+    </div>
+    <button class="filter-chip active" data-cat="all">Barchasi</button>
+    <button class="filter-chip" data-cat="dasturlash">Dasturlash</button>
+    <button class="filter-chip" data-cat="tillar">Tillar</button>
+    <button class="filter-chip" data-cat="dizayn">Dizayn</button>
+    <button class="filter-chip" data-cat="biznes">Biznes</button>
+    <button class="filter-chip" data-cat="math">Matematika</button>
+  </div>
+
+  <div class="courses-grid" id="coursesGrid">
+    <p style="color:var(--muted);padding:20px;grid-column:1/-1">Kurslar yuklanmoqda...</p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── HOW IT WORKS (yangi bo'lim) ── -->
+<section class="section reveal" id="how-it-works">
+  <div class="section-label">Qanday ishlaydi</div>
+  <h2 class="section-title">4 qadamda boshlang</h2>
+  <p class="section-sub">Ro'yxatdan o'tishdan birinchi sertifikatgacha</p>
+  <div class="steps-wrap">
+    <div class="step-dash"></div>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title">Ro'yxatdan o'ting</div>
+      <div class="step-text">Email yoki Google orqali 30 soniyada hisob yarating — bepul.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title">Kurs tanlang</div>
+      <div class="step-text">340+ kurs ichidan o'zingizga mos yo'nalishni toping.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title">O'qing va mashq qiling</div>
+      <div class="step-text">Video, jonli dars yoki PDF materiallar orqali o'rganing.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-title">Sertifikat oling</div>
+      <div class="step-text">Kursni yakunlab, rasmiy sertifikatni yuklab oling.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── FEATURES ── -->
+<section class="section features-section reveal" id="features">
+  <div class="section-label">Nima uchun MUTP?</div>
+  <h2 class="section-title">Boshqa platformalardan farqi</h2>
+  <p class="section-sub">O'zbekiston o'quvchisi uchun maxsus yaratilgan imkoniyatlar</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon"><i class="ti ti-device-floppy"></i></div>
+      <div class="feature-title">Video joy eslab qoladi</div>
+      <div class="feature-text">Qaytib kirganingizda dars to'xtatgan joyingizdan davom etadi.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-green"><i class="ti ti-wifi-off"></i></div>
+      <div class="feature-title">Oflayn ishlaydi</div>
+      <div class="feature-text">Internet bo'lmasa ham avval ko'rilgan darslarni ochish mumkin.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="ti ti-video"></i></div>
+      <div class="feature-title">Jonli darslar</div>
+      <div class="feature-text">Zoom orqali ustoz bilan to'g'ridan-to'g'ri savol-javob imkoni.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-amber"><i class="ti ti-certificate"></i></div>
+      <div class="feature-title">Sertifikat</div>
+      <div class="feature-text">Kurs yakunida rasmiy sertifikat oling, LinkedIn ga qo'shing.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-green"><i class="ti ti-credit-card"></i></div>
+      <div class="feature-title">Payme · Click · Uzcard</div>
+      <div class="feature-text">O'zbekistonning barcha to'lov tizimlarida qulay to'lov.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-purple"><i class="ti ti-users"></i></div>
+      <div class="feature-title">To'liq o'zbek tilida</div>
+      <div class="feature-text">Interfeys va kurslarning aksariyati ona tilimizda.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon"><i class="ti ti-eye"></i></div>
+      <div class="feature-title">Bepul preview</div>
+      <div class="feature-text">Har kursda 2–3 ta darsni ro'yxatdan o'tmasdan bepul ko'ring.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon fi-amber"><i class="ti ti-chart-bar"></i></div>
+      <div class="feature-title">Ustoz analitikasi</div>
+      <div class="feature-text">O'qituvchilar o'z kurslarining statistikasini real vaqtda kuzatadi.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── TOP TEACHERS (yangi bo'lim) ── -->
+<section class="section reveal" id="teachers">
+  <div class="section-header-row">
+    <div>
+      <div class="section-label">Eng yaxshi ustozlar</div>
+      <h2 class="section-title" style="margin-bottom:0">Top o'qituvchilar</h2>
+    </div>
+    <a class="link-more" href="courses.html">Barchasini ko'rish <i class="ti ti-arrow-right" style="font-size:13px"></i></a>
+  </div>
+  <p class="section-sub">Platformadagi eng yuqori baholik ustozlar</p>
+  <div class="teachers-grid">
+    <div class="teacher-mini-card">
+      <div class="teacher-avatar-lg" style="background:#DBEAFE;color:#1D4ED8">AK</div>
+      <div class="teacher-mini-name">Alisher Karimov</div>
+      <div class="teacher-mini-role">Python · Django</div>
+      <div class="teacher-mini-stats">
+        <div class="tms"><span class="tms-num">2,340</span><span class="tms-label">O'quvchi</span></div>
+        <div class="tms"><span class="tms-num">4.9★</span><span class="tms-label">Baho</span></div>
+        <div class="tms"><span class="tms-num">8</span><span class="tms-label">Kurs</span></div>
+      </div>
+    </div>
+    <div class="teacher-mini-card">
+      <div class="teacher-avatar-lg" style="background:#D1FAE5;color:#065F46">DN</div>
+      <div class="teacher-mini-name">Dilnoza Nazarova</div>
+      <div class="teacher-mini-role">IELTS · Ingliz tili</div>
+      <div class="teacher-mini-stats">
+        <div class="tms"><span class="tms-num">1,876</span><span class="tms-label">O'quvchi</span></div>
+        <div class="tms"><span class="tms-num">4.8★</span><span class="tms-label">Baho</span></div>
+        <div class="tms"><span class="tms-num">5</span><span class="tms-label">Kurs</span></div>
+      </div>
+    </div>
+    <div class="teacher-mini-card">
+      <div class="teacher-avatar-lg" style="background:#EDE9FE;color:#5B21B6">SX</div>
+      <div class="teacher-mini-name">Sarvinoz Xoliqova</div>
+      <div class="teacher-mini-role">UI/UX · Figma</div>
+      <div class="teacher-mini-stats">
+        <div class="tms"><span class="tms-num">1,540</span><span class="tms-label">O'quvchi</span></div>
+        <div class="tms"><span class="tms-num">4.9★</span><span class="tms-label">Baho</span></div>
+        <div class="tms"><span class="tms-num">4</span><span class="tms-label">Kurs</span></div>
+      </div>
+    </div>
+    <div class="teacher-mini-card">
+      <div class="teacher-avatar-lg" style="background:#FFE4E6;color:#9F1239">BT</div>
+      <div class="teacher-mini-name">Bobur Toshmatov</div>
+      <div class="teacher-mini-role">Matematika · DTM</div>
+      <div class="teacher-mini-stats">
+        <div class="tms"><span class="tms-num">3,100</span><span class="tms-label">O'quvchi</span></div>
+        <div class="tms"><span class="tms-num">4.8★</span><span class="tms-label">Baho</span></div>
+        <div class="tms"><span class="tms-num">6</span><span class="tms-label">Kurs</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── TEACHER CTA ── -->
+<section style="padding:64px 0">
+  <div class="teacher-section reveal">
+    <div>
+      <div class="section-label">O'qituvchilar uchun</div>
+      <h2 class="teacher-title">Kurs yarating — daromad oling</h2>
+      <p class="teacher-sub">Bilimingizni minglab o'quvchilarga yetkazing. Har bir sotuvdan <strong style="color:#fff">70%</strong> siz olasiz.</p>
+      <div class="teacher-perks">
+        <div class="perk"><div class="perk-check">✓</div>Video yoki Zoom orqali dars bering</div>
+        <div class="perk"><div class="perk-check">✓</div>Tekin yoki pullik kurs qo'ying</div>
+        <div class="perk"><div class="perk-check">✓</div>O'quvchilar statistikasini real vaqtda ko'ring</div>
+        <div class="perk"><div class="perk-check">✓</div>Daromadingizni har hafta Payme orqali oling</div>
+      </div>
+      <a href="/auth.html?role=teacher" class="btn-teacher" style="text-decoration:none">O'qituvchi bo'lish <i class="ti ti-arrow-right"></i></a>
+    </div>
+    <div class="teacher-card">
+      <div class="teacher-avatar">AK</div>
+      <div class="teacher-name">Alisher Karimov</div>
+      <div class="teacher-role">Python & Django · Toshkent</div>
+      <div class="teacher-stats">
+        <div class="t-stat"><div class="t-stat-num">2,340</div><div class="t-stat-label">O'quvchilar</div></div>
+        <div class="t-stat"><div class="t-stat-num">8</div><div class="t-stat-label">Kurslar</div></div>
+        <div class="t-stat"><div class="t-stat-num">4.9★</div><div class="t-stat-label">Reyting</div></div>
+        <div class="t-stat"><div class="t-stat-num">4.2M</div><div class="t-stat-label">Daromad (so'm)</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TESTIMONIALS (yangi bo'lim) ── -->
+<section class="section testimonials-section reveal">
+  <div class="section-label">O'quvchilar fikri</div>
+  <h2 class="section-title">Ular nima deydi?</h2>
+  <p class="section-sub">Haqiqiy o'quvchilarning haqiqiy tajribasi</p>
+  <div class="testimonials-grid">
+    <div class="testimonial-card">
+      <div class="t-stars">★★★★★</div>
+      <div class="t-text">"Python kursini tugallaganimdan so'ng, 3 oyda o'z loyihamni yozdim. Alisher ustoz juda tushunarli tushuntiradi, har bir savolimga javob berdi."</div>
+      <div class="t-author">
+        <div class="t-avatar" style="background:#DBEAFE;color:#1D4ED8">ZM</div>
+        <div><div class="t-name">Zafar Mirzayev</div><div class="t-meta">Toshkent · Python kursi</div></div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="t-stars">★★★★★</div>
+      <div class="t-text">"IELTS da 7.5 oldim! Dilnoza opaning darslari Udemy dagi kurslardan ancha yaxshi — o'zbekcha tushuntirishlar juda qulay bo'ldi."</div>
+      <div class="t-author">
+        <div class="t-avatar" style="background:#D1FAE5;color:#065F46">NK</div>
+        <div><div class="t-name">Nodira Karimova</div><div class="t-meta">Samarqand · IELTS kursi</div></div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="t-stars">★★★★★</div>
+      <div class="t-text">"Video to'xtatgan joyni eslab qolishi menga juda qulay — vaqtim bo'lmasa to'xtataman, keyinroq davom etaman. Shu xususiyat uchun rahmat!"</div>
+      <div class="t-author">
+        <div class="t-avatar" style="background:#EDE9FE;color:#5B21B6">BX</div>
+        <div><div class="t-name">Bobur Xasanov</div><div class="t-meta">Farg'ona · UI/UX kursi</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── FAQ (yangi bo'lim) ── -->
+<section class="section reveal" id="faq">
+  <div class="section-label">Savollar</div>
+  <h2 class="section-title">Ko'p so'raladigan savollar</h2>
+  <p class="section-sub">Javob topa olmagan bo'lsangiz, biz bilan bog'laning</p>
+  <div class="faq-list">
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        MUTP da ro'yxatdan o'tish pullikmi?
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">Yo'q, ro'yxatdan o'tish va ko'plab kurslarni ko'rish butunlay bepul. Faqat ayrim premium kurslar uchun to'lov kerak bo'ladi.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Sertifikat haqiqiy hujjat sifatida qabul qilinadimi?
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">MUTP sertifikatlari LinkedIn profilingizga qo'shilishi mumkin. Ko'plab O'zbekiston kompaniyalari platformamizni tan oladi. Sertifikatda kurs nomi, muddati va o'qituvchi imzosi bo'ladi.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Men ham o'qituvchi bo'la olamanmi?
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">Albatta! Istalgan yo'nalishda bilimi bor har kim o'qituvchi bo'lishi mumkin. Ro'yxatdan o'ting, kurs yarating va o'quvchilarga yeting. Har bir sotuvdan 70% siz olasiz.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Darslarni telefonda ko'rish mumkinmi?
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">Ha, MUTP barcha qurilmalar uchun moslashtirilgan. Telefon, planshet yoki kompyuterdan qulay foydalanishingiz mumkin. Ilovamiz tez orada App Store va Google Play da chiqadi.</div></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Qanday to'lov usullari bor?
+        <div class="faq-icon">+</div>
+      </button>
+      <div class="faq-a"><div class="faq-a-inner">Payme, Click, Uzcard va Humo orqali to'lov qabul qilinadi. Xorijiy Visa/Mastercard kartalari ham qabul qilinadi.</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── CTA ── -->
+<section style="padding:64px 0">
+  <div class="cta-section reveal">
+    <h2 class="cta-title">Bugun boshlang — bepul</h2>
+    <p class="cta-sub">Ro'yxatdan o'ting va birinchi kursni bepul ko'ring. Kredit karta kerak emas.</p>
+    <div class="cta-buttons">
+      <a href="/auth.html?role=student" class="btn-hero" style="text-decoration:none">Bepul boshlash <i class="ti ti-arrow-right"></i></a>
+      <a href="/auth.html?role=teacher" class="btn-hero-ghost" style="text-decoration:none">O'qituvchi bo'lish</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer class="footer">
+  <div style="max-width:320px; display:flex; flex-direction:column; gap:12px;">
+    <div class="footer-logo">
+      <span class="logo-dot"></span> MUTP
+    </div>
+    <p style="color:#a4db89; font-size:13px; line-height:1.6; margin:0 0 16px 0;">O'zbekistonning №1 premium ta'lim platformasi. Eng yaxshi ustozlardan zamonaviy kasblar va bilimlar.</p>
+    <div style="display:flex; gap:12px;">
+      <a href="#" class="footer-social-btn"><i class="ti ti-brand-instagram"></i></a>
+      <a href="#" class="footer-social-btn"><i class="ti ti-brand-telegram"></i></a>
+      <a href="#" class="footer-social-btn"><i class="ti ti-brand-youtube"></i></a>
+    </div>
+  </div>
+  
+  <div class="footer-col">
+    <div class="footer-col-title">Platforma</div>
+    <div class="footer-links">
+      <a href="/courses.html">Barcha kurslar</a>
+      <a href="/#courses">Mashhur darslar</a>
+      <a href="/#how-it-works">Qanday ishlaydi</a>
+    </div>
+  </div>
+  
+  <div class="footer-col">
+    <div class="footer-col-title">Ustozlar uchun</div>
+    <div class="footer-links">
+      <a href="/auth.html?role=teacher">O'qituvchi bo'lish</a>
+      <a href="/auth.html?role=teacher&tab=register">Kurs yaratish</a>
+      <a href="/#teachers">Top ustozlarimiz</a>
+    </div>
+  </div>
+  
+  <div class="footer-col">
+    <div class="footer-col-title">Kompaniya</div>
+    <div class="footer-links">
+      <a href="#">Biz haqimizda</a>
+      <a href="#">Aloqa va qo'llab-quvvatlash</a>
+      <a href="#">Foydalanish shartlari</a>
+      <a href="#">Maxfiylik siyosati</a>
+    </div>
+  </div>
+  
+  <div class="footer-bottom">
+    <span>© 2026 MUTP. Barcha huquqlar himoyalangan.</span>
+    <span>Powered by Antigravity AI</span>
+  </div>
+</footer>
+
+<script>
+// ── SCROLL NAV ──
+const nav = document.getElementById('mainNav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 30);
+});
+
+// ── REVEAL ──
+const reveals = document.querySelectorAll('.reveal');
+const ro = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.08 });
+reveals.forEach(el => ro.observe(el));
+
+// ── COUNTER ──
+function runCounter(el) {
+  const target = parseInt(el.dataset.count);
+  const suffix = el.dataset.suffix || '';
+  let start = 0;
+  const dur = 1600;
+  const step = ts => {
+    if (!start) start = ts;
+    const p = Math.min((ts - start) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.floor(ease * target).toLocaleString('uz-UZ') + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+const statsObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      document.querySelectorAll('[data-count]').forEach(runCounter);
+      statsObs.disconnect();
+    }
+  });
+}, { threshold: 0.5 });
+const heroStats = document.querySelector('.hero-stats');
+if (heroStats) statsObs.observe(heroStats);
+
+// ── FAQ ──
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!isOpen) item.classList.add('open');
+}
+</script>
+<script src="assets/js/toast.js"></script>
+<script src="assets/js/config.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/courses.js"></script>
+<script src="assets/js/index.js"></script>
+</body>
+</html>
