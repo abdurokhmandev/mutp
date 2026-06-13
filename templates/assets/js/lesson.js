@@ -532,7 +532,7 @@ const LessonPage = {
 
     try {
       const res = await API.get(`/courses/teacher/courses/${this.course.slug}/homeworks/`);
-      const homeworks = res.data?.data || [];
+      const homeworks = res.data || [];
       const lessonHw = homeworks.filter(hw => hw.after_lesson === this.lesson?.id && hw.submission_status === 'pending');
       
       const oldBanner = document.getElementById('lessonHwBanner');

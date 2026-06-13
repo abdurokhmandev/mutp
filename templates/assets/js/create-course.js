@@ -786,7 +786,7 @@ const CreateCourse = {
 
     try {
       const res = await API.get(`/courses/teacher/courses/${this.course.slug}/homeworks/`);
-      this.homeworkList = res.data.data || [];
+      this.homeworkList = res.data || [];
     } catch (e) {
       this.homeworkList = [];
     }
@@ -871,7 +871,7 @@ const CreateCourse = {
   async loadHomeworkData(homeworkId) {
     try {
       const res = await API.get(`/courses/teacher/courses/homeworks/${homeworkId}/`);
-      const hw = res.data.data;
+      const hw = res.data;
       document.getElementById('homeworkTitle').value = hw.title || '';
       document.getElementById('homeworkDescription').value = hw.description || '';
       document.getElementById('homeworkAfterLesson').value = hw.after_lesson || '';
@@ -956,7 +956,7 @@ const CreateCourse = {
         const res = await API.post(`/courses/homeworks/${this.currentHomeworkId}/resources/`, fd);
         window.toast?.show("Material qo'shildi!", "success");
         
-        this.homeworkResources.push(res.data.data);
+        this.homeworkResources.push(res.data);
         this.renderHwResourceList();
 
         document.getElementById('hwResourceTitle').value = '';
@@ -992,7 +992,7 @@ const CreateCourse = {
           await API.patch(`/courses/teacher/courses/homeworks/${this.currentHomeworkId}/`, payload);
         } else {
           const res = await API.post(`/courses/teacher/courses/${this.course.slug}/homeworks/`, payload);
-          this.currentHomeworkId = res.data.data.id;
+          this.currentHomeworkId = res.data.id;
         }
 
         window.toast?.show("Vazifa saqlandi!", 'success');

@@ -385,7 +385,7 @@ const CourseDetail = {
 
     try {
       const res = await API.get(`/courses/teacher/courses/${this.course.slug}/homeworks/`);
-      const homeworks = res.data.data || [];
+      const homeworks = res.data || [];
       if (homeworks.length > 0) {
         block.style.display = 'block';
         container.innerHTML = homeworks.map(hw => {
