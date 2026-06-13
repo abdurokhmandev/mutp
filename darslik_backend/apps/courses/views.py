@@ -609,6 +609,16 @@ class TeacherCourseDetailView(APIView):
         serializer = CourseDetailSerializer(course, context={'request': request})
         return success_response(data=serializer.data, message="Kurs ma'lumotlari")
 
+    def delete(self, request, slug):
+        try:
+            course = Course.objects.get(slug=slug, teacher=request.user)
+        except Course.DoesNotExist:
+            return error_response(message="Kurs topilmadi", status_code=404)
+
+        course.delete()
+        return success_response(message="Kurs muvaffaqiyatli o'chirildi")
+
+
 
 class CoursePublishView(APIView):
     permission_classes = [IsVerifiedTeacher, IsCourseOwner]

@@ -29,6 +29,9 @@ const CreateCourse = {
         this.course = res.data;
         this.fillStep1();
         await this.renderModules();
+        // Show delete button when editing existing course
+        const deleteBtn = document.getElementById('btnDeleteCourse');
+        if (deleteBtn) deleteBtn.style.display = 'inline-flex';
       } catch (e) {
         window.toast?.show(e.message, 'error');
       }
@@ -71,6 +74,7 @@ const CreateCourse = {
     document.getElementById('btnStep1Next')?.addEventListener('click', () => this.saveStep1(false));
     document.getElementById('btnPublish')?.addEventListener('click', () => this.publish());
     document.getElementById('addHomeworkBtn')?.addEventListener('click', () => this.openHomeworkModal());
+    document.getElementById('btnDeleteCourse')?.addEventListener('click', () => this.deleteCourse());
 
     document.getElementById('btnAddOutcome')?.addEventListener('click', () => {
       const container = document.getElementById('learningOutcomesContainer');
@@ -200,6 +204,26 @@ const CreateCourse = {
     await this.renderModules();
     this.updateChecklist();
   },
+
+  async deleteCourse() {
+    if (!this.course) {
+      window.toast?.show("O'chiriladigan kurs topilmadi!", 'error');
+      return;
+    }
+    const confirmed = confirm(`"${this.course.title}" kursini o'chirmoqchimisiz?\n\nBarcha darslar, modullar va vazifalar ham o'chib ketadi!`);
+    if (!confirmed) return;
+
+    try {
+      await API.delete(`/courses/teacher/courses/${this.course.slug}/`);
+      window.toast?.show("Kurs muvaffaqiyatli o'chirildi!", 'success');
+      setTimeout(() => {
+        window.location.href = 'dashboard-teacher.html';
+      }, 1200);
+    } catch (e) {
+      window.toast?.show(e.message || "O'chirishda xatolik!", 'error');
+    }
+  },
+
 
   async renderModules() {
     const container = document.getElementById('modulesContainer');
@@ -358,7 +382,6 @@ const CreateCourse = {
 
     document.getElementById('videoFields').style.display = type === 'video' ? 'flex' : 'none';
     document.getElementById('textFields').style.display = type === 'text' ? 'block' : 'none';
-    document.getElementById('homeworkFields').style.display = type === 'homework' ? 'flex' : 'none';
     document.getElementById('quizFields').style.display = type === 'quiz' ? 'block' : 'none';
     
     // Show/Hide Resource fields based on currentLessonId
@@ -514,13 +537,6 @@ const CreateCourse = {
       } else if (lType === 'text') {
         const textVal = document.getElementById('lessonTextContent').value.trim();
         fd.append('text_content', textVal);
-      } else if (lType === 'homework') {
-        const hwDesc = document.getElementById('lessonHomeworkDesc').value.trim();
-        const hwDeadline = document.getElementById('lessonHomeworkDeadline').value;
-        fd.append('homework_description', hwDesc);
-        if (hwDeadline) {
-          fd.append('homework_deadline_days', hwDeadline);
-        }
       }
 
       try {

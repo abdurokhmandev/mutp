@@ -106,11 +106,31 @@ const TeacherDashboard = {
           <td>★ ${(c.rating || c.average_rating || 0).toFixed(1)}</td>
           <td>${Math.round(c.earnings || 0).toLocaleString('uz-UZ')}</td>
           <td><span class="pill ${isPublished ? 'pill-green' : 'pill-amber'}">${c.status_display || 'Qoralama'}</span></td>
-          <td><a href="/create-course.html?slug=${c.slug}" style="color:var(--purple);text-decoration:none;font-size:12px">Tahrirlash</a></td>
+          <td style="display:flex;gap:8px;align-items:center;">
+            <a href="/create-course.html?slug=${c.slug}" style="color:var(--purple);text-decoration:none;font-size:12px">Tahrirlash</a>
+            <button onclick="TeacherDashboard.deleteCourse('${c.slug}', '${c.title.replace(/'/g, "\\'")}')"
+              style="background:none;border:none;cursor:pointer;color:var(--rose);font-size:12px;padding:0;display:flex;align-items:center;gap:3px;"
+              title="O'chirish">
+              <i class="ti ti-trash"></i>
+            </button>
+          </td>
         </tr>
       `;
     }).join('');
   },
+
+  async deleteCourse(slug, title) {
+    const confirmed = confirm(`"${title}" kursini o'chirmoqchimisiz?\n\nBarcha darslar va vazifalar ham o'chib ketadi!`);
+    if (!confirmed) return;
+    try {
+      await API.delete(`/courses/teacher/courses/${slug}/`);
+      window.toast?.show("Kurs o'chirildi!", 'success');
+      await this.loadDashboard();
+    } catch (e) {
+      window.toast?.show(e.message || "O'chirishda xatolik!", 'error');
+    }
+  },
+
 
   renderChart(monthly) {
     const canvas = document.getElementById('revenueChart');
