@@ -341,6 +341,10 @@ const CourseDetail = {
         };
       }
 
+      if (this.course.is_enrolled) {
+        this.loadHomeworks();
+      }
+
     } catch (error) {
       window.toast?.show(error.message, 'error');
     }
@@ -372,6 +376,81 @@ const CourseDetail = {
         </div>
       </div>
     `).join('');
+  },
+
+  async loadHomeworks() {
+    const block = document.getElementById('courseHomeworksBlock');
+    const container = document.getElementById('courseHomeworksList');
+    if (!block || !container) return;
+
+    try {
+      const res = await API.get(`/courses/teacher/courses/${this.course.slug}/homeworks/`);
+      const homeworks = res.data.data || [];
+      if (homeworks.length > 0) {
+        block.style.display = 'block';
+        container.innerHTML = homeworks.map(hw => {
+          let statusLabel = 'Kutilmoqda';
+          let statusClass = 'pending';
+          if (hw.submission_status === 'submitted') {
+            statusLabel = 'Topshirilgan';
+            statusClass = 'submitted';
+          } else if (hw.submission_status === 'reviewed') {
+            statusLabel = 'Ko\'rib chiqilgan';
+            statusClass = 'reviewed';
+          }
+
+          const btnText = hw.submission_status === 'pending' ? 'Bajardim ✓' : 'Topshirilgan';
+          const btnDisabled = hw.submission_status !== 'pending' ? 'disabled' : '';
+
+          return `
+            <div class="homework-card" style="border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:12px; background:var(--white);">
+              <div class="homework-card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span class="homework-card-title" style="font-weight:700; font-size:15px; color:var(--ink);">${hw.title}</span>
+                <span class="homework-status ${statusClass}" style="font-size:11px; padding:3px 10px; border-radius:99px; font-weight:600;">${statusLabel}</span>
+              </div>
+              <p class="homework-card-desc" style="font-size:14px; color:var(--ink-2); line-height:1.5; margin-bottom:12px;">${hw.description.replace(/\n/g, '<br>')}</p>
+              
+              <!-- Homework resources -->
+              ${hw.resources && hw.resources.length > 0 ? `
+                <div style="margin-bottom:12px;">
+                  <span style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Materiallar:</span>
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    ${hw.resources.map(r => {
+                      const href = r.resource_type === 'link' ? r.url : r.file;
+                      return `<a href="${href}" target="_blank" style="font-size:13px; color:var(--duo-green); text-decoration:none;">${r.resource_type === 'link' ? '🔗' : '📁'} ${r.title}</a>`;
+                    }).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="homework-card-meta" style="font-size:12px; color:var(--muted);">⏰ ${hw.deadline_days ? hw.deadline_days + ' kun' : 'Muddatsiz'} ${hw.after_lesson_title ? '· ' + hw.after_lesson_title + 'dan keyin' : ''}</span>
+                <button class="btn-primary mark-done-btn" data-hw-id="${hw.id}" ${btnDisabled} style="padding:6px 16px; font-size:13px; border-radius:8px; width:auto; margin:0;">${btnText}</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Bind mark as done
+        container.querySelectorAll('.mark-done-btn').forEach(btn => {
+          btn.onclick = async () => {
+            const hwId = btn.dataset.hwId;
+            try {
+              await API.post(`/courses/homeworks/${hwId}/submit/`);
+              window.toast?.show("Vazifa muvaffaqiyatli topshirildi!", 'success');
+              this.loadHomeworks();
+            } catch (err) {
+              window.toast?.show(err.message, 'error');
+            }
+          };
+        });
+
+      } else {
+        block.style.display = 'none';
+      }
+    } catch (err) {
+      block.style.display = 'none';
+    }
   },
 };
 

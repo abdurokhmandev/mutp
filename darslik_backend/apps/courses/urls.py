@@ -23,7 +23,12 @@ from .views import (
     LessonUpdateView,
     TeacherDashboardView,
     SaveCourseView,
-    SavedCoursesListView
+    SavedCoursesListView,
+    HomeworkListCreateView,
+    HomeworkDetailView,
+    HomeworkSubmitView,
+    HomeworkResourceCreateView,
+    HomeworkResourceDeleteView
 )
 
 urlpatterns = [
@@ -60,5 +65,12 @@ urlpatterns = [
     path('teacher/courses/<slug:slug>/publish/', CoursePublishView.as_view(), name='course_publish'),
     path('teacher/courses/<slug:slug>/modules/', ModuleCreateView.as_view(), name='module_create'),
     path('teacher/modules/<int:id>/lessons/',    LessonCreateView.as_view(), name='lesson_create'),
+    
+    # Homework / Vazifalar
+    path('teacher/courses/<slug:slug>/homeworks/', HomeworkListCreateView.as_view(), name='homework_list_create'),
+    path('teacher/courses/homeworks/<int:id>/', HomeworkDetailView.as_view(), name='homework_detail'),
+    path('homeworks/<int:id>/submit/', HomeworkSubmitView.as_view(), name='homework_submit'),
+    path('homeworks/<int:id>/resources/', HomeworkResourceCreateView.as_view(), name='homework_resource_create'),
+    path('homeworks/resources/<int:id>/', HomeworkResourceDeleteView.as_view(), name='homework_resource_delete'),
 ]
 

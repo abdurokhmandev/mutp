@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from apps.users.serializers import UserProfileSerializer
-from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse, LessonResource
+from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse, LessonResource, Homework, HomeworkResource, HomeworkSubmission
 
 User = get_user_model()
 
@@ -280,5 +280,37 @@ class LessonDetailSerializer(serializers.ModelSerializer):
                 "last_watched": progress.last_watched
             }
         return {"watched_seconds": 0, "is_completed": False}
+
+
+class HomeworkResourceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HomeworkResource
+        fields = ['id', 'title', 'resource_type', 'file', 'url']
+
+
+class HomeworkSerializer(serializers.ModelSerializer):
+    resources = HomeworkResourceSerializer(many=True, read_only=True)
+    submission_status = serializers.SerializerMethodField()
+    after_lesson_title = serializers.CharField(source='after_lesson.title', read_only=True)
+
+    class Meta:
+        model = Homework
+        fields = ['id', 'title', 'description', 'after_lesson', 'after_lesson_title', 'deadline_days', 'order', 'resources', 'submission_status']
+
+    def get_submission_status(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user or request.user.is_anonymous:
+            return 'pending'
+        sub = HomeworkSubmission.objects.filter(homework=obj, student=request.user).first()
+        return sub.status if sub else 'pending'
+
+
+class HomeworkSubmissionSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.full_name', read_only=True)
+    homework_title = serializers.CharField(source='homework.title', read_only=True)
+
+    class Meta:
+        model = HomeworkSubmission
+        fields = ['id', 'homework', 'homework_title', 'student', 'student_name', 'status', 'completed_at']
 
 

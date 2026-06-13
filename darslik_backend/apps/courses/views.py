@@ -8,7 +8,7 @@ from rest_framework.pagination import PageNumberPagination
 
 from apps.core.utils import success_response, error_response
 from apps.users.models import User, TeacherProfile
-from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse, LessonResource
+from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse, LessonResource, Homework, HomeworkResource, HomeworkSubmission
 from .permissions import IsTeacher, IsVerifiedTeacher, IsCourseOwner, IsEnrolledOrFreePreview
 from .serializers import (
     CategorySerializer,
@@ -22,7 +22,10 @@ from .serializers import (
     LessonSerializer,
     QuestionSerializer,
     AnswerOptionSerializer,
-    LessonResourceSerializer
+    LessonResourceSerializer,
+    HomeworkSerializer,
+    HomeworkResourceSerializer,
+    HomeworkSubmissionSerializer
 )
 
 
@@ -923,4 +926,211 @@ class LessonResourceDeleteView(APIView):
             
         res.delete()
         return success_response(message="Resurs o'chirildi")
+
+
+class HomeworkListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug):
+        try:
+            course = Course.objects.get(slug=slug)
+        except Course.DoesNotExist:
+            return error_response(message="Kurs topilmadi", status_code=404)
+
+        homeworks = Homework.objects.filter(course=course).order_by('order')
+        serializer = HomeworkSerializer(homeworks, many=True, context={'request': request})
+        return success_response(data=serializer.data, message="Kurs vazifalari ro'yxati")
+
+    def post(self, request, slug):
+        try:
+            course = Course.objects.get(slug=slug)
+        except Course.DoesNotExist:
+            return error_response(message="Kurs topilmadi", status_code=404)
+
+        if course.teacher != request.user:
+            return error_response(message="Ruxsat berilmagan", status_code=403)
+
+        title = request.data.get('title')
+        description = request.data.get('description')
+        after_lesson_id = request.data.get('after_lesson')
+        deadline_days = request.data.get('deadline_days')
+
+        if not title:
+            return error_response(message="Vazifa sarlavhasi kiritilishi shart", status_code=400)
+
+        after_lesson = None
+        if after_lesson_id:
+            try:
+                after_lesson = Lesson.objects.get(id=after_lesson_id)
+            except Lesson.DoesNotExist:
+                return error_response(message="Tanlangan dars topilmadi", status_code=400)
+
+        if deadline_days == '' or deadline_days is None:
+            deadline_days = None
+        else:
+            try:
+                deadline_days = int(deadline_days)
+            except ValueError:
+                deadline_days = None
+
+        max_order = Homework.objects.filter(course=course).aggregate(m=models.Max('order'))['m'] or 0
+        homework = Homework.objects.create(
+            course=course,
+            title=title,
+            description=description or '',
+            after_lesson=after_lesson,
+            deadline_days=deadline_days,
+            order=max_order + 1
+        )
+
+        serializer = HomeworkSerializer(homework, context={'request': request})
+        return success_response(data=serializer.data, message="Vazifa yaratildi", status_code=201)
+
+
+class HomeworkDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        try:
+            homework = Homework.objects.get(id=id)
+        except Homework.DoesNotExist:
+            return error_response(message="Vazifa topilmadi", status_code=404)
+
+        if homework.course.teacher != request.user and not Enrollment.objects.filter(student=request.user, course=homework.course).exists():
+            return error_response(message="Ruxsat berilmagan", status_code=403)
+
+        serializer = HomeworkSerializer(homework, context={'request': request})
+        return success_response(data=serializer.data, message="Vazifa batafsil ma'lumoti")
+
+    def patch(self, request, id):
+        try:
+            homework = Homework.objects.get(id=id)
+        except Homework.DoesNotExist:
+            return error_response(message="Vazifa topilmadi", status_code=404)
+
+        if homework.course.teacher != request.user:
+            return error_response(message="Ruxsat berilmagan", status_code=403)
+
+        title = request.data.get('title')
+        description = request.data.get('description')
+        after_lesson_id = request.data.get('after_lesson')
+        deadline_days = request.data.get('deadline_days')
+
+        if title is not None:
+            homework.title = title
+        if description is not None:
+            homework.description = description
+        if after_lesson_id is not None:
+            if after_lesson_id == '' or after_lesson_id is None:
+                homework.after_lesson = None
+            else:
+                try:
+                    homework.after_lesson = Lesson.objects.get(id=after_lesson_id)
+                except Lesson.DoesNotExist:
+                    return error_response(message="Tanlangan dars topilmadi", status_code=400)
+        if deadline_days is not None:
+            if deadline_days == '' or deadline_days is None:
+                homework.deadline_days = None
+            else:
+                try:
+                    homework.deadline_days = int(deadline_days)
+                except ValueError:
+                    homework.deadline_days = None
+
+        homework.save()
+        serializer = HomeworkSerializer(homework, context={'request': request})
+        return success_response(data=serializer.data, message="Vazifa yangilandi")
+
+    def delete(self, request, id):
+        try:
+            homework = Homework.objects.get(id=id)
+        except Homework.DoesNotExist:
+            return error_response(message="Vazifa topilmadi", status_code=404)
+
+        if homework.course.teacher != request.user:
+            return error_response(message="Ruxsat berilmagan", status_code=403)
+
+        homework.delete()
+        return success_response(message="Vazifa o'chirildi")
+
+
+class HomeworkSubmitView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        try:
+            homework = Homework.objects.get(id=id)
+        except Homework.DoesNotExist:
+            return error_response(message="Vazifa topilmadi", status_code=404)
+
+        # Check enrollment
+        if not Enrollment.objects.filter(student=request.user, course=homework.course).exists():
+            return error_response(message="Siz ushbu kursga yozilmagansiz", status_code=403)
+
+        submission, created = HomeworkSubmission.objects.get_or_create(
+            homework=homework,
+            student=request.user,
+            defaults={'status': 'submitted', 'completed_at': timezone.now()}
+        )
+        if not created:
+            submission.status = 'submitted'
+            submission.completed_at = timezone.now()
+            submission.save()
+
+        serializer = HomeworkSubmissionSerializer(submission, context={'request': request})
+        return success_response(data=serializer.data, message="Vazifa topshirildi")
+
+
+class HomeworkResourceCreateView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def post(self, request, id):
+        try:
+            homework = Homework.objects.get(id=id)
+        except Homework.DoesNotExist:
+            return error_response(message="Vazifa topilmadi", status_code=404)
+
+        if homework.course.teacher != request.user:
+            return error_response(message="Ruxsat berilmagan", status_code=403)
+
+        title = request.data.get('title')
+        r_type = request.data.get('resource_type', 'file')
+        
+        if not title:
+            return error_response(message="Sarlavha kiritilishi shart", status_code=400)
+
+        file = request.FILES.get('file')
+        url = request.data.get('url', '')
+
+        if r_type == 'file' and not file:
+            return error_response(message="Fayl tanlanmagan", status_code=400)
+        if r_type == 'link' and not url:
+            return error_response(message="Havola kiritilmagan", status_code=400)
+
+        res = HomeworkResource.objects.create(
+            homework=homework,
+            title=title,
+            resource_type=r_type,
+            file=file if r_type == 'file' else None,
+            url=url if r_type == 'link' else ''
+        )
+
+        serializer = HomeworkResourceSerializer(res)
+        return success_response(data=serializer.data, message="Material qo'shildi", status_code=201)
+
+
+class HomeworkResourceDeleteView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def delete(self, request, id):
+        try:
+            res = HomeworkResource.objects.get(id=id)
+        except HomeworkResource.DoesNotExist:
+            return error_response(message="Resurs topilmadi", status_code=404)
+
+        if res.homework.course.teacher != request.user:
+            return error_response(message="Ruxsat berilmagan", status_code=403)
+
+        res.delete()
+        return success_response(message="Material o'chirildi")
 

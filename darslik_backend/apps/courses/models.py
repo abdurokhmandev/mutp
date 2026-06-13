@@ -439,3 +439,56 @@ class LessonResource(models.Model):
         return f"{self.lesson.title} — {self.title}"
 
 
+class Homework(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='homeworks')
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    after_lesson = models.ForeignKey(
+        'Lesson', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='homeworks', help_text="Qaysi darsdan keyin ko'rsatiladi"
+    )
+    deadline_days = models.PositiveIntegerField(null=True, blank=True)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order']
+        verbose_name = "Vazifa"
+        verbose_name_plural = "Vazifalar"
+
+    def __str__(self):
+        return f"{self.course.title} — {self.title}"
+
+
+class HomeworkResource(models.Model):
+    RESOURCE_TYPES = [('file', 'Fayl'), ('link', 'Havola')]
+    homework = models.ForeignKey(Homework, on_delete=models.CASCADE, related_name='resources')
+    title = models.CharField(max_length=200)
+    resource_type = models.CharField(max_length=10, choices=RESOURCE_TYPES, default='file')
+    file = models.FileField(upload_to='homework_resources/', blank=True, null=True)
+    url = models.URLField(blank=True)
+
+    class Meta:
+        verbose_name = "Vazifa resursi"
+        verbose_name_plural = "Vazifa resurslari"
+
+    def __str__(self):
+        return f"{self.homework.title} — {self.title}"
+
+
+class HomeworkSubmission(models.Model):
+    STATUS_CHOICES = [('pending', 'Kutilmoqda'), ('submitted', 'Topshirilgan'), ('reviewed', 'Ko\'rib chiqilgan')]
+    homework = models.ForeignKey(Homework, on_delete=models.CASCADE, related_name='submissions')
+    student = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ['homework', 'student']
+        verbose_name = "Topshirilgan vazifa"
+        verbose_name_plural = "Topshirilgan vazifalar"
+
+    def __str__(self):
+        return f"{self.student.full_name} — {self.homework.title}: {self.status}"
+
+

@@ -70,6 +70,7 @@ const CreateCourse = {
     document.getElementById('btnSaveDraft')?.addEventListener('click', () => this.saveStep1(true));
     document.getElementById('btnStep1Next')?.addEventListener('click', () => this.saveStep1(false));
     document.getElementById('btnPublish')?.addEventListener('click', () => this.publish());
+    document.getElementById('addHomeworkBtn')?.addEventListener('click', () => this.openHomeworkModal());
 
     document.getElementById('btnAddOutcome')?.addEventListener('click', () => {
       const container = document.getElementById('learningOutcomesContainer');
@@ -767,6 +768,268 @@ const CreateCourse = {
       pubBtn.disabled = !ready;
       pubBtn.style.opacity = ready ? '1' : '0.5';
       pubBtn.style.cursor = ready ? 'pointer' : 'not-allowed';
+    }
+  },
+
+  homeworkList: [],
+  currentHomeworkId: null,
+  homeworkResources: [],
+
+  async renderHomeworkList() {
+    const container = document.getElementById('homeworkListContainer');
+    if (!container) return;
+
+    if (!this.course) {
+      container.innerHTML = '<p class="empty-state">Avval kursni saqlang.</p>';
+      return;
+    }
+
+    try {
+      const res = await API.get(`/courses/teacher/courses/${this.course.slug}/homeworks/`);
+      this.homeworkList = res.data.data || [];
+    } catch (e) {
+      this.homeworkList = [];
+    }
+
+    if (this.homeworkList.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state" style="padding:32px; text-align:center; color:var(--muted);">
+          <span style="font-size:40px;">📋</span>
+          <p style="margin-top:8px;">Hali vazifa qo'shilmagan. Vazifalar ixtiyoriy — kerak bo'lsa qo'shing.</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = this.homeworkList.map((hw) => `
+      <div class="homework-item" data-homework-id="${hw.id}" style="display:flex; align-items:center; gap:12px; padding:12px 16px; border:1px solid var(--border); border-radius:12px; margin-bottom:8px; background:var(--white);">
+        <div class="homework-item-icon" style="font-size:24px;">📝</div>
+        <div class="homework-item-info" style="display:flex; flex-direction:column; flex:1;">
+          <span class="homework-item-title" style="font-size:14px; font-weight:600;">${hw.title}</span>
+          <span class="homework-item-meta" style="font-size:12px; color:var(--muted); margin-top:2px;">
+            ${hw.deadline_days ? hw.deadline_days + ' kun muddat' : 'Muddatsiz'} 
+            ${hw.after_lesson_title ? '· ' + hw.after_lesson_title + 'dan keyin' : '· Kurs boshida'}
+          </span>
+        </div>
+        <div class="homework-item-actions" style="display:flex; gap:8px;">
+          <button type="button" class="btn-secondary btn-edit-homework" data-homework-id="${hw.id}" style="padding:4px 8px; border:none; cursor:pointer;" title="Tahrirlash"><i class="ti ti-edit"></i></button>
+          <button type="button" class="btn-secondary btn-delete-homework" data-homework-id="${hw.id}" style="padding:4px 8px; border:none; cursor:pointer; color:var(--rose);" title="O'chirish"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+    `).join('');
+
+    container.querySelectorAll('.btn-edit-homework').forEach((btn) => {
+      btn.onclick = () => this.openHomeworkModal(btn.dataset.homeworkId);
+    });
+
+    container.querySelectorAll('.btn-delete-homework').forEach((btn) => {
+      btn.onclick = () => this.deleteHomework(btn.dataset.homeworkId);
+    });
+  },
+
+  async deleteHomework(id) {
+    if (!confirm("Haqiqatan ham ushbu vazifani o'chirmoqchimisiz?")) return;
+    try {
+      await API.delete(`/courses/teacher/courses/homeworks/${id}/`);
+      window.toast?.show("Vazifa o'chirildi", 'success');
+      await this.renderHomeworkList();
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  openHomeworkModal(homeworkId = null) {
+    this.currentHomeworkId = homeworkId;
+    this.homeworkResources = [];
+
+    // Reset form
+    document.getElementById('homeworkForm').reset();
+    document.getElementById('hwModalTitle').textContent = homeworkId ? 'Vazifani tahrirlash' : 'Yangi vazifa qo\'shish';
+    document.getElementById('hwResourceList').innerHTML = '';
+
+    // Populate after lesson options
+    const select = document.getElementById('homeworkAfterLesson');
+    if (select) {
+      select.innerHTML = '<option value="">— Tanlanmagan (kurs boshida) —</option>';
+      (this.course?.modules || []).forEach((mod) => {
+        (mod.lessons || []).forEach((les) => {
+          select.innerHTML += `<option value="${les.id}">${les.title} (${mod.title})</option>`;
+        });
+      });
+    }
+
+    this.initHomeworkModalEvents();
+
+    if (homeworkId) {
+      this.loadHomeworkData(homeworkId);
+    } else {
+      this.toggleHomeworkResourceFields();
+      document.getElementById('homeworkModal').style.display = 'flex';
+    }
+  },
+
+  async loadHomeworkData(homeworkId) {
+    try {
+      const res = await API.get(`/courses/teacher/courses/homeworks/${homeworkId}/`);
+      const hw = res.data.data;
+      document.getElementById('homeworkTitle').value = hw.title || '';
+      document.getElementById('homeworkDescription').value = hw.description || '';
+      document.getElementById('homeworkAfterLesson').value = hw.after_lesson || '';
+      document.getElementById('homeworkDeadlineDays').value = hw.deadline_days || '';
+
+      this.homeworkResources = hw.resources || [];
+      this.renderHwResourceList();
+
+      this.toggleHomeworkResourceFields();
+      document.getElementById('homeworkModal').style.display = 'flex';
+    } catch (err) {
+      window.toast?.show('Vazifa ma\'lumotlarini yuklashda xatolik: ' + err.message, 'error');
+    }
+  },
+
+  closeHomeworkModal() {
+    document.getElementById('homeworkModal').style.display = 'none';
+  },
+
+  toggleHomeworkResourceFields() {
+    const hasHwId = !!this.currentHomeworkId;
+    document.getElementById('hwResourceNotSavedWarning').style.display = hasHwId ? 'none' : 'block';
+    document.getElementById('hwResourceList').style.display = hasHwId ? 'block' : 'none';
+    document.getElementById('hwResourceAddRow').style.display = hasHwId ? 'flex' : 'none';
+  },
+
+  initHomeworkModalEvents() {
+    document.getElementById('hwResourceType').onchange = (e) => {
+      const isFile = e.target.value === 'file';
+      document.getElementById('hwResourceFile').style.display = isFile ? 'block' : 'none';
+      document.getElementById('hwResourceUrl').style.display = isFile ? 'none' : 'block';
+    };
+
+    // Add Homework Resource Click
+    document.getElementById('addHwResourceBtn').onclick = async () => {
+      if (!this.currentHomeworkId) {
+        window.toast?.show("Avval vazifani saqlab oling!", 'warning');
+        return;
+      }
+
+      const rType = document.getElementById('hwResourceType').value;
+      const rTitle = document.getElementById('hwResourceTitle').value.trim();
+      
+      if (!rTitle) {
+        window.toast?.show("Material nomini kiriting!", 'error');
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append('title', rTitle);
+      fd.append('resource_type', rType);
+
+      if (rType === 'file') {
+        const fileInput = document.getElementById('hwResourceFile');
+        const file = fileInput.files[0];
+        if (!file) {
+          window.toast?.show("Fayl tanlang!", 'error');
+          return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          window.toast?.show("Fayl hajmi 10 MB dan oshmasligi kerak!", 'error');
+          return;
+        }
+        const allowedExts = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'jpg', 'jpeg', 'png'];
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!allowedExts.includes(ext)) {
+          window.toast?.show("Fayl formati noto'g'ri!", 'error');
+          return;
+        }
+        fd.append('file', file);
+      } else {
+        const url = document.getElementById('hwResourceUrl').value.trim();
+        if (!url) {
+          window.toast?.show("Havolani kiriting!", 'error');
+          return;
+        }
+        fd.append('url', url);
+      }
+
+      try {
+        window.toast?.show("Yuklanmoqda...", "info");
+        const res = await API.post(`/courses/homeworks/${this.currentHomeworkId}/resources/`, fd);
+        window.toast?.show("Material qo'shildi!", "success");
+        
+        this.homeworkResources.push(res.data.data);
+        this.renderHwResourceList();
+
+        document.getElementById('hwResourceTitle').value = '';
+        document.getElementById('hwResourceFile').value = '';
+        document.getElementById('hwResourceUrl').value = '';
+      } catch (err) {
+        window.toast?.show(err.message, 'error');
+      }
+    };
+
+    // Save Homework Form
+    document.getElementById('homeworkForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('homeworkTitle').value.trim();
+      const description = document.getElementById('homeworkDescription').value.trim();
+      const afterLesson = document.getElementById('homeworkAfterLesson').value;
+      const deadlineDays = document.getElementById('homeworkDeadlineDays').value;
+
+      if (!title) {
+        window.toast?.show("Vazifa sarlavhasini kiriting!", 'error');
+        return;
+      }
+
+      const payload = {
+        title,
+        description,
+        after_lesson: afterLesson || null,
+        deadline_days: deadlineDays || null
+      };
+
+      try {
+        if (this.currentHomeworkId) {
+          await API.patch(`/courses/teacher/courses/homeworks/${this.currentHomeworkId}/`, payload);
+        } else {
+          const res = await API.post(`/courses/teacher/courses/${this.course.slug}/homeworks/`, payload);
+          this.currentHomeworkId = res.data.data.id;
+        }
+
+        window.toast?.show("Vazifa saqlandi!", 'success');
+        this.closeHomeworkModal();
+        await this.renderHomeworkList();
+      } catch (err) {
+        window.toast?.show(err.message, 'error');
+      }
+    };
+  },
+
+  renderHwResourceList() {
+    const container = document.getElementById('hwResourceList');
+    if (!container) return;
+
+    if (this.homeworkResources.length === 0) {
+      container.innerHTML = '<p class="empty-state" style="padding: 8px;">Materiallar yo\'q.</p>';
+      return;
+    }
+
+    container.innerHTML = this.homeworkResources.map(r => `
+      <div class="resource-builder-item" style="display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom: 6px;">
+        <span class="title" style="font-size: 13px; font-weight: 600;">${r.title} (${r.resource_type === 'link' ? 'Havola' : 'Fayl'})</span>
+        <button type="button" class="remove-btn" onclick="CreateCourse.deleteHwResource(${r.id})" style="color: var(--rose); cursor: pointer; border: none; background: none;">✕</button>
+      </div>
+    `).join('');
+  },
+
+  async deleteHwResource(id) {
+    if (!confirm("Haqiqatan ham ushbu materialni o'chirmoqchimisiz?")) return;
+    try {
+      await API.delete(`/courses/homeworks/resources/${id}/`);
+      window.toast?.show("Material o'chirildi", 'success');
+      this.homeworkResources = this.homeworkResources.filter(r => r.id !== id);
+      this.renderHwResourceList();
+    } catch (err) {
+      window.toast?.show(err.message, 'error');
     }
   },
 };

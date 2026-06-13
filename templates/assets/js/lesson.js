@@ -167,6 +167,7 @@ const LessonPage = {
 
     this.renderSidebar();
     App.updateNav();
+    this.checkLessonHomeworks();
     
     // Next lesson configurations
     const next = this.getNextLesson();
@@ -522,6 +523,44 @@ const LessonPage = {
   getNextLesson() {
     const idx = this.allLessons.findIndex((l) => l.id === this.lesson.id);
     return idx >= 0 && idx < this.allLessons.length - 1 ? this.allLessons[idx + 1] : null;
+  },
+
+  async checkLessonHomeworks() {
+    const isCompleted = this.lesson.current_progress?.is_completed;
+    if (!isCompleted) return;
+
+    try {
+      const res = await API.get(`/courses/teacher/courses/${this.course.slug}/homeworks/`);
+      const homeworks = res.data.data || [];
+      const lessonHw = homeworks.filter(hw => hw.after_lesson === this.lesson.id && hw.submission_status === 'pending');
+      
+      const oldBanner = document.getElementById('lessonHwBanner');
+      if (oldBanner) oldBanner.remove();
+
+      if (lessonHw.length > 0) {
+        const banner = document.createElement('div');
+        banner.id = 'lessonHwBanner';
+        banner.className = 'homework-popup-banner';
+        banner.style.cssText = `
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: var(--amber-light);
+          border: 1px solid var(--amber);
+          border-radius: 10px;
+          padding: 12px 16px;
+          margin-top: 16px;
+          font-size: 14px;
+        `;
+        banner.innerHTML = `
+          📝 Sizga yangi vazifa berildi: <strong>${lessonHw[0].title}</strong>
+          <a href="/course-detail.html?slug=${this.course.slug}#homeworks" style="margin-left:auto; color:var(--ink); font-weight:700; text-decoration:none;">Ko'rish &rarr;</a>
+        `;
+        
+        const parent = document.querySelector('#descriptionTab') || document.body;
+        parent.insertBefore(banner, parent.firstChild);
+      }
+    } catch(e) {}
   },
 };
 

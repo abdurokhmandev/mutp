@@ -102,7 +102,9 @@
         <div class="step-line"></div>
         <div class="step" id="step2-tab"><div class="step-circle">2</div> Darslar</div>
         <div class="step-line"></div>
-        <div class="step" id="step3-tab"><div class="step-circle">3</div> Nashr etish</div>
+        <div class="step" id="step3-tab"><div class="step-circle">3</div> Vazifalar</div>
+        <div class="step-line"></div>
+        <div class="step" id="step4-tab"><div class="step-circle">4</div> Nashr etish</div>
       </div>
       
       <!-- Step 1 -->
@@ -204,8 +206,28 @@
         </div>
       </div>
       
-      <!-- Step 3 -->
+      <!-- Step 3: Vazifalar -->
       <div class="step-content" id="step3">
+        <div style="margin-bottom:24px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h3 style="font-size:18px;font-family:'Plus Jakarta Sans';margin-bottom:4px;">Kurs vazifalari</h3>
+            <p style="font-size:13px;color:var(--muted);margin:0;">O'quvchilar uchun yozma topshiriqlar (ixtiyoriy)</p>
+          </div>
+          <button class="btn-secondary" id="addHomeworkBtn" style="padding:6px 12px;font-size:13px;"><i class="ti ti-plus"></i> Vazifa qo'shish</button>
+        </div>
+        
+        <div id="homeworkListContainer">
+          <!-- Dinamik vazifalar ro'yxati -->
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; margin-top:32px;">
+          <button class="btn-secondary" onclick="nextStep(2)">Oldingi</button>
+          <button class="btn-primary" onclick="nextStep(4)">Keyingi qadam <i class="ti ti-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step-content" id="step4">
         <div style="text-align:center; padding:40px 0;">
           <div style="width:80px;height:80px;border-radius:50%;background:var(--green-light);color:var(--green);font-size:40px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
             <i class="ti ti-check"></i>
@@ -215,7 +237,7 @@
         </div>
         
         <div style="display:flex; justify-content:space-between; margin-top:32px;">
-          <button class="btn-secondary" onclick="nextStep(2)">Oldingi</button>
+          <button class="btn-secondary" onclick="nextStep(3)">Oldingi</button>
         </div>
       </div>
       
@@ -275,6 +297,9 @@
       });
       document.getElementById(`step${step}`).classList.add('active');
       window.scrollTo(0, 0);
+      if (step === 3 && typeof CreateCourse !== 'undefined') {
+        CreateCourse.renderHomeworkList();
+      }
     }
   </script>
 
@@ -298,7 +323,6 @@
             <option value="video">Video dars</option>
             <option value="text">Matn dars</option>
             <option value="quiz">Test (Quiz)</option>
-            <option value="homework">Vazifa</option>
           </select>
         </div>
 
@@ -335,18 +359,6 @@
           </div>
         </div>
 
-        <!-- Vazifa maydonlari -->
-        <div id="homeworkFields" style="display:none; flex-direction:column; gap:16px;">
-          <div class="form-group">
-            <label class="form-label">Vazifa tavsifi</label>
-            <textarea id="lessonHomeworkDesc" class="form-control" rows="5" placeholder="Vazifa shartlarini va talablarini yozing..."></textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Bajarish muddati (kunlarda)</label>
-            <input type="number" id="lessonHomeworkDeadline" class="form-control" placeholder="Masalan: 3" min="1">
-          </div>
-        </div>
-
         <!-- Test (Quiz) dars maydonlari -->
         <div id="quizFields" style="display:none;">
           <div class="homework-builder" style="border-top:none; padding-top:0;">
@@ -380,6 +392,64 @@
         <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid var(--border); padding-top:16px; margin-top:8px;">
           <button type="button" class="btn-secondary" onclick="CreateCourse.closeLessonModal()">Yopish</button>
           <button type="submit" class="btn-primary" id="saveLessonBtn">Darsni saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Vazifa Qo'shish/Tahrirlash Modali -->
+  <div id="homeworkModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+    <div class="modal-content" style="background:var(--white); border-radius:16px; width:100%; max-width:600px; max-height:90vh; overflow-y:auto; padding:24px; box-shadow:0 8px 30px rgba(0,0,0,0.15); display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:12px;">
+        <h3 id="hwModalTitle" style="font-family:'Plus Jakarta Sans'; font-size:18px;">Yangi vazifa qo'shish</h3>
+        <button type="button" onclick="CreateCourse.closeHomeworkModal()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted);"><i class="ti ti-x"></i></button>
+      </div>
+      
+      <form id="homeworkForm" style="display:flex; flex-direction:column; gap:16px;">
+        <div class="form-group">
+          <label class="form-label">Vazifa sarlavhasi</label>
+          <input type="text" id="homeworkTitle" class="form-control" placeholder="Masalan: 1-bob bo'yicha amaliy mashq" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Vazifa tavsifi</label>
+          <textarea id="homeworkDescription" class="form-control" rows="6" placeholder="Vazifani batafsil tasvirlab yozing..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Qaysi darsdan keyin beriladi (ixtiyoriy)</label>
+          <select id="homeworkAfterLesson" class="form-control">
+            <option value="">— Tanlanmagan (kurs boshida) —</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Bajarish muddati (kunlarda, ixtiyoriy)</label>
+          <input type="number" id="homeworkDeadlineDays" class="form-control" placeholder="Necha kun ichida (masalan: 7)" min="1">
+        </div>
+
+        <!-- Resurslar — ixtiyoriy fayl/havola -->
+        <div class="resource-builder" style="border-top:1px solid var(--border); padding-top:16px;">
+          <label style="font-weight:700; font-size:14px; margin-bottom:8px; display:block;">Qo'shimcha materiallar (ixtiyoriy)</label>
+          <div id="hwResourceNotSavedWarning" style="color:var(--muted); font-size:13px; margin-bottom:8px; display:none;">
+            <em>Materiallarni qo'shish uchun avval vazifani yarating (saqlang).</em>
+          </div>
+          <div id="hwResourceList" style="margin-bottom:12px;"></div>
+          <div class="resource-add-row" id="hwResourceAddRow" style="display:flex; flex-wrap:wrap; gap:8px;">
+            <select id="hwResourceType" class="form-control" style="flex:1; min-width:120px;">
+              <option value="file">📁 Fayl</option>
+              <option value="link">🔗 Havola</option>
+            </select>
+            <input type="text" id="hwResourceTitle" class="form-control" placeholder="Nomi" style="flex:2; min-width:180px;">
+            <input type="file" id="hwResourceFile" class="form-control" style="flex:2; min-width:180px;">
+            <input type="url" id="hwResourceUrl" class="form-control" placeholder="https://..." style="display:none; flex:2; min-width:180px;">
+            <button type="button" id="addHwResourceBtn" class="btn-secondary" style="padding:10px 16px;">+ Qo'shish</button>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid var(--border); padding-top:16px; margin-top:8px;">
+          <button type="button" class="btn-secondary" onclick="CreateCourse.closeHomeworkModal()">Yopish</button>
+          <button type="submit" class="btn-primary" id="saveHomeworkBtn">Vazifani saqlash</button>
         </div>
       </form>
     </div>
