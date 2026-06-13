@@ -41,6 +41,9 @@ INSTALLED_APPS = [
     
     # Custom apps
     'apps.users',
+    'apps.teacher',
+    'apps.notifications',
+    'apps.chat',
     'apps.courses',
     'apps.analytics',
 ]
