@@ -111,6 +111,10 @@ const LessonPage = {
     if (quizContainer) quizContainer.style.display = 'none';
     if (nextBtn) nextBtn.style.display = 'none';
 
+    // Remove previous player controls if any
+    const prevControls = document.querySelector('.player-controls');
+    if (prevControls) prevControls.remove();
+
     // Dars turi bo'yicha render
     if (l.lesson_type === 'video') {
       const src = l.video_file || l.video_url;
