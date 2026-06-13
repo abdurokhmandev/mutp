@@ -134,15 +134,25 @@ const LessonPage = {
 
     // Reset tabs to description on load
     document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
-    const descTabHeader = document.querySelector('.tabs .tab[data-tab="description"]');
-    if (descTabHeader) descTabHeader.classList.add('active');
     document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
-    const descTabPane = document.getElementById('descriptionTab');
-    if (descTabPane) descTabPane.style.display = 'block';
+
+    // Auto-switch to quiz/homework tab for quiz lessons
+    if (l.lesson_type === 'quiz') {
+      const hwTabHeader = document.querySelector('.tabs .tab[data-tab="homework"]');
+      if (hwTabHeader) hwTabHeader.classList.add('active');
+      const hwTabPane = document.getElementById('homeworkTab');
+      if (hwTabPane) hwTabPane.style.display = 'block';
+    } else {
+      const descTabHeader = document.querySelector('.tabs .tab[data-tab="description"]');
+      if (descTabHeader) descTabHeader.classList.add('active');
+      const descTabPane = document.getElementById('descriptionTab');
+      if (descTabPane) descTabPane.style.display = 'block';
+    }
 
     // Render resources and quiz
     this.renderResources(l);
     this.renderQuizUI(l);
+
 
     // Player va Bannerlarni render qilish
     this.renderLessonPlayer(l);
@@ -360,14 +370,14 @@ const LessonPage = {
 
     container.innerHTML = lesson.resources.map(r => {
       const icon = r.resource_type === 'link' ? '🔗' : this.getFileIcon(r.title);
-      const href = r.resource_type === 'link' ? r.url : r.file;
+      let href = r.resource_type === 'link' ? r.url : this.getMediaUrl(r.file);
       const sizeLabel = r.file_size ? this.formatFileSize(r.file_size) : '';
       return `
-        <a href="${href}" target="_blank" class="resource-item">
+        <a href="${href}" target="_blank" rel="noopener noreferrer" class="resource-item" download>
           <span class="resource-icon">${icon}</span>
           <div class="resource-info">
             <span class="resource-title">${r.title}</span>
-            <span class="resource-meta">${r.resource_type === 'link' ? 'Havola' : sizeLabel}</span>
+            <span class="resource-meta">${r.resource_type === 'link' ? 'Havola' : (sizeLabel || 'Yuklab olish')}</span>
           </div>
           <span class="resource-download">⬇</span>
         </a>`;
@@ -527,13 +537,14 @@ const LessonPage = {
   },
 
   async checkLessonHomeworks() {
-    const isCompleted = this.lesson?.current_progress?.is_completed;
-    if (!isCompleted || !this.course?.slug) return;
+    if (!this.course?.slug) return;
 
     try {
-      const res = await API.get(`/courses/teacher/courses/${this.course.slug}/homeworks/`);
+      const res = await API.get(`/courses/${this.course.slug}/homeworks/`);
       const homeworks = res.data || [];
-      const lessonHw = homeworks.filter(hw => hw.after_lesson === this.lesson?.id && hw.submission_status === 'pending');
+      const lessonHw = homeworks.filter(hw =>
+        hw.after_lesson === this.lesson?.id && hw.submission_status === 'pending'
+      );
       
       const oldBanner = document.getElementById('lessonHwBanner');
       if (oldBanner) oldBanner.remove();
@@ -541,27 +552,26 @@ const LessonPage = {
       if (lessonHw.length > 0) {
         const banner = document.createElement('div');
         banner.id = 'lessonHwBanner';
-        banner.className = 'homework-popup-banner';
         banner.style.cssText = `
           display: flex;
           align-items: center;
           gap: 10px;
-          background: var(--amber-light);
-          border: 1px solid var(--amber);
+          background: var(--amber-light, #fffbeb);
+          border: 1px solid var(--amber, #f59e0b);
           border-radius: 10px;
           padding: 12px 16px;
-          margin-top: 16px;
+          margin-bottom: 16px;
           font-size: 14px;
         `;
         banner.innerHTML = `
           📝 Sizga yangi vazifa berildi: <strong>${lessonHw[0].title}</strong>
-          <a href="/course-detail.html?slug=${this.course.slug}#homeworks" style="margin-left:auto; color:var(--ink); font-weight:700; text-decoration:none;">Ko'rish &rarr;</a>
+          <a href="/course-detail.html?slug=${this.course.slug}" style="margin-left:auto; color:var(--ink); font-weight:700; text-decoration:none;">Ko'rish &rarr;</a>
         `;
         
         const parent = document.querySelector('#descriptionTab') || document.body;
         parent.insertBefore(banner, parent.firstChild);
       }
-    } catch(e) {}
+    } catch(e) { /* silent — student may not have access */ }
   },
 };
 

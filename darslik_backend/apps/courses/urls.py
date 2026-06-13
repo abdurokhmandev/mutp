@@ -28,7 +28,8 @@ from .views import (
     HomeworkDetailView,
     HomeworkSubmitView,
     HomeworkResourceCreateView,
-    HomeworkResourceDeleteView
+    HomeworkResourceDeleteView,
+    StudentCourseHomeworksView
 )
 
 urlpatterns = [
@@ -72,5 +73,6 @@ urlpatterns = [
     path('homeworks/<int:id>/submit/', HomeworkSubmitView.as_view(), name='homework_submit'),
     path('homeworks/<int:id>/resources/', HomeworkResourceCreateView.as_view(), name='homework_resource_create'),
     path('homeworks/resources/<int:id>/', HomeworkResourceDeleteView.as_view(), name='homework_resource_delete'),
+    path('<slug:slug>/homeworks/', StudentCourseHomeworksView.as_view(), name='student_course_homeworks'),
 ]
 

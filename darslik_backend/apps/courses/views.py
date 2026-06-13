@@ -938,6 +938,29 @@ class LessonResourceDeleteView(APIView):
         return success_response(message="Resurs o'chirildi")
 
 
+class StudentCourseHomeworksView(APIView):
+    """O'quvchi uchun kurs vazifalari ro'yxati"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug):
+        try:
+            course = Course.objects.get(slug=slug)
+        except Course.DoesNotExist:
+            return error_response(message="Kurs topilmadi", status_code=404)
+
+        # Check enrollment (teacher can also view)
+        is_teacher = course.teacher == request.user
+        is_enrolled = Enrollment.objects.filter(student=request.user, course=course).exists()
+
+        if not is_teacher and not is_enrolled:
+            return error_response(message="Ruxsat berilmagan", status_code=403)
+
+        homeworks = Homework.objects.filter(course=course).order_by('order')
+        serializer = HomeworkSerializer(homeworks, many=True, context={'request': request})
+        return success_response(data=serializer.data, message="Kurs vazifalari")
+
+
+
 class HomeworkListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 

@@ -384,11 +384,10 @@ const CreateCourse = {
     document.getElementById('textFields').style.display = type === 'text' ? 'block' : 'none';
     document.getElementById('quizFields').style.display = type === 'quiz' ? 'block' : 'none';
     
-    // Show/Hide Resource fields based on currentLessonId
-    const hasLessonId = !!this.currentLessonId;
-    document.getElementById('resourceNotSavedWarning').style.display = hasLessonId ? 'none' : 'block';
-    document.getElementById('resourceList').style.display = hasLessonId ? 'block' : 'none';
-    document.getElementById('resourceAddRow').style.display = hasLessonId ? 'flex' : 'none';
+    // Always show resource fields — auto-save will handle the rest
+    document.getElementById('resourceNotSavedWarning').style.display = 'none';
+    document.getElementById('resourceList').style.display = 'block';
+    document.getElementById('resourceAddRow').style.display = 'flex';
   },
 
   extractYouTubeId(url) {
@@ -427,9 +426,35 @@ const CreateCourse = {
 
     // Add Resource Click
     document.getElementById('addResourceBtn').onclick = async () => {
+      // Auto-save lesson first if not saved yet
       if (!this.currentLessonId) {
-        window.toast?.show("Avval darsning asosiy ma'lumotlarini saqlab oling!", 'warning');
-        return;
+        const lTitle = document.getElementById('lessonTitle').value.trim();
+        if (!lTitle) {
+          window.toast?.show("Avval dars nomini kiriting!", 'warning');
+          return;
+        }
+        window.toast?.show("Dars saqlanmoqda...", 'info');
+        try {
+          const lType = document.getElementById('lessonType').value;
+          const fd2 = new FormData();
+          fd2.append('title', lTitle);
+          fd2.append('lesson_type', lType);
+          if (lType === 'video') {
+            const vSource = document.getElementById('videoSource').value;
+            if (vSource === 'url') {
+              const vUrl = document.getElementById('lessonVideoUrl').value.trim();
+              if (vUrl) fd2.append('video_url', vUrl);
+            }
+          } else if (lType === 'text') {
+            fd2.append('text_content', document.getElementById('lessonTextContent').value.trim());
+          }
+          const saveRes = await API.post(`/courses/teacher/modules/${this.currentModuleId}/lessons/`, fd2);
+          this.currentLessonId = saveRes.data.id;
+          window.toast?.show("Dars saqlandi! Endi resurs qo'shilmoqda...", 'success');
+        } catch (saveErr) {
+          window.toast?.show("Darsni saqlashda xatolik: " + saveErr.message, 'error');
+          return;
+        }
       }
 
       const rType = document.getElementById('resourceType').value;
@@ -455,11 +480,10 @@ const CreateCourse = {
           window.toast?.show("Fayl hajmi 10 MB dan oshmasligi kerak!", 'error');
           return;
         }
-        // format tekshirish (pdf, doc, docx, ppt, pptx, zip, jpg, png)
         const allowedExts = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'jpg', 'jpeg', 'png'];
         const ext = file.name.split('.').pop().toLowerCase();
         if (!allowedExts.includes(ext)) {
-          window.toast?.show("Fayl formati noto'g'ri! Faqat ruxsat etilgan formatlar: pdf, doc, docx, ppt, pptx, zip, jpg, png", 'error');
+          window.toast?.show("Fayl formati noto'g'ri! Faqat: pdf, doc, docx, ppt, pptx, zip, jpg, png", 'error');
           return;
         }
         fd.append('file', file);
@@ -473,15 +497,13 @@ const CreateCourse = {
       }
 
       try {
-        window.toast?.show("Yuklanmoqda...", "info");
+        window.toast?.show("Resurs yuklanmoqda...", "info");
         const res = await API.post(`/courses/lessons/${this.currentLessonId}/resources/`, fd);
         window.toast?.show("Resurs muvaffaqiyatli qo'shildi!", "success");
         
-        // Reload resources
         this.lessonResources.push(res.data);
         this.renderResourceList();
 
-        // Clear fields
         document.getElementById('resourceTitle').value = '';
         document.getElementById('resourceFile').value = '';
         document.getElementById('resourceUrl').value = '';
@@ -489,6 +511,7 @@ const CreateCourse = {
         window.toast?.show(err.message, 'error');
       }
     };
+
 
     // Add Question Click
     document.getElementById('addQuestionBtn').onclick = () => {
