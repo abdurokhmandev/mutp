@@ -9,6 +9,8 @@ from .views import (
     LessonProgressUpdateView,
     LessonQuizView,
     LessonQuizSubmitView,
+    LessonResourceCreateView,
+    LessonResourceDeleteView,
     ReviewCreateView,
     CertificateView,
     TeacherCourseListView,
@@ -18,6 +20,7 @@ from .views import (
     CoursePublishView,
     ModuleCreateView,
     LessonCreateView,
+    LessonUpdateView,
     TeacherDashboardView,
     SaveCourseView,
     SavedCoursesListView
@@ -35,8 +38,11 @@ urlpatterns = [
     # Darslar
     path('lessons/<int:id>/',            LessonDetailView.as_view(), name='lesson_detail'),
     path('lessons/<int:id>/progress/',   LessonProgressUpdateView.as_view(), name='lesson_progress'),
+    path('lessons/<int:id>/update/',     LessonUpdateView.as_view(), name='lesson_update'),
     path('lessons/<int:id>/quiz/',       LessonQuizView.as_view(), name='lesson_quiz'),
     path('lessons/<int:id>/quiz/submit/', LessonQuizSubmitView.as_view(), name='lesson_quiz_submit'),
+    path('lessons/<int:id>/resources/',  LessonResourceCreateView.as_view(), name='lesson_resources'),
+    path('lessons/resources/<int:id>/', LessonResourceDeleteView.as_view(), name='resource_delete'),
 
     # Sertifikat
     path('certificates/<str:code>/',     CertificateView.as_view(), name='certificate_view'),

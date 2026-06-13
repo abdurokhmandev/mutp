@@ -5,12 +5,6 @@ const LessonPage = {
   allLessons: [],
   player: null,
   ytPlayer: null,
-  
-  // Quiz o'zgaruvchilari
-  quizQuestions: [],
-  currentQuestionIndex: 0,
-  userAnswers: [],
-  selectedOptionId: null,
 
   getLessonId() {
     return new URLSearchParams(window.location.search).get('id');
@@ -24,6 +18,8 @@ const LessonPage = {
       window.toast?.show('Dars topilmadi', 'error');
       return;
     }
+
+    this.initTabs();
 
     try {
       await this.loadLesson(id);
@@ -52,6 +48,25 @@ const LessonPage = {
       }
       window.toast?.show(e.message, 'error');
     }
+  },
+
+  initTabs() {
+    document.querySelectorAll('.tabs .tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        if (tab.classList.contains('disabled')) return;
+        
+        document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        const targetTab = tab.dataset.tab;
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+          pane.style.display = 'none';
+        });
+        
+        const pane = document.getElementById(`${targetTab}Tab`);
+        if (pane) pane.style.display = 'block';
+      });
+    });
   },
 
   async loadLesson(id) {
@@ -91,84 +106,33 @@ const LessonPage = {
     const titleEl = document.querySelector('.lesson-title-lg');
     if (titleEl) titleEl.textContent = l.title;
 
-    const contentEl = document.querySelector('.tab-content');
-    if (contentEl) {
-      contentEl.innerHTML = l.content
+    const descriptionContent = document.querySelector('#descriptionTab .tab-content');
+    if (descriptionContent) {
+      descriptionContent.innerHTML = l.content
         ? `<div>${l.content.replace(/\n/g, '<br>')}</div>`
         : '<p>Dars tavsifi mavjud emas.</p>';
     }
 
-    // Elementlarni tozalash/yashirish
-    const videoEl = document.getElementById('videoPlayer');
-    const ytContainer = document.getElementById('ytPlayerContainer');
-    const textContainer = document.getElementById('textLessonContainer');
-    const quizContainer = document.getElementById('quizContainer');
-    const nextBtn = document.getElementById('nextBtn');
+    // Reset tabs to description on load
+    document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+    const descTabHeader = document.querySelector('.tabs .tab[data-tab="description"]');
+    if (descTabHeader) descTabHeader.classList.add('active');
+    document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+    const descTabPane = document.getElementById('descriptionTab');
+    if (descTabPane) descTabPane.style.display = 'block';
 
-    if (videoEl) videoEl.style.display = 'none';
-    if (ytContainer) ytContainer.style.display = 'none';
-    if (textContainer) textContainer.style.display = 'none';
-    if (quizContainer) quizContainer.style.display = 'none';
-    if (nextBtn) nextBtn.style.display = 'none';
+    // Render resources and quiz
+    this.renderResources(l);
+    this.renderQuizUI(l);
 
-    // Remove previous player controls if any
-    const prevControls = document.querySelector('.player-controls');
-    if (prevControls) prevControls.remove();
-
-    // Dars turi bo'yicha render
-    if (l.lesson_type === 'video') {
-      const src = l.video_file || l.video_url;
-      if (src) {
-        if (this.isYouTubeUrl(src)) {
-          this.initYouTube(src);
-        } else {
-          if (videoEl) {
-            videoEl.style.display = 'block';
-            videoEl.src = src;
-            videoEl.removeAttribute('controls');
-            this.initPlayer();
-          }
-        }
-      } else {
-        if (ytContainer) {
-          ytContainer.style.display = 'block';
-          ytContainer.innerHTML = '<p style="color:white;padding:40px;text-align:center;">Video hali yuklanmagan</p>';
-        }
-      }
-    } else if (l.lesson_type === 'text') {
-      if (textContainer) {
-        textContainer.style.display = 'flex';
-        const completeBtn = document.getElementById('completeTextBtn');
-        const isDone = l.current_progress?.is_completed;
-        
-        if (isDone) {
-          completeBtn.innerHTML = '<i class="ti ti-circle-check"></i> Tugatilgan';
-          completeBtn.style.background = 'var(--muted)';
-          completeBtn.style.boxShadow = 'none';
-          completeBtn.disabled = true;
-          if (nextBtn) nextBtn.style.display = 'flex';
-        } else {
-          completeBtn.innerHTML = '<i class="ti ti-checkbox"></i> Darsni tugatdim';
-          completeBtn.style.background = 'var(--duo-green)';
-          completeBtn.style.boxShadow = '0 4px 0 var(--duo-green-dark)';
-          completeBtn.disabled = false;
-          completeBtn.onclick = () => this.completeTextLesson();
-        }
-      }
-    } else if (l.lesson_type === 'quiz') {
-      if (quizContainer) {
-        quizContainer.style.display = 'flex';
-        this.loadQuizQuestions();
-      }
-    }
+    // Player va Bannerlarni render qilish
+    this.renderLessonPlayer(l);
 
     if (this.course) {
       const progressFill = document.querySelector('.course-progress-fill');
       const progressText = document.querySelector('.course-progress-text span:last-child');
       const enrolled = this.course.is_enrolled;
       if (progressFill && enrolled) {
-        const pct = this.course.total_duration_seconds > 0 ? (l.current_progress?.course_progress ?? 0) : 0;
-        // Agar o'quvchi kursga yozilgan bo'lsa va darslar tugatilgan bo'lsa
         let completedLessonsCount = 0;
         let totalLessonsCount = 0;
         this.allLessons.forEach(les => {
@@ -185,12 +149,84 @@ const LessonPage = {
     this.renderSidebar();
     App.updateNav();
     
-    // Keyingi dars tugmasini sozlash
+    // Next lesson configurations
     const next = this.getNextLesson();
+    const nextBtn = document.getElementById('nextBtn');
     if (next && nextBtn) {
       nextBtn.onclick = () => {
         window.location.href = `/lesson.html?id=${next.id}&slug=${this.course?.slug || ''}`;
       };
+    }
+  },
+
+  renderLessonPlayer(lesson) {
+    const videoEl = document.getElementById('videoPlayer');
+    const ytContainer = document.getElementById('ytPlayerContainer');
+    const textContainer = document.getElementById('textLessonContainer');
+    const quizContainer = document.getElementById('quizContainer');
+    const nextBtn = document.getElementById('nextBtn');
+
+    if (videoEl) videoEl.style.display = 'none';
+    if (ytContainer) ytContainer.style.display = 'none';
+    if (textContainer) textContainer.style.display = 'none';
+    if (quizContainer) quizContainer.style.display = 'none';
+    if (nextBtn) nextBtn.style.display = 'none';
+
+    const prevControls = document.querySelector('.player-controls');
+    if (prevControls) prevControls.remove();
+
+    if (lesson.lesson_type === 'video') {
+      const src = lesson.video_file || lesson.video_url;
+      if (src) {
+        if (this.isYouTubeUrl(src)) {
+          this.initYouTube(src);
+        } else {
+          if (videoEl) {
+            videoEl.style.display = 'block';
+            videoEl.src = src;
+            videoEl.removeAttribute('controls');
+            this.initPlayer();
+          }
+        }
+      } else {
+        if (ytContainer) {
+          ytContainer.style.display = 'block';
+          ytContainer.innerHTML = `
+            <div class="empty-lesson-banner" style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; width:100%; height:100%; aspect-ratio:16/9; background:#000; color:var(--muted);">
+              <span style="font-size:48px;">🎬</span>
+              <p>Bu darsga hali video yuklanmagan.</p>
+            </div>`;
+        }
+      }
+    } else if (lesson.lesson_type === 'text') {
+      if (textContainer) {
+        textContainer.style.display = 'flex';
+        const completeBtn = document.getElementById('completeTextBtn');
+        const isDone = lesson.current_progress?.is_completed;
+        
+        if (isDone) {
+          completeBtn.innerHTML = '<i class="ti ti-circle-check"></i> Tugatilgan';
+          completeBtn.style.background = 'var(--muted)';
+          completeBtn.style.boxShadow = 'none';
+          completeBtn.disabled = true;
+          if (nextBtn) nextBtn.style.display = 'flex';
+        } else {
+          completeBtn.innerHTML = '<i class="ti ti-checkbox"></i> Darsni tugatdim';
+          completeBtn.style.background = 'var(--duo-green)';
+          completeBtn.style.boxShadow = '0 4px 0 var(--duo-green-dark)';
+          completeBtn.disabled = false;
+          completeBtn.onclick = () => this.completeLessonProgress(true);
+        }
+      }
+    } else if (lesson.lesson_type === 'quiz') {
+      if (textContainer) {
+        textContainer.style.display = 'flex';
+        textContainer.innerHTML = `
+          <i class="ti ti-help" style="font-size: 80px; color: var(--duo-green); margin-bottom: 20px;"></i>
+          <h2 style="font-family:'Plus Jakarta Sans';">Dars Testi</h2>
+          <p style="margin-top: 10px; opacity:0.8; max-width: 500px;">Ushbu dars testdan iborat. Darsni tamomlash uchun pastdagi "Uyga vazifa" tabiga o'tib savollarga javob bering.</p>
+        `;
+      }
     }
   },
 
@@ -222,7 +258,6 @@ const LessonPage = {
       <iframe id="ytPlayer" width="100%" height="100%" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     `;
 
-    // YouTube API scriptini yuklash
     if (!window.YT) {
       const tag = document.createElement('script');
       tag.src = "https://www.youtube.com/iframe_api";
@@ -236,7 +271,7 @@ const LessonPage = {
         events: {
           'onStateChange': function(event) {
             if (event.data === YT.PlayerState.ENDED) {
-              self.completeTextLesson(); // darsni yakunlash API ga yuboradi
+              self.completeLessonProgress(true); // video tugaganda progressni saqlash
             }
           }
         }
@@ -248,24 +283,21 @@ const LessonPage = {
       triggerYTInit();
     }
     
-    // Qo'shimcha ravishda YouTube darslar uchun foydalanuvchi tugatganda yoki darhol "Keyingi" ni ochish uchun
-    // 5 soniyadan so'ng auto complete yoki tugmani ochib qo'yish mumkin (video yakunlanmasa ham)
+    // YouTube videoni yuklaganidan keyin tugmani ko'rsatish
     setTimeout(() => {
       const nextBtn = document.getElementById('nextBtn');
       if (nextBtn) nextBtn.style.display = 'flex';
-      this.completeTextLesson(true); // jim saqlash
-    }, 15000);
+    }, 5000);
   },
 
-  async completeTextLesson(silent = false) {
+  async completeLessonProgress(isCompleted = false, silent = false) {
     try {
       await API.patch(`/courses/lessons/${this.lesson.id}/progress/`, {
         watched_seconds: 1,
-        is_completed: true
+        is_completed: isCompleted
       });
       if (!silent) {
-        window.toast?.show("Dars tugatildi!", "success");
-        // reload current lesson state
+        window.toast?.show("Dars progressi muvaffaqiyatli saqlandi!", "success");
         await this.loadLesson(this.lesson.id);
       }
     } catch (e) {
@@ -273,156 +305,122 @@ const LessonPage = {
     }
   },
 
-  // Quiz interfeysi mantig'i
-  async loadQuizQuestions() {
-    try {
-      const res = await API.get(`/courses/lessons/${this.lesson.id}/quiz/`);
-      this.quizQuestions = res.data || [];
-      this.currentQuestionIndex = 0;
-      this.userAnswers = [];
-      this.selectedOptionId = null;
-      this.renderQuestion();
-    } catch (e) {
-      window.toast?.show("Quiz savollarini yuklab bo'lmadi.", "error");
+  renderResources(lesson) {
+    const container = document.querySelector('.resources-tab-content');
+    if (!container) return;
+
+    if (!lesson.resources || lesson.resources.length === 0) {
+      container.innerHTML = `<p class="empty-state">Bu darsga hali resurslar qo'shilmagan.</p>`;
+      return;
     }
+
+    container.innerHTML = lesson.resources.map(r => {
+      const icon = r.resource_type === 'link' ? '🔗' : this.getFileIcon(r.title);
+      const href = r.resource_type === 'link' ? r.url : r.file;
+      const sizeLabel = r.file_size ? this.formatFileSize(r.file_size) : '';
+      return `
+        <a href="${href}" target="_blank" class="resource-item">
+          <span class="resource-icon">${icon}</span>
+          <div class="resource-info">
+            <span class="resource-title">${r.title}</span>
+            <span class="resource-meta">${r.resource_type === 'link' ? 'Havola' : sizeLabel}</span>
+          </div>
+          <span class="resource-download">⬇</span>
+        </a>`;
+    }).join('');
   },
 
-  renderQuestion() {
-    const container = document.getElementById('quizBody');
-    const titleEl = document.getElementById('quizTitle');
-    const progressEl = document.getElementById('quizProgress');
-    const actionBtn = document.getElementById('quizActionBtn');
-    
-    if (this.quizQuestions.length === 0) {
-      container.innerHTML = `<p style="text-align:center;padding:20px;">Bu darsda test savollari mavjud emas.</p>`;
-      actionBtn.style.display = 'none';
+  getFileIcon(filename) {
+    if (!filename) return '📎';
+    const ext = filename.split('.').pop().toLowerCase();
+    const map = { pdf: '📄', doc: '📝', docx: '📝', ppt: '📊', pptx: '📊', zip: '🗂️', jpg: '🖼️', png: '🖼️' };
+    return map[ext] || '📎';
+  },
+
+  formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/1024/1024).toFixed(1) + ' MB';
+  },
+
+  renderQuizUI(lesson) {
+    const container = document.querySelector('.homework-tab-content');
+    if (!container) return;
+
+    if (!lesson.questions || lesson.questions.length === 0) {
+      container.innerHTML = `<p class="empty-state">Bu darsga uyga vazifa biriktirilmagan.</p>`;
       return;
     }
-
-    actionBtn.style.display = 'block';
-
-    if (this.currentQuestionIndex >= this.quizQuestions.length) {
-      this.submitQuiz();
-      return;
-    }
-
-    const q = this.quizQuestions[this.currentQuestionIndex];
-    titleEl.textContent = this.lesson.title + " — Test";
-    progressEl.textContent = `Savol: ${this.currentQuestionIndex + 1}/${this.quizQuestions.length}`;
-    
-    let optionsHtml = (q.options || []).map((opt, idx) => {
-      const letter = String.fromCharCode(65 + idx); // A, B, C...
-      return `
-        <button class="quiz-option-card" data-id="${opt.id}" onclick="LessonPage.selectOption(${opt.id})">
-          <div class="quiz-option-badge">${letter}</div>
-          <span>${opt.text}</span>
-        </button>
-      `;
-    }).join('');
 
     container.innerHTML = `
-      <div class="quiz-question-text">${q.text}</div>
-      <div class="quiz-options-list">
-        ${optionsHtml}
-      </div>
-    `;
+      <div class="quiz-wrapper">
+        <h3 style="color: var(--ink); margin-bottom: 8px;">📝 Uyga vazifa — ${lesson.questions.length} savol</h3>
+        <p class="quiz-pass-note" style="color: var(--muted); font-size:13px; margin-bottom: 16px;">O'tish balli: 70%</p>
+        <div id="quizQuestionsList"></div>
+        <button id="submitQuizBtn" class="btn" style="background:var(--duo-green); border:none; color:white; padding:12px 24px; border-radius:16px; font-weight:700; cursor:pointer; box-shadow: 0 4px 0 var(--duo-green-dark); font-size:15px; margin-top: 12px; display: block; width: 100%; transition: transform 0.1s;">Tekshirish</button>
+        <div id="quizResultAlert" style="display:none; margin-top:16px;"></div>
+      </div>`;
 
-    actionBtn.textContent = this.currentQuestionIndex === this.quizQuestions.length - 1 ? "Natijani yuborish" : "Keyingi savol";
-    actionBtn.onclick = () => this.nextQuestion();
-    this.selectedOptionId = null;
-    this.updateActionBtnState();
-  },
-
-  selectOption(id) {
-    this.selectedOptionId = id;
-    document.querySelectorAll('.quiz-option-card').forEach(card => {
-      if (parseInt(card.dataset.id) === id) {
-        card.classList.add('selected');
-      } else {
-        card.classList.remove('selected');
-      }
+    const qList = document.getElementById('quizQuestionsList');
+    lesson.questions.forEach((q, idx) => {
+      const qDiv = document.createElement('div');
+      qDiv.className = 'quiz-question';
+      qDiv.innerHTML = `
+        <p class="quiz-q-text">${idx+1}. ${q.text}</p>
+        <div class="quiz-options">
+          ${q.options.map(opt => `
+            <label class="quiz-option">
+              <input type="radio" name="q${q.id}" value="${opt.id}">
+              <span style="color: var(--ink-2); font-size: 14px;">${opt.text}</span>
+            </label>`).join('')}
+        </div>`;
+      qList.appendChild(qDiv);
     });
-    this.updateActionBtnState();
-  },
 
-  updateActionBtnState() {
-    const actionBtn = document.getElementById('quizActionBtn');
-    if (this.selectedOptionId === null) {
-      actionBtn.disabled = true;
-      actionBtn.style.opacity = '0.5';
-      actionBtn.style.cursor = 'not-allowed';
-    } else {
-      actionBtn.disabled = false;
-      actionBtn.style.opacity = '1';
-      actionBtn.style.cursor = 'pointer';
-    }
-  },
-
-  nextQuestion() {
-    if (this.selectedOptionId === null) return;
-    const q = this.quizQuestions[this.currentQuestionIndex];
-    this.userAnswers.push({
-      question_id: q.id,
-      selected_option_id: this.selectedOptionId
-    });
-    this.currentQuestionIndex++;
-    this.renderQuestion();
-  },
-
-  async submitQuiz() {
-    const container = document.getElementById('quizBody');
-    const progressEl = document.getElementById('quizProgress');
-    const actionBtn = document.getElementById('quizActionBtn');
-
-    container.innerHTML = `<div style="text-align:center;padding:40px;"><i class="ti ti-loader" style="font-size:40px;animation:spin 1s infinite linear;display:inline-block;"></i><p style="margin-top:10px;">Natijalar hisoblanmoqda...</p></div>`;
-    actionBtn.style.display = 'none';
-
-    try {
-      const res = await API.post(`/courses/lessons/${this.lesson.id}/quiz/submit/`, {
-        answers: this.userAnswers
+    document.getElementById('submitQuizBtn').onclick = async () => {
+      const answers = lesson.questions.map(q => {
+        const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+        return { question_id: q.id, answer_id: selected ? parseInt(selected.value) : null };
       });
-      const attempt = res.data;
-      
-      const success = attempt.passed;
-      const statusText = success ? "Tabriklaymiz! Testdan o'tdingiz!" : "Afsuski, yetarli ball to'play olmadingiz.";
-      const color = success ? "var(--duo-green)" : "#ff4b4b";
-      const icon = success ? "ti-circle-check-filled" : "ti-circle-x-filled";
 
-      progressEl.textContent = `Natija: ${Math.round(attempt.score)}%`;
-
-      container.innerHTML = `
-        <div style="text-align:center; padding:20px;">
-          <i class="ti ${icon}" style="font-size: 80px; color: ${color}; margin-bottom: 20px;"></i>
-          <h2 style="font-family:'Plus Jakarta Sans'; color:${color};">${statusText}</h2>
-          <p style="margin-top: 15px; font-size:16px;">Sizning natijangiz: <strong>${attempt.correct_count} / ${attempt.total_count}</strong> (${Math.round(attempt.score)}%)</p>
-          <p style="margin-top: 10px; opacity: 0.8; font-size:14px;">O'tish bali: 70%</p>
-          ${!success ? `
-            <button onclick="LessonPage.loadQuizQuestions()" class="btn" style="background:#ff4b4b; border:none; color:white; padding:12px 24px; border-radius:16px; font-weight:700; cursor:pointer; box-shadow: 0 4px 0 #b33434; margin-top:20px; transition:transform 0.1s; display:inline-flex; align-items:center; gap:8px;">
-              <i class="ti ti-refresh"></i> Qayta urinish
-            </button>
-          ` : ''}
-        </div>
-      `;
-
-      if (success) {
-        const nextBtn = document.getElementById('nextBtn');
-        if (nextBtn) nextBtn.style.display = 'flex';
-        // Dars progressini yangilash
-        await this.loadLesson(this.lesson.id);
+      const unanswered = answers.filter(a => a.answer_id === null);
+      if (unanswered.length > 0 && !confirm("Barcha savollarga javob bermadingiz. Baribir tekshirasizmi?")) {
+        return;
       }
-    } catch (e) {
-      window.toast?.show("Natijalarni yuborishda xatolik yuz berdi.", "error");
-      container.innerHTML = `
-        <div style="text-align:center; padding:20px;">
-          <i class="ti ti-circle-x-filled" style="font-size: 80px; color: #ff4b4b; margin-bottom: 20px;"></i>
-          <h2>Xatolik yuz berdi</h2>
-          <p style="margin-top: 10px;">${e.message || "Tizimda muammo."}</p>
-          <button onclick="LessonPage.loadQuizQuestions()" class="btn" style="background:var(--duo-green); border:none; color:white; padding:12px 24px; border-radius:16px; font-weight:700; cursor:pointer; box-shadow: 0 4px 0 var(--duo-green-dark); margin-top:20px;">
-            Qayta yuklash
-          </button>
-        </div>
-      `;
-    }
+
+      const submitBtn = document.getElementById('submitQuizBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Hisoblanmoqda...';
+
+      try {
+        const res = await API.post(`/courses/lessons/${lesson.id}/quiz/submit/`, { answers });
+        const resultDiv = document.getElementById('quizResultAlert');
+        resultDiv.style.display = 'block';
+        
+        const passed = res.data.is_passed ?? res.data.passed;
+        const score = res.data.score;
+        
+        resultDiv.innerHTML = `
+          <div class="quiz-score ${passed ? 'passed' : 'failed'}">
+            Natija: ${score}% — ${passed ? "O'tdingiz! ✅" : "O'ta olmadingiz ❌"}
+          </div>
+          <button id="retryQuizBtn" class="btn" style="background:var(--ink); border:none; color:white; padding:10px 20px; border-radius:12px; font-weight:600; cursor:pointer; margin-top:12px; display:block; width:100%;">Qayta urinish</button>`;
+        
+        document.getElementById('retryQuizBtn').onclick = () => this.renderQuizUI(lesson);
+        
+        if (passed) {
+          window.toast?.show("Tabriklaymiz! Testdan muvaffaqiyatli o'tdingiz.", "success");
+          await this.loadLesson(lesson.id);
+        } else {
+          window.toast?.show("Afsuski, o'tish ballini to'play olmadingiz.", "error");
+        }
+      } catch (err) {
+        window.toast?.show(err.message || "Test topshirishda xatolik", "error");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Tekshirish';
+      }
+    };
   },
 
   renderSidebar() {
@@ -438,7 +436,7 @@ const LessonPage = {
             const done = lesson.is_completed;
             const icon = done ? 'ti-circle-check-filled icon-done' : active ? 'ti-player-play-filled icon-play' : 'ti-circle icon-lock';
             return `
-              <li class="s-lesson ${active ? 'active' : ''}" onclick="window.location.href='/lesson.html?id=${lesson.id}&slug=${this.course.slug}'">
+              <li class="s-lesson ${active ? 'active' : ''}" data-lesson-id="${lesson.id}" onclick="window.location.href='/lesson.html?id=${lesson.id}&slug=${this.course.slug}'">
                 <i class="ti ${icon} icon"></i>
                 ${lesson.title}
                 <div style="font-size:11px;color:var(--muted);margin-top:2px;">${lesson.duration_display || ''}</div>
@@ -468,17 +466,12 @@ const LessonPage = {
             watched_seconds: Math.floor(time),
           });
         } catch {
-          // jim
+          // silent
         }
       },
-      onComplete: () => {
+      onComplete: async () => {
         if (nextBtn) nextBtn.style.display = 'flex';
-        const next = this.getNextLesson();
-        if (next && nextBtn) {
-          nextBtn.onclick = () => {
-            window.location.href = `/lesson.html?id=${next.id}&slug=${this.course?.slug || ''}`;
-          };
-        }
+        await this.completeLessonProgress(true);
       },
     });
   },

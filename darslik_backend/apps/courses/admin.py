@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt
+from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse, LessonResource
 
 
 @admin.register(Category)
@@ -108,4 +108,19 @@ class QuizAttemptAdmin(admin.ModelAdmin):
     list_display = ['student', 'lesson', 'score', 'completed_at']
     list_filter = ['score', 'completed_at', 'lesson__module__course']
     search_fields = ['student__email', 'lesson__title']
+
+
+@admin.register(SavedCourse)
+class SavedCourseAdmin(admin.ModelAdmin):
+    list_display = ['user', 'course', 'saved_at']
+    list_filter = ['saved_at']
+    search_fields = ['user__email', 'course__title']
+
+
+@admin.register(LessonResource)
+class LessonResourceAdmin(admin.ModelAdmin):
+    list_display = ['title', 'lesson', 'resource_type', 'order']
+    list_filter = ['resource_type', 'lesson__module__course']
+    search_fields = ['title', 'lesson__title']
+
 

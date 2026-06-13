@@ -411,3 +411,25 @@ class SavedCourse(models.Model):
     def __str__(self):
         return f"{self.user.full_name} — {self.course.title}"
 
+
+class LessonResource(models.Model):
+    RESOURCE_TYPES = [
+        ('file', 'Fayl (PDF, DOCX va h.k.)'),
+        ('link', 'Tashqi havola'),
+    ]
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='resources')
+    title = models.CharField(max_length=200)
+    resource_type = models.CharField(max_length=10, choices=RESOURCE_TYPES, default='file')
+    file = models.FileField(upload_to='lesson_resources/', blank=True, null=True)
+    url = models.URLField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order']
+        verbose_name = "Dars resursi"
+        verbose_name_plural = "Dars resurslari"
+
+    def __str__(self):
+        return f"{self.lesson.title} — {self.title}"
+
+

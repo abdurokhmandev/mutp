@@ -204,10 +204,16 @@ const CreateCourse = {
         </div>
         <div class="section-lessons">
           ${(mod.lessons || []).map((l) => `
-            <div class="lesson-item">
-              <i class="ti ti-video" style="color:var(--blue)"></i>
-              <span style="flex:1">${l.title}</span>
-              <span style="font-size:12px;color:var(--muted)">${l.duration_display || ''}</span>
+            <div class="lesson-item" style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:12px; flex:1;">
+                <i class="ti ti-${l.lesson_type === 'quiz' ? 'help' : l.lesson_type === 'text' ? 'book' : 'video'}" style="color:var(--duo-green)"></i>
+                <span style="font-weight:600">${l.title}</span>
+                <span style="font-size:11px; color:var(--muted)">(${l.lesson_type === 'video' ? 'Video' : l.lesson_type === 'text' ? 'Matn' : 'Test'})</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:12px;color:var(--muted)">${l.duration_display || ''}</span>
+                <button type="button" class="btn-secondary btn-edit-lesson" data-module-id="${mod.id}" data-lesson-id="${l.id}" style="padding:4px 8px; border:none; cursor:pointer;"><i class="ti ti-edit"></i></button>
+              </div>
             </div>
           `).join('')}
           <div style="padding:12px 16px;background:var(--surface)">
@@ -220,57 +226,385 @@ const CreateCourse = {
     `).join('');
 
     container.querySelectorAll('.btn-add-lesson').forEach((btn) => {
-      btn.addEventListener('click', () => this.addLesson(btn.dataset.moduleId));
+      btn.addEventListener('click', () => this.openLessonModal(btn.dataset.moduleId));
+    });
+
+    container.querySelectorAll('.btn-edit-lesson').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openLessonModal(btn.dataset.moduleId, btn.dataset.lessonId);
+      });
     });
   },
 
-  async addLesson(moduleId) {
-    const title = prompt('Dars nomini kiriting:');
-    if (!title?.trim()) return;
+  currentModuleId: null,
+  currentLessonId: null,
+  quizQuestions: [],
+  lessonResources: [],
 
-    const withVideo = confirm("Video fayl yuklaysizmi?\n\nOK = video tanlash\nBekor = matn dars (videosiz)");
+  openLessonModal(moduleId, lessonId = null) {
+    this.currentModuleId = moduleId;
+    this.currentLessonId = lessonId;
+    this.quizQuestions = [];
+    this.lessonResources = [];
 
-    if (!withVideo) {
-      try {
-        await API.post(`/courses/teacher/modules/${moduleId}/lessons/`, {
-          title: title.trim(),
-          lesson_type: 'text',
-          content: '',
-        });
-        await this.refreshCourse();
-        window.toast?.show("Dars qo'shildi", 'success');
-      } catch (e) {
-        window.toast?.show(e.message, 'error');
-      }
-      return;
+    // Reset fields
+    document.getElementById('lessonForm').reset();
+    document.getElementById('modalTitle').textContent = lessonId ? 'Darsni tahrirlash' : 'Yangi dars qo\'shish';
+    document.getElementById('resourceList').innerHTML = '';
+    document.getElementById('questionsList').innerHTML = '';
+
+    // Bind UI change handlers
+    this.initLessonModalEvents();
+
+    if (lessonId) {
+      this.loadLessonData(lessonId);
+    } else {
+      this.toggleLessonTypeFields();
+      document.getElementById('lessonModal').style.display = 'flex';
     }
+  },
 
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'video/mp4,video/webm,video/*';
-    input.onchange = async () => {
-      const file = input.files?.[0];
-      if (!file) {
-        window.toast?.show('Video fayl tanlanmadi', 'error');
+  async loadLessonData(lessonId) {
+    try {
+      const res = await API.get(`/courses/lessons/${lessonId}/`);
+      const l = res.data;
+      document.getElementById('lessonTitle').value = l.title || '';
+      document.getElementById('lessonType').value = l.lesson_type || 'video';
+      document.getElementById('lessonContent').value = l.content || '';
+      
+      if (l.video_url && (l.video_url.includes('youtube.com') || l.video_url.includes('youtu.be'))) {
+        document.getElementById('videoSource').value = 'url';
+        document.getElementById('lessonVideoUrl').value = l.video_url;
+      } else {
+        document.getElementById('videoSource').value = 'file';
+      }
+
+      this.lessonResources = l.resources || [];
+      this.renderResourceList();
+
+      this.quizQuestions = l.questions || [];
+      this.renderQuestionsBuilder();
+
+      this.toggleLessonTypeFields();
+      document.getElementById('lessonModal').style.display = 'flex';
+    } catch (err) {
+      window.toast?.show('Dars ma\'lumotlarini yuklashda xatolik: ' + err.message, 'error');
+    }
+  },
+
+  closeLessonModal() {
+    document.getElementById('lessonModal').style.display = 'none';
+  },
+
+  toggleLessonTypeFields() {
+    const type = document.getElementById('lessonType').value;
+    const source = document.getElementById('videoSource').value;
+
+    document.getElementById('videoSourceGroup').style.display = type === 'video' ? 'block' : 'none';
+    document.getElementById('videoUrlGroup').style.display = (type === 'video' && source === 'url') ? 'block' : 'none';
+    document.getElementById('videoFileGroup').style.display = (type === 'video' && source === 'file') ? 'block' : 'none';
+    document.getElementById('textContentGroup').style.display = type === 'text' ? 'block' : 'none';
+    
+    // Show/Hide Builders
+    document.querySelector('.resource-builder').style.display = this.currentLessonId ? 'block' : 'none';
+    document.querySelector('.homework-builder').style.display = (type === 'quiz' || (type === 'video' && this.currentLessonId)) ? 'block' : 'none';
+  },
+
+  initLessonModalEvents() {
+    // Setup change triggers
+    document.getElementById('lessonType').onchange = () => this.toggleLessonTypeFields();
+    document.getElementById('videoSource').onchange = () => this.toggleLessonTypeFields();
+    
+    document.getElementById('resourceType').onchange = (e) => {
+      const isFile = e.target.value === 'file';
+      document.getElementById('resourceFile').style.display = isFile ? 'block' : 'none';
+      document.getElementById('resourceUrl').style.display = isFile ? 'none' : 'block';
+    };
+
+    // Add Resource Click
+    document.getElementById('addResourceBtn').onclick = async () => {
+      if (!this.currentLessonId) {
+        window.toast?.show("Avval darsning asosiy ma'lumotlarini saqlab oling!", 'warning');
+        return;
+      }
+
+      const rType = document.getElementById('resourceType').value;
+      const rTitle = document.getElementById('resourceTitle').value.trim();
+      
+      if (!rTitle) {
+        window.toast?.show("Resurs nomini kiriting!", 'error');
         return;
       }
 
       const fd = new FormData();
-      fd.append('title', title.trim());
-      fd.append('lesson_type', 'video');
-      fd.append('video_file', file);
-      const duration = await this.getVideoDuration(file);
-      if (duration) fd.append('duration_seconds', String(Math.round(duration)));
+      fd.append('title', rTitle);
+      fd.append('resource_type', rType);
+
+      if (rType === 'file') {
+        const fileInput = document.getElementById('resourceFile');
+        const file = fileInput.files[0];
+        if (!file) {
+          window.toast?.show("Fayl tanlang!", 'error');
+          return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          window.toast?.show("Fayl hajmi 10 MB dan oshmasligi kerak!", 'error');
+          return;
+        }
+        fd.append('file', file);
+      } else {
+        const url = document.getElementById('resourceUrl').value.trim();
+        if (!url) {
+          window.toast?.show("Havolani kiriting!", 'error');
+          return;
+        }
+        fd.append('url', url);
+      }
 
       try {
-        await API.post(`/courses/teacher/modules/${moduleId}/lessons/`, fd);
-        await this.refreshCourse();
-        window.toast?.show("Video dars qo'shildi", 'success');
-      } catch (e) {
-        window.toast?.show(e.message, 'error');
+        window.toast?.show("Yuklanmoqda...", "info");
+        const res = await API.post(`/courses/lessons/${this.currentLessonId}/resources/`, fd);
+        window.toast?.show("Resurs muvaffaqiyatli qo'shildi!", "success");
+        
+        // Reload resources
+        this.lessonResources.push(res.data);
+        this.renderResourceList();
+
+        // Clear fields
+        document.getElementById('resourceTitle').value = '';
+        document.getElementById('resourceFile').value = '';
+        document.getElementById('resourceUrl').value = '';
+      } catch (err) {
+        window.toast?.show(err.message, 'error');
       }
     };
-    input.click();
+
+    // Add Question Click
+    document.getElementById('addQuestionBtn').onclick = () => {
+      this.quizQuestions.push({
+        text: '',
+        options: [
+          { text: '', is_correct: true },
+          { text: '', is_correct: false }
+        ]
+      });
+      this.renderQuestionsBuilder();
+    };
+
+    // Save Form
+    document.getElementById('lessonForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const lTitle = document.getElementById('lessonTitle').value.trim();
+      const lType = document.getElementById('lessonType').value;
+      const content = document.getElementById('lessonContent').value.trim();
+      
+      if (!lTitle) {
+        window.toast?.show("Dars nomini kiriting!", 'error');
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append('title', lTitle);
+      fd.append('lesson_type', lType);
+      fd.append('content', content);
+
+      if (lType === 'video') {
+        const vSource = document.getElementById('videoSource').value;
+        if (vSource === 'url') {
+          const vUrl = document.getElementById('lessonVideoUrl').value.trim();
+          if (!vUrl) {
+            window.toast?.show("YouTube havolasini kiriting!", 'error');
+            return;
+          }
+          fd.append('video_url', vUrl);
+        } else {
+          const vFile = document.getElementById('lessonVideoFile').files[0];
+          if (vFile) {
+            fd.append('video_file', vFile);
+            const dur = await this.getVideoDuration(vFile);
+            if (dur) fd.append('duration_seconds', String(Math.round(dur)));
+          }
+        }
+      }
+
+      try {
+        let savedLesson = null;
+        if (this.currentLessonId) {
+          const res = await API.patch(`/courses/lessons/${this.currentLessonId}/update/`, fd);
+          savedLesson = res.data;
+        } else {
+          const res = await API.post(`/courses/teacher/modules/${this.currentModuleId}/lessons/`, fd);
+          savedLesson = res.data;
+          this.currentLessonId = savedLesson.id;
+        }
+
+        // Savollarni saqlash
+        if (lType === 'quiz' || (lType === 'video' && this.quizQuestions.length > 0)) {
+          const validatedQuestions = this.collectQuizData();
+          if (validatedQuestions) {
+            await API.post(`/courses/lessons/${this.currentLessonId}/quiz/`, { questions: validatedQuestions });
+          } else {
+            return;
+          }
+        }
+
+        window.toast?.show("Dars saqlandi!", 'success');
+        this.closeLessonModal();
+        await this.refreshCourse();
+      } catch (err) {
+        window.toast?.show(err.message, 'error');
+      }
+    };
+  },
+
+  renderResourceList() {
+    const container = document.getElementById('resourceList');
+    if (!container) return;
+
+    if (this.lessonResources.length === 0) {
+      container.innerHTML = '<p class="empty-state" style="padding: 8px;">Resurslar yo\'q.</p>';
+      return;
+    }
+
+    container.innerHTML = this.lessonResources.map(r => `
+      <div class="resource-builder-item">
+        <span class="title">${r.title} (${r.resource_type === 'link' ? 'Havola' : 'Fayl'})</span>
+        <button type="button" class="remove-btn" onclick="CreateCourse.deleteResource(${r.id})">✕</button>
+      </div>
+    `).join('');
+  },
+
+  async deleteResource(id) {
+    if (!confirm("Haqiqatan ham ushbu resursni o'chirmoqchimisiz?")) return;
+    try {
+      await API.delete(`/courses/lessons/resources/${id}/`);
+      window.toast?.show("Resurs o'chirildi", 'success');
+      this.lessonResources = this.lessonResources.filter(r => r.id !== id);
+      this.renderResourceList();
+    } catch (err) {
+      window.toast?.show(err.message, 'error');
+    }
+  },
+
+  renderQuestionsBuilder() {
+    const container = document.getElementById('questionsList');
+    if (!container) return;
+
+    if (this.quizQuestions.length === 0) {
+      container.innerHTML = '<p class="empty-state" style="padding: 12px;">Hali savollar qo\'shilmagan.</p>';
+      return;
+    }
+
+    container.innerHTML = '';
+    this.quizQuestions.forEach((q, qIdx) => {
+      const qBlock = document.createElement('div');
+      qBlock.className = 'question-block';
+      qBlock.dataset.index = qIdx;
+      
+      qBlock.innerHTML = `
+        <div class="question-header">
+          <span>Savol #${qIdx + 1}</span>
+          <button type="button" class="remove-question-btn" onclick="CreateCourse.removeQuestion(${qIdx})">✕</button>
+        </div>
+        <input type="text" class="form-control question-text" placeholder="Savol matnini kiriting..." value="${q.text || ''}" style="margin-bottom:12px;" oninput="CreateCourse.quizQuestions[${qIdx}].text = this.value">
+        <div class="options-list"></div>
+        <button type="button" class="add-option-btn" onclick="CreateCourse.addOption(${qIdx})">+ Variant qo'shish</button>
+      `;
+
+      const optionsContainer = qBlock.querySelector('.options-list');
+      q.options.forEach((opt, optIdx) => {
+        const optRow = document.createElement('div');
+        optRow.className = 'option-row';
+        optRow.innerHTML = `
+          <input type="radio" name="correct_${qIdx}" class="option-correct" ${opt.is_correct ? 'checked' : ''} title="To'g'ri javob" onchange="CreateCourse.setCorrectOption(${qIdx}, ${optIdx})">
+          <input type="text" class="form-control option-text" placeholder="Variant matni..." value="${opt.text || ''}" style="padding: 6px 10px; font-size:13px;" oninput="CreateCourse.quizQuestions[${qIdx}].options[${optIdx}].text = this.value">
+          <button type="button" class="remove-option-btn" onclick="CreateCourse.removeOption(${qIdx}, ${optIdx})">✕</button>
+        `;
+        optionsContainer.appendChild(optRow);
+      });
+
+      container.appendChild(qBlock);
+    });
+  },
+
+  removeQuestion(qIdx) {
+    this.quizQuestions.splice(qIdx, 1);
+    this.renderQuestionsBuilder();
+  },
+
+  addOption(qIdx) {
+    const q = this.quizQuestions[qIdx];
+    if (q.options.length >= 6) {
+      window.toast?.show("Maksimal 6 ta variant bo'lishi mumkin!", 'warning');
+      return;
+    }
+    q.options.push({ text: '', is_correct: false });
+    this.renderQuestionsBuilder();
+  },
+
+  removeOption(qIdx, optIdx) {
+    const q = this.quizQuestions[qIdx];
+    if (q.options.length <= 2) {
+      window.toast?.show("Kamida 2 ta variant bo'lishi shart!", 'warning');
+      return;
+    }
+    q.options.splice(optIdx, 1);
+    const correctLeft = q.options.some(o => o.is_correct);
+    if (!correctLeft && q.options.length > 0) {
+      q.options[0].is_correct = true;
+    }
+    this.renderQuestionsBuilder();
+  },
+
+  setCorrectOption(qIdx, optIdx) {
+    this.quizQuestions[qIdx].options.forEach((opt, i) => {
+      opt.is_correct = i === optIdx;
+    });
+  },
+
+  collectQuizData() {
+    const questions = [];
+    for (let i = 0; i < this.quizQuestions.length; i++) {
+      const q = this.quizQuestions[i];
+      const text = q.text.trim();
+      
+      if (!text) {
+        window.toast?.show(`Savol #${i+1} matni bo'sh bo'lishi mumkin emas!`, 'error');
+        return null;
+      }
+
+      if (q.options.length < 2) {
+        window.toast?.show(`Savol #${i+1} da kamida 2 ta variant bo'lishi shart!`, 'error');
+        return null;
+      }
+
+      const hasCorrect = q.options.some(opt => opt.is_correct);
+      if (!hasCorrect) {
+        window.toast?.show(`Savol #${i+1} da to'g'ri javob belgilanmagan!`, 'error');
+        return null;
+      }
+
+      const cleanedOptions = q.options.map(opt => {
+        return {
+          text: opt.text.trim(),
+          is_correct: opt.is_correct
+        };
+      });
+
+      const hasEmptyOption = cleanedOptions.some(opt => !opt.text);
+      if (hasEmptyOption) {
+        window.toast?.show(`Savol #${i+1} da variantlar matni bo'sh bo'lishi mumkin emas!`, 'error');
+        return null;
+      }
+
+      questions.push({
+        text,
+        options: cleanedOptions,
+        order: i
+      });
+    }
+    return questions;
   },
 
   getVideoDuration(file) {

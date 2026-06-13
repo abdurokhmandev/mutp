@@ -69,8 +69,21 @@
     @media(max-width: 900px) {
       .layout { flex-direction: column; }
       .right-panel { width: 100%; position: static; }
-      .stepper { flex-wrap: wrap; }
     }
+    
+    /* Homework & Resource Builders */
+    .question-block { border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:12px; background: var(--surface); position: relative; }
+    .question-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-weight:600; color: var(--ink); }
+    .option-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; width: 100%; }
+    .remove-question-btn, .remove-option-btn { background:none; border:none; color: var(--rose); cursor:pointer; font-size:16px; display: flex; align-items: center; justify-content: center; }
+    .remove-question-btn:hover, .remove-option-btn:hover { color: var(--rose-dark); }
+    .add-option-btn { background:none; border:1px dashed var(--border-2); border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; width:100%; text-align:center; transition:0.2s; }
+    .add-option-btn:hover { background:var(--surface-2); border-color:var(--muted); }
+    .empty-state { color: var(--muted); font-size:14px; padding:24px; text-align:center; }
+    
+    .resource-builder-item { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; }
+    .resource-builder-item .title { font-size: 13px; font-weight: 600; }
+    .resource-builder-item .remove-btn { color: var(--rose); cursor: pointer; border: none; background: none; }
   </style>
 </head>
 <body>
@@ -264,5 +277,84 @@
       window.scrollTo(0, 0);
     }
   </script>
+
+  <!-- Dars Tahrirlash Modali -->
+  <div id="lessonModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+    <div class="modal-content" style="background:var(--white); border-radius:16px; width:100%; max-width:600px; max-height:90vh; overflow-y:auto; padding:24px; box-shadow:0 8px 30px rgba(0,0,0,0.15); display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:12px;">
+        <h3 id="modalTitle" style="font-family:'Plus Jakarta Sans'; font-size:18px;">Darsni tahrirlash</h3>
+        <button type="button" onclick="CreateCourse.closeLessonModal()" style="background:none; border:none; font-size:20px; cursor:pointer; color:var(--muted);"><i class="ti ti-x"></i></button>
+      </div>
+      
+      <form id="lessonForm" style="display:flex; flex-direction:column; gap:16px;">
+        <div class="form-group">
+          <label class="form-label">Dars nomi</label>
+          <input type="text" id="lessonTitle" class="form-control" placeholder="Dars nomini kiriting..." required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Dars turi</label>
+          <select id="lessonType" class="form-control">
+            <option value="video">Video dars</option>
+            <option value="text">Matn dars</option>
+            <option value="quiz">Test (Quiz)</option>
+          </select>
+        </div>
+
+        <div id="videoSourceGroup" class="form-group">
+          <label class="form-label">Video manbasi</label>
+          <select id="videoSource" class="form-control">
+            <option value="url">YouTube Havolasi</option>
+            <option value="file">Video fayl yuklash</option>
+          </select>
+        </div>
+        
+        <div id="videoUrlGroup" class="form-group">
+          <label class="form-label">YouTube Havolasi</label>
+          <input type="url" id="lessonVideoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+
+        <div id="videoFileGroup" class="form-group" style="display:none;">
+          <label class="form-label">Video fayli (Maks 100MB)</label>
+          <input type="file" id="lessonVideoFile" class="form-control" accept="video/mp4,video/*">
+        </div>
+        
+        <div id="textContentGroup" class="form-group" style="display:none;">
+          <label class="form-label">Matn mazmuni</label>
+          <textarea id="lessonContent" class="form-control" rows="5" placeholder="Dars matnini kiriting (Markdown yoki oddiy matn)..."></textarea>
+        </div>
+
+        <!-- Resurs Qo'shish UI -->
+        <div class="resource-builder" style="border-top:1px solid var(--border); padding-top:16px;">
+          <label style="font-weight:700; font-size:14px; margin-bottom:8px; display:block;">Qo'shimcha materiallar (PDF, havola va h.k.)</label>
+          <div id="resourceList" style="margin-bottom:12px;"></div>
+          <div class="resource-add-row" style="display:flex; flex-wrap:wrap; gap:8px;">
+            <select id="resourceType" class="form-control" style="flex:1; min-width:120px;">
+              <option value="file">Fayl yuklash</option>
+              <option value="link">Havola qo'shish</option>
+            </select>
+            <input type="text" id="resourceTitle" class="form-control" placeholder="Nomi (masalan: Dars konspekti)" style="flex:2; min-width:180px;">
+            <input type="file" id="resourceFile" class="form-control" style="flex:2; min-width:180px;">
+            <input type="url" id="resourceUrl" class="form-control" placeholder="https://..." style="display:none; flex:2; min-width:180px;">
+            <button type="button" id="addResourceBtn" class="btn-secondary" style="padding:10px 16px;">+ Qo'shish</button>
+          </div>
+        </div>
+
+        <!-- Uyga vazifa (Test savollari) builder -->
+        <div class="homework-builder" style="border-top:1px solid var(--border); padding-top:16px;">
+          <div class="homework-builder-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <label style="font-weight:700; font-size:14px;">Uyga vazifa (test savollari)</label>
+            <button type="button" id="addQuestionBtn" class="btn-secondary" style="font-size:12px; padding:6px 12px;">+ Savol qo'shish</button>
+          </div>
+          <div id="questionsList" style="max-height:250px; overflow-y:auto; display:flex; flex-direction:column; gap:12px;"></div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid var(--border); padding-top:16px; margin-top:8px;">
+          <button type="button" class="btn-secondary" onclick="CreateCourse.closeLessonModal()">Yopish</button>
+          <button type="submit" class="btn-primary" id="saveLessonBtn">Darsni saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </body>
 </html>

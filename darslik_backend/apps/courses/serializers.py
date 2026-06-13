@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from apps.users.serializers import UserProfileSerializer
-from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse
+from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse, LessonResource
 
 User = get_user_model()
 
@@ -63,44 +63,7 @@ class LessonSerializer(serializers.ModelSerializer):
 
 
 
-class LessonDetailSerializer(serializers.ModelSerializer):
-    duration_display = serializers.CharField(read_only=True)
-    current_progress = serializers.SerializerMethodField()
-    video_file = serializers.SerializerMethodField()
 
-    class Meta:
-        model = Lesson
-        fields = [
-            'id', 'title', 'order', 'lesson_type', 'duration_seconds', 'duration_display',
-            'is_free_preview', 'video_url', 'video_file', 'content', 'live_url', 'live_scheduled',
-            'current_progress'
-        ]
-
-    def get_video_file(self, obj):
-        if not obj.video_file:
-            return None
-        request = self.context.get('request')
-        if request is not None:
-            return request.build_absolute_uri(obj.video_file.url)
-        return obj.video_file.url
-
-    def get_current_progress(self, obj):
-        request = self.context.get('request')
-        if not request or not request.user or request.user.is_anonymous:
-            return None
-        
-        enrollment = Enrollment.objects.filter(student=request.user, course=obj.module.course).first()
-        if not enrollment:
-            return None
-            
-        progress = LessonProgress.objects.filter(enrollment=enrollment, lesson=obj).first()
-        if progress:
-            return {
-                "watched_seconds": progress.watched_seconds,
-                "is_completed": progress.is_completed,
-                "last_watched": progress.last_watched
-            }
-        return {"watched_seconds": 0, "is_completed": False}
 
 
 class ModuleSerializer(serializers.ModelSerializer):
@@ -258,4 +221,63 @@ class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ['id', 'text', 'order', 'options']
+
+
+class LessonResourceSerializer(serializers.ModelSerializer):
+    file_size = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LessonResource
+        fields = ['id', 'title', 'resource_type', 'file', 'url', 'file_size']
+
+    def get_file_size(self, obj):
+        if obj.file:
+            try:
+                return obj.file.size  # bytes
+            except Exception:
+                return None
+        return None
+
+
+class LessonDetailSerializer(serializers.ModelSerializer):
+    duration_display = serializers.CharField(read_only=True)
+    current_progress = serializers.SerializerMethodField()
+    video_file = serializers.SerializerMethodField()
+    resources = LessonResourceSerializer(many=True, read_only=True)
+    questions = QuestionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Lesson
+        fields = [
+            'id', 'title', 'order', 'lesson_type', 'duration_seconds', 'duration_display',
+            'is_free_preview', 'video_url', 'video_file', 'content', 'live_url', 'live_scheduled',
+            'current_progress', 'resources', 'questions'
+        ]
+
+    def get_video_file(self, obj):
+        if not obj.video_file:
+            return None
+        request = self.context.get('request')
+        if request is not None:
+            return request.build_absolute_uri(obj.video_file.url)
+        return obj.video_file.url
+
+    def get_current_progress(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user or request.user.is_anonymous:
+            return None
+        
+        enrollment = Enrollment.objects.filter(student=request.user, course=obj.module.course).first()
+        if not enrollment:
+            return None
+            
+        progress = LessonProgress.objects.filter(enrollment=enrollment, lesson=obj).first()
+        if progress:
+            return {
+                "watched_seconds": progress.watched_seconds,
+                "is_completed": progress.is_completed,
+                "last_watched": progress.last_watched
+            }
+        return {"watched_seconds": 0, "is_completed": False}
+
 

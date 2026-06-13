@@ -8,7 +8,7 @@ from rest_framework.pagination import PageNumberPagination
 
 from apps.core.utils import success_response, error_response
 from apps.users.models import User, TeacherProfile
-from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse
+from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse, LessonResource
 from .permissions import IsTeacher, IsVerifiedTeacher, IsCourseOwner, IsEnrolledOrFreePreview
 from .serializers import (
     CategorySerializer,
@@ -21,7 +21,8 @@ from .serializers import (
     ModuleSerializer,
     LessonSerializer,
     QuestionSerializer,
-    AnswerOptionSerializer
+    AnswerOptionSerializer,
+    LessonResourceSerializer
 )
 
 
@@ -260,7 +261,10 @@ class LessonProgressUpdateView(APIView):
 
 
 class LessonQuizView(APIView):
-    permission_classes = [IsAuthenticated, IsEnrolledOrFreePreview]
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated(), IsVerifiedTeacher()]
+        return [IsAuthenticated(), IsEnrolledOrFreePreview()]
 
     def get(self, request, id):
         try:
@@ -273,6 +277,37 @@ class LessonQuizView(APIView):
         questions = Question.objects.filter(lesson=lesson)
         serializer = QuestionSerializer(questions, many=True, context={'request': request})
         return success_response(data=serializer.data, message="Quiz savollari")
+
+    def post(self, request, id):
+        try:
+            lesson = Lesson.objects.get(id=id)
+        except Lesson.DoesNotExist:
+            return error_response(message="Dars topilmadi", status_code=404)
+
+        if lesson.module.course.teacher != request.user:
+            return error_response(message="Ushbu dars sizga tegishli emas", status_code=403)
+
+        # delete old questions and create new ones (full replace)
+        lesson.questions.all().delete()
+        for q_idx, q_data in enumerate(request.data.get('questions', [])):
+            text = q_data.get('text', '').strip()
+            if not text:
+                continue
+            question = Question.objects.create(
+                lesson=lesson,
+                text=text,
+                order=q_data.get('order', q_idx)
+            )
+            for opt in q_data.get('options', []):
+                opt_text = opt.get('text', '').strip()
+                if not opt_text:
+                    continue
+                AnswerOption.objects.create(
+                    question=question,
+                    text=opt_text,
+                    is_correct=bool(opt.get('is_correct', False))
+                )
+        return success_response(data={'success': True}, message="Test savollari muvaffaqiyatli saqlandi")
 
 
 class LessonQuizSubmitView(APIView):
@@ -291,7 +326,15 @@ class LessonQuizSubmitView(APIView):
         except Enrollment.DoesNotExist:
             return error_response(message="Siz ushbu kursga yozilmagansiz", status_code=403)
 
-        answers = request.data.get('answers', {})
+        raw_answers = request.data.get('answers', {})
+        answers = {}
+        if isinstance(raw_answers, list):
+            for item in raw_answers:
+                if isinstance(item, dict) and 'question_id' in item:
+                    answers[str(item['question_id'])] = item.get('answer_id')
+        elif isinstance(raw_answers, dict):
+            answers = raw_answers
+
         questions = Question.objects.filter(lesson=lesson)
         total = questions.count()
 
@@ -345,6 +388,63 @@ class LessonQuizSubmitView(APIView):
         }
 
         return success_response(data=data, message="Test natijangiz hisoblandi")
+
+
+class LessonResourceCreateView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def post(self, request, id):
+        try:
+            lesson = Lesson.objects.get(id=id)
+        except Lesson.DoesNotExist:
+            return error_response(message="Dars topilmadi", status_code=404)
+
+        if lesson.module.course.teacher != request.user:
+            return error_response(message="Ushbu dars sizga tegishli emas", status_code=403)
+
+        title = request.data.get('title')
+        resource_type = request.data.get('resource_type', 'file')
+
+        if not title:
+            return error_response(message="Resurs nomi kiritilishi shart", status_code=400)
+
+        file_obj = request.FILES.get('file')
+        url = request.data.get('url', '')
+
+        if resource_type == 'file':
+            if not file_obj:
+                return error_response(message="Fayl yuklanishi shart", status_code=400)
+            
+            # File validation
+            if file_obj.size > 10 * 1024 * 1024:
+                return error_response(message="Fayl hajmi 10 MB dan oshmasligi kerak", status_code=400)
+            
+            ext = file_obj.name.split('.')[-1].lower()
+            allowed_extensions = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'jpg', 'png']
+            if ext not in allowed_extensions:
+                return error_response(
+                    message=f"Ruxsat berilmagan fayl turi. Ruxsat etilganlar: {', '.join(allowed_extensions)}",
+                    status_code=400
+                )
+        elif resource_type == 'link':
+            if not url:
+                return error_response(message="Havola kiritilishi shart", status_code=400)
+
+        # Set order
+        max_order = lesson.resources.aggregate(m=models.Max('order'))['m'] or 0
+        order = max_order + 1
+
+        resource = LessonResource.objects.create(
+            lesson=lesson,
+            title=title,
+            resource_type=resource_type,
+            file=file_obj if resource_type == 'file' else None,
+            url=url if resource_type == 'link' else '',
+            order=order
+        )
+
+        serializer = LessonResourceSerializer(resource, context={'request': request})
+        return success_response(data=serializer.data, message="Dars resursi qo'shildi", status_code=201)
 
 
 
@@ -627,6 +727,50 @@ class LessonCreateView(APIView):
         return success_response(data=serializer.data, message="Modulga yangi dars qo'shildi", status_code=201)
 
 
+class LessonUpdateView(APIView):
+    permission_classes = [IsVerifiedTeacher]
+
+    def patch(self, request, id):
+        try:
+            lesson = Lesson.objects.get(id=id)
+        except Lesson.DoesNotExist:
+            return error_response(message="Dars topilmadi", status_code=404)
+
+        if lesson.module.course.teacher != request.user:
+            return error_response(message="Ushbu dars sizga tegishli emas", status_code=403)
+
+        title = request.data.get('title')
+        lesson_type = request.data.get('lesson_type')
+        video_url = request.data.get('video_url')
+        content = request.data.get('content')
+        live_url = request.data.get('live_url')
+        live_scheduled = request.data.get('live_scheduled')
+        is_free_preview = request.data.get('is_free_preview')
+
+        if title is not None:
+            lesson.title = title
+        if lesson_type is not None:
+            lesson.lesson_type = lesson_type
+        if video_url is not None:
+            lesson.video_url = video_url
+        if content is not None:
+            lesson.content = content
+        if live_url is not None:
+            lesson.live_url = live_url
+        if live_scheduled is not None:
+            lesson.live_scheduled = live_scheduled
+        if is_free_preview is not None:
+            lesson.is_free_preview = str(is_free_preview).lower() in ('true', '1', 'yes')
+
+        video_file = request.FILES.get('video_file')
+        if video_file:
+            lesson.video_file = video_file
+
+        lesson.save()
+        serializer = LessonSerializer(lesson, context={'request': request})
+        return success_response(data=serializer.data, message="Dars muvaffaqiyatli yangilandi")
+
+
 class TeacherDashboardView(APIView):
     permission_classes = [IsVerifiedTeacher]
 
@@ -706,3 +850,20 @@ class TeacherDashboardView(APIView):
         }
 
         return success_response(data=data, message="Ustoz boshqaruv paneli ma'lumotlari")
+
+
+class LessonResourceDeleteView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def delete(self, request, id):
+        try:
+            res = LessonResource.objects.get(id=id)
+        except LessonResource.DoesNotExist:
+            return error_response(message="Resurs topilmadi", status_code=404)
+        
+        if res.lesson.module.course.teacher != request.user:
+            return error_response(message="Ruxsat berilmagan", status_code=403)
+            
+        res.delete()
+        return success_response(message="Resurs o'chirildi")
+
