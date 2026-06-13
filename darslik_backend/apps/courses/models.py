@@ -397,3 +397,17 @@ class QuizAttempt(models.Model):
     def __str__(self):
         return f"{self.student.full_name} — {self.lesson.title}: {self.score}%"
 
+
+class SavedCourse(models.Model):
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='saved_courses')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='saved_by')
+    saved_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Saqlangan kurs"
+        verbose_name_plural = "Saqlangan kurslar"
+        unique_together = ['user', 'course']
+
+    def __str__(self):
+        return f"{self.user.full_name} — {self.course.title}"
+

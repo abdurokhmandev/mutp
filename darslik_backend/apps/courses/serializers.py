@@ -1,6 +1,10 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from apps.users.serializers import UserProfileSerializer
-from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt
+from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse
+
+User = get_user_model()
+
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -147,21 +151,68 @@ class CourseListSerializer(serializers.ModelSerializer):
         return obj.thumbnail.url
 
 
+class InstructorMiniSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+    students_count = serializers.SerializerMethodField()
+    courses_count = serializers.SerializerMethodField()
+    bio = serializers.CharField(source='teacherprofile.bio', default='')
+    specialization = serializers.CharField(source='teacherprofile.specialization', default='')
+
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'avatar', 'bio', 'specialization',
+                  'rating', 'students_count', 'courses_count']
+
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}".strip() or obj.username
+
+    def get_rating(self, obj):
+        courses = obj.courses.filter(status='published')
+        if not courses.exists():
+            return 0.0
+        from django.db.models import Avg
+        from .models import Review
+        qs = Review.objects.filter(enrollment__course__in=courses)
+        if not qs.exists():
+            return 0.0
+        return round(qs.aggregate(avg=Avg('rating'))['avg'], 1)
+
+    def get_students_count(self, obj):
+        courses = obj.courses.filter(status='published')
+        if not courses.exists():
+            return 0
+        from .models import Enrollment
+        return Enrollment.objects.filter(course__in=courses).values('student').distinct().count()
+
+    def get_courses_count(self, obj):
+        return obj.courses.filter(status='published').count()
+
+
 class CourseDetailSerializer(CourseListSerializer):
     description = serializers.CharField()
     total_duration_seconds = serializers.IntegerField(read_only=True)
     modules = ModuleSerializer(many=True, read_only=True)
     is_enrolled = serializers.SerializerMethodField()
+    is_saved = serializers.SerializerMethodField()
+    instructor = InstructorMiniSerializer(source='teacher', read_only=True)
 
     class Meta:
         model = Course
-        fields = CourseListSerializer.Meta.fields + ['description', 'total_duration_seconds', 'modules', 'is_enrolled']
+        fields = CourseListSerializer.Meta.fields + ['description', 'total_duration_seconds', 'modules', 'is_enrolled', 'is_saved', 'instructor']
 
     def get_is_enrolled(self, obj):
         request = self.context.get('request')
         if not request or not request.user or request.user.is_anonymous:
             return False
         return Enrollment.objects.filter(student=request.user, course=obj).exists()
+
+    def get_is_saved(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user or request.user.is_anonymous:
+            return False
+        from .models import SavedCourse
+        return SavedCourse.objects.filter(user=request.user, course=obj).exists()
 
 
 class EnrollmentSerializer(serializers.ModelSerializer):

@@ -77,11 +77,32 @@ const CourseDetail = {
     }
   },
 
+  updateSaveBtn() {
+    const saveBtn = document.getElementById('saveBtn');
+    if (!saveBtn) return;
+
+    if (this.course.is_saved) {
+      saveBtn.innerHTML = 'Saqlangan ✓ <i class="ti ti-heart-filled"></i>';
+      saveBtn.style.background = 'var(--duo-green)';
+      saveBtn.style.color = 'white';
+      saveBtn.style.borderColor = 'var(--duo-green)';
+    } else {
+      saveBtn.innerHTML = 'Saqlash <i class="ti ti-heart"></i>';
+      saveBtn.style.background = 'transparent';
+      saveBtn.style.color = 'var(--ink-2)';
+      saveBtn.style.borderColor = 'var(--border)';
+    }
+  },
+
   getFirstLesson() {
     for (const mod of this.course.modules || []) {
       if (mod.lessons?.length) return mod.lessons[0];
     }
     return null;
+  },
+
+  isYouTubeUrl(url) {
+    return url.includes('youtube.com') || url.includes('youtu.be');
   },
 
   async init() {
@@ -123,13 +144,75 @@ const CourseDetail = {
         `;
       }
 
+      // 1. Clickable Instructor and Real Instructor details
+      const instructor = this.course.instructor || {
+        id: null,
+        full_name: this.course.teacher_name,
+        specialization: "O'qituvchi",
+        avatar: this.course.teacher_avatar,
+        bio: "Ushbu o'qituvchi hali bio qo'shmagan.",
+        rating: this.course.average_rating,
+        students_count: this.course.student_count,
+        courses_count: this.course.lessons_count ? 1 : 0
+      };
+
       const instructorRow = document.querySelector('.instructor-row');
       if (instructorRow) {
+        instructorRow.style.cursor = 'pointer';
+        instructorRow.style.padding = '8px';
+        instructorRow.style.borderRadius = '12px';
+        instructorRow.style.transition = 'background 0.2s';
+        instructorRow.onmouseover = () => { instructorRow.style.background = 'var(--surface-2)'; };
+        instructorRow.onmouseout = () => { instructorRow.style.background = 'transparent'; };
+        
+        let avatarHtml = instructor.avatar 
+          ? `<img src="${instructor.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+          : App.initials(instructor.full_name);
+        
         instructorRow.innerHTML = `
-          <div class="avatar-md">${App.initials(this.course.teacher_name)}</div>
+          <div class="avatar-md" style="display:flex;align-items:center;justify-content:center;overflow:hidden;">${avatarHtml}</div>
           <div>
-            <div style="font-weight:600;">${this.course.teacher_name}</div>
+            <div style="font-weight:600;">${instructor.full_name}</div>
             <div style="font-size:12px;color:var(--blue-mid)">O'qituvchi</div>
+          </div>
+        `;
+        if (instructor.id) {
+          instructorRow.onclick = () => {
+            window.location.href = `/profile.html?id=${instructor.id}`;
+          };
+        }
+      }
+
+      const instBox = document.querySelector('.inst-box');
+      if (instBox) {
+        instBox.style.cursor = 'pointer';
+        instBox.style.padding = '20px';
+        instBox.style.borderRadius = '16px';
+        instBox.style.transition = 'background 0.2s';
+        instBox.onmouseover = () => { instBox.style.background = 'var(--surface-2)'; };
+        instBox.onmouseout = () => { instBox.style.background = 'transparent'; };
+        
+        if (instructor.id) {
+          instBox.onclick = () => {
+            window.location.href = `/profile.html?id=${instructor.id}`;
+          };
+        }
+
+        let avatarHtml = instructor.avatar 
+          ? `<img src="${instructor.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+          : App.initials(instructor.full_name);
+
+        instBox.innerHTML = `
+          <div class="inst-avatar" style="font-size:24px;color:white;display:flex;align-items:center;justify-content:center;background:var(--blue-mid);overflow:hidden;">${avatarHtml}</div>
+          <div class="inst-info" style="flex:1;">
+            <h4 class="name" style="margin:0;font-family:'Plus Jakarta Sans';">${instructor.full_name}</h4>
+            <p class="specialization" style="margin:4px 0 8px 0;font-size:13px;color:var(--muted);">${instructor.specialization || "O'qituvchi"}</p>
+            <div class="inst-stats" style="display:flex;gap:12px;font-size:12px;color:var(--ink-2);margin-bottom:8px;">
+              <div class="rating"><i class="ti ti-star-filled" style="color:var(--amber)"></i> ${instructor.rating?.toFixed(1) || '—'} Reyting</div>
+              <div class="students-count"><i class="ti ti-users"></i> ${instructor.students_count?.toLocaleString('uz-UZ') || 0} O'quvchi</div>
+              <div class="courses-count"><i class="ti ti-video"></i> ${instructor.courses_count || 0} ta Kurs</div>
+            </div>
+            <div class="inst-bio" style="font-size:13px;line-height:1.5;color:var(--muted);">${instructor.bio || "Bu o'qituvchi hali bio qo'shmagan."}</div>
           </div>
         `;
       }
@@ -145,7 +228,7 @@ const CourseDetail = {
         `;
       }
 
-      // 1. Nima o'rganasiz block rendering
+      // Nima o'rganasiz block rendering
       const outcomesBlock = document.getElementById('learningOutcomesBlock');
       const outcomesGrid = document.getElementById('learningOutcomesGrid');
       if (outcomesBlock && outcomesGrid) {
@@ -162,7 +245,32 @@ const CourseDetail = {
       this.renderModules();
       this.updateCta();
 
-      // 2. Preview Video / Thumbnail rendering
+      // 2. Save Button Initialization & Handler
+      const saveBtn = document.getElementById('saveBtn');
+      if (saveBtn) {
+        this.updateSaveBtn();
+        saveBtn.onclick = async (e) => {
+          e.preventDefault();
+          if (!App.isLoggedIn()) {
+            window.location.href = '/auth.html';
+            return;
+          }
+          try {
+            const res = await API.post(`/courses/${this.course.slug}/save/`);
+            this.course.is_saved = res.data.saved;
+            this.updateSaveBtn();
+            if (res.data.saved) {
+              window.toast?.show('Kurs saqlandi', 'success');
+            } else {
+              window.toast?.show('Kurs saqlanganlardan olib tashlandi', 'info');
+            }
+          } catch (err) {
+            window.toast?.show(err.message, 'error');
+          }
+        };
+      }
+
+      // 3. Preview Video / Thumbnail rendering (Strict Fallback / No Broken Images)
       const preview = document.getElementById('previewVideoContainer');
       if (preview) {
         let previewUrl = this.course.preview_video_url;
@@ -170,7 +278,6 @@ const CourseDetail = {
         let fallbackLessonId = null;
 
         if (!previewUrl) {
-          // find first free preview lesson with a video link
           for (const mod of this.course.modules || []) {
             for (const les of mod.lessons || []) {
               if (les.is_free_preview && (les.video_file || les.video_url)) {
@@ -184,19 +291,43 @@ const CourseDetail = {
           }
         }
 
-        // Set cover background
-        if (this.course.thumbnail) {
-          preview.style.backgroundImage = `url(${this.course.thumbnail})`;
-          preview.style.backgroundSize = 'cover';
-          preview.style.backgroundPosition = 'center';
+        let imageUrl = this.course.thumbnail;
+        if (!imageUrl && previewUrl && this.isYouTubeUrl(previewUrl)) {
+          let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+          let match = previewUrl.match(regExp);
+          if (match && match[2].length === 11) {
+            imageUrl = `https://img.youtube.com/vi/${match[2]}/hqdefault.jpg`;
+          }
+        }
+
+        if (imageUrl) {
+          preview.innerHTML = `
+            <img id="previewThumbImg" src="${imageUrl}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:12px;position:absolute;top:0;left:0;z-index:1;">
+            <div class="play-btn" style="z-index:2;"><i class="ti ti-player-play-filled"></i></div>
+            <div id="previewFallback" style="background: linear-gradient(135deg, var(--duo-green-bg), var(--duo-green)); display:none; align-items:center; justify-content:center; height:100%; width:100%; border-radius:12px; position:absolute; top:0; left:0; z-index:1;">
+              <span style="font-size:48px;">📚</span>
+            </div>
+          `;
+          const thumbImg = document.getElementById('previewThumbImg');
+          const fallbackDiv = document.getElementById('previewFallback');
+          if (thumbImg && fallbackDiv) {
+            thumbImg.onerror = () => {
+              thumbImg.style.display = 'none';
+              fallbackDiv.style.display = 'flex';
+            };
+          }
         } else {
-          preview.style.background = 'linear-gradient(135deg, var(--duo-green), var(--duo-green-dark))';
+          preview.innerHTML = `
+            <div style="background: linear-gradient(135deg, var(--duo-green-bg), var(--duo-green)); display:flex; align-items:center; justify-content:center; height:100%; width:100%; border-radius:12px; position:absolute; top:0; left:0; z-index:1;">
+              <span style="font-size:48px;">📚</span>
+            </div>
+            <div class="play-btn" style="z-index:2;"><i class="ti ti-player-play-filled"></i></div>
+          `;
         }
 
         const firstLesson = this.getFirstLesson();
         preview.onclick = () => {
           if (this.course.is_enrolled && firstLesson) {
-            // enrolled -> go straight to first lesson
             window.location.href = `/lesson.html?id=${firstLesson.id}&slug=${this.course.slug}`;
           } else if (previewUrl) {
             if (isFreeLessonPreview && fallbackLessonId) {
@@ -205,7 +336,6 @@ const CourseDetail = {
               window.open(previewUrl, '_blank');
             }
           } else {
-            // no preview url, enroll first
             this.enroll();
           }
         };

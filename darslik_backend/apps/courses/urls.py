@@ -18,7 +18,9 @@ from .views import (
     CoursePublishView,
     ModuleCreateView,
     LessonCreateView,
-    TeacherDashboardView
+    TeacherDashboardView,
+    SaveCourseView,
+    SavedCoursesListView
 )
 
 urlpatterns = [
@@ -27,6 +29,7 @@ urlpatterns = [
     path('',                             CourseListView.as_view(), name='course_list'),
     path('<slug:slug>/',                 CourseDetailView.as_view(), name='course_detail'),
     path('<slug:slug>/enroll/',          EnrollView.as_view(), name='enroll'),
+    path('<slug:slug>/save/',            SaveCourseView.as_view(), name='save_course'),
     path('<slug:slug>/review/',          ReviewCreateView.as_view(), name='review_create'),
 
     # Darslar
@@ -40,6 +43,7 @@ urlpatterns = [
 
     # O'quvchi
     path('student/enrollments/',         MyEnrollmentsView.as_view(), name='my_enrollments'),
+    path('student/saved/',               SavedCoursesListView.as_view(), name='saved_courses'),
 
     # O'qituvchi
     path('teacher/dashboard/',           TeacherDashboardView.as_view(), name='teacher_dashboard'),

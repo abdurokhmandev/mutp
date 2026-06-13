@@ -135,8 +135,9 @@
       <span class="logo-text">MUTP O'quvchi</span>
     </div>
     <span class="nav-section">Asosiy</span>
-    <a class="nav-item active" href="/dashboard-student.html"><i class="ti ti-layout-dashboard"></i>Dashboard</a>
+    <a class="nav-item active" href="#" id="dashboardTabBtn" onclick="DashboardStudent.switchTab('dashboard')"><i class="ti ti-layout-dashboard"></i>Dashboard</a>
     <a class="nav-item" href="/courses.html"><i class="ti ti-books"></i>Kurs sotib olish</a>
+    <a class="nav-item" href="#" id="savedTabBtn" onclick="DashboardStudent.switchTab('saved')"><i class="ti ti-heart"></i>Saqlangan kurslar</a>
     <span class="nav-section">Sahifalar</span>
     <a class="nav-item" href="/"><i class="ti ti-home"></i>Bosh sahifa</a>
     <a class="nav-item" href="/profile.html"><i class="ti ti-user"></i>Profilim</a>
@@ -165,7 +166,8 @@
     </div>
 
     <div class="content">
-      <!-- Metrics row -->
+      <div id="dashboardMainContent">
+        <!-- Metrics row -->
       <div class="metrics-grid stats-row">
         <div class="metric stat-info">
           <div class="metric-header">
@@ -249,6 +251,19 @@
             <div class="cert-list">
               <p style="color:var(--text-2);font-size:13px">Yuklanmoqda...</p>
             </div>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <!-- Saved Courses Content (hidden by default) -->
+      <div id="savedCoursesContent" style="display: none;">
+        <div class="card">
+          <div class="card-head" style="display: flex; justify-content: space-between; align-items: center; margin: -20px -20px 20px; padding: 14px 20px; border-bottom: 2px solid var(--border);">
+            <span class="card-head-title">Saqlangan kurslarim</span>
+          </div>
+          <div id="savedCoursesGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+            <p style="color:var(--text-2);font-size:13px">Yuklanmoqda...</p>
           </div>
         </div>
       </div>

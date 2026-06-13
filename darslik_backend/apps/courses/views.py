@@ -8,7 +8,7 @@ from rest_framework.pagination import PageNumberPagination
 
 from apps.core.utils import success_response, error_response
 from apps.users.models import User, TeacherProfile
-from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt
+from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse
 from .permissions import IsTeacher, IsVerifiedTeacher, IsCourseOwner, IsEnrolledOrFreePreview
 from .serializers import (
     CategorySerializer,
@@ -141,6 +141,40 @@ class EnrollView(APIView):
         enrollment = Enrollment.objects.create(student=request.user, course=course)
         serializer = EnrollmentSerializer(enrollment, context={'request': request})
         return success_response(data=serializer.data, message="Kursga muvaffaqiyatli yozildingiz", status_code=201)
+
+
+class SaveCourseView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, slug):
+        try:
+            course = Course.objects.get(slug=slug, status=Course.Status.PUBLISHED)
+        except Course.DoesNotExist:
+            return error_response(message="Kurs topilmadi", status_code=404)
+
+        saved_course = SavedCourse.objects.filter(user=request.user, course=course)
+        if saved_course.exists():
+            saved_course.delete()
+            return success_response(data={"saved": False}, message="Kurs saqlanganlardan olib tashlandi")
+        else:
+            SavedCourse.objects.create(user=request.user, course=course)
+            return success_response(data={"saved": True}, message="Kurs muvaffaqiyatli saqlandi")
+
+
+class SavedCoursesListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        saved_relations = SavedCourse.objects.filter(user=request.user).select_related('course')
+        courses = [rel.course for rel in saved_relations]
+        
+        # Paginate courses
+        paginator = CoursePagination()
+        paginated_courses = paginator.paginate_queryset(courses, request, view=self)
+        
+        serializer = CourseListSerializer(paginated_courses, many=True, context={'request': request})
+        paginated_data = paginator.get_paginated_response(serializer.data).data
+        return success_response(data=paginated_data, message="Saqlangan kurslar ro'yxati")
 
 
 class MyEnrollmentsView(APIView):
