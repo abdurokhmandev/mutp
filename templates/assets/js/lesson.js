@@ -521,18 +521,19 @@ const LessonPage = {
   },
 
   getNextLesson() {
-    const idx = this.allLessons.findIndex((l) => l.id === this.lesson.id);
+    if (!this.lesson) return null;
+    const idx = this.allLessons.findIndex((l) => l.id === this.lesson?.id);
     return idx >= 0 && idx < this.allLessons.length - 1 ? this.allLessons[idx + 1] : null;
   },
 
   async checkLessonHomeworks() {
-    const isCompleted = this.lesson.current_progress?.is_completed;
-    if (!isCompleted) return;
+    const isCompleted = this.lesson?.current_progress?.is_completed;
+    if (!isCompleted || !this.course?.slug) return;
 
     try {
       const res = await API.get(`/courses/teacher/courses/${this.course.slug}/homeworks/`);
-      const homeworks = res.data.data || [];
-      const lessonHw = homeworks.filter(hw => hw.after_lesson === this.lesson.id && hw.submission_status === 'pending');
+      const homeworks = res.data?.data || [];
+      const lessonHw = homeworks.filter(hw => hw.after_lesson === this.lesson?.id && hw.submission_status === 'pending');
       
       const oldBanner = document.getElementById('lessonHwBanner');
       if (oldBanner) oldBanner.remove();
