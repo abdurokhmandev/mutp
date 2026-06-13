@@ -206,9 +206,9 @@ const CreateCourse = {
           ${(mod.lessons || []).map((l) => `
             <div class="lesson-item" style="display:flex; justify-content:space-between; align-items:center;">
               <div style="display:flex; align-items:center; gap:12px; flex:1;">
-                <i class="ti ti-${l.lesson_type === 'quiz' ? 'help' : l.lesson_type === 'text' ? 'book' : 'video'}" style="color:var(--duo-green)"></i>
+                <i class="ti ti-${l.lesson_type === 'quiz' ? 'help' : l.lesson_type === 'text' ? 'book' : l.lesson_type === 'homework' ? 'clipboard' : 'video'}" style="color:var(--duo-green)"></i>
                 <span style="font-weight:600">${l.title}</span>
-                <span style="font-size:11px; color:var(--muted)">(${l.lesson_type === 'video' ? 'Video' : l.lesson_type === 'text' ? 'Matn' : 'Test'})</span>
+                <span style="font-size:11px; color:var(--muted)">(${l.lesson_type === 'video' ? 'Video' : l.lesson_type === 'text' ? 'Matn' : l.lesson_type === 'quiz' ? 'Test' : 'Vazifa'})</span>
               </div>
               <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-size:12px;color:var(--muted)">${l.duration_display || ''}</span>
@@ -253,6 +253,7 @@ const CreateCourse = {
     document.getElementById('modalTitle').textContent = lessonId ? 'Darsni tahrirlash' : 'Yangi dars qo\'shish';
     document.getElementById('resourceList').innerHTML = '';
     document.getElementById('questionsList').innerHTML = '';
+    document.getElementById('ytPreview').style.display = 'none';
 
     // Bind UI change handlers
     this.initLessonModalEvents();
@@ -260,6 +261,7 @@ const CreateCourse = {
     if (lessonId) {
       this.loadLessonData(lessonId);
     } else {
+      this.setVideoSource('url');
       this.toggleLessonTypeFields();
       document.getElementById('lessonModal').style.display = 'flex';
     }
@@ -271,13 +273,16 @@ const CreateCourse = {
       const l = res.data;
       document.getElementById('lessonTitle').value = l.title || '';
       document.getElementById('lessonType').value = l.lesson_type || 'video';
-      document.getElementById('lessonContent').value = l.content || '';
+      document.getElementById('lessonTextContent').value = l.text_content || '';
+      document.getElementById('lessonHomeworkDesc').value = l.homework_description || '';
+      document.getElementById('lessonHomeworkDeadline').value = l.homework_deadline_days || '';
       
       if (l.video_url && (l.video_url.includes('youtube.com') || l.video_url.includes('youtu.be'))) {
-        document.getElementById('videoSource').value = 'url';
+        this.setVideoSource('url');
         document.getElementById('lessonVideoUrl').value = l.video_url;
+        this.showYouTubePreview(l.video_url);
       } else {
-        document.getElementById('videoSource').value = 'file';
+        this.setVideoSource('file');
       }
 
       this.lessonResources = l.resources || [];
@@ -297,25 +302,66 @@ const CreateCourse = {
     document.getElementById('lessonModal').style.display = 'none';
   },
 
+  setVideoSource(source) {
+    document.getElementById('videoSource').value = source;
+    const urlBtn = document.getElementById('sourceUrlBtn');
+    const fileBtn = document.getElementById('sourceFileBtn');
+    if (source === 'url') {
+      urlBtn.classList.add('active');
+      fileBtn.classList.remove('active');
+      document.getElementById('videoUrlGroup').style.display = 'block';
+      document.getElementById('videoFileGroup').style.display = 'none';
+    } else {
+      urlBtn.classList.remove('active');
+      fileBtn.classList.add('active');
+      document.getElementById('videoUrlGroup').style.display = 'none';
+      document.getElementById('videoFileGroup').style.display = 'block';
+    }
+  },
+
   toggleLessonTypeFields() {
     const type = document.getElementById('lessonType').value;
-    const source = document.getElementById('videoSource').value;
 
-    document.getElementById('videoSourceGroup').style.display = type === 'video' ? 'block' : 'none';
-    document.getElementById('videoUrlGroup').style.display = (type === 'video' && source === 'url') ? 'block' : 'none';
-    document.getElementById('videoFileGroup').style.display = (type === 'video' && source === 'file') ? 'block' : 'none';
-    document.getElementById('textContentGroup').style.display = type === 'text' ? 'block' : 'none';
+    document.getElementById('videoFields').style.display = type === 'video' ? 'flex' : 'none';
+    document.getElementById('textFields').style.display = type === 'text' ? 'block' : 'none';
+    document.getElementById('homeworkFields').style.display = type === 'homework' ? 'flex' : 'none';
+    document.getElementById('quizFields').style.display = type === 'quiz' ? 'block' : 'none';
     
-    // Show/Hide Builders
-    document.querySelector('.resource-builder').style.display = this.currentLessonId ? 'block' : 'none';
-    document.querySelector('.homework-builder').style.display = (type === 'quiz' || (type === 'video' && this.currentLessonId)) ? 'block' : 'none';
+    // Show/Hide Resource fields based on currentLessonId
+    const hasLessonId = !!this.currentLessonId;
+    document.getElementById('resourceNotSavedWarning').style.display = hasLessonId ? 'none' : 'block';
+    document.getElementById('resourceList').style.display = hasLessonId ? 'block' : 'none';
+    document.getElementById('resourceAddRow').style.display = hasLessonId ? 'flex' : 'none';
+  },
+
+  extractYouTubeId(url) {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  },
+
+  showYouTubePreview(url) {
+    const ytId = this.extractYouTubeId(url);
+    const previewDiv = document.getElementById('ytPreview');
+    const previewImg = document.getElementById('ytPreviewImg');
+    if (ytId) {
+      previewImg.src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+      previewDiv.style.display = 'block';
+    } else {
+      previewDiv.style.display = 'none';
+    }
   },
 
   initLessonModalEvents() {
     // Setup change triggers
     document.getElementById('lessonType').onchange = () => this.toggleLessonTypeFields();
-    document.getElementById('videoSource').onchange = () => this.toggleLessonTypeFields();
     
+    // YouTube link preview update
+    document.getElementById('lessonVideoUrl').oninput = (e) => {
+      this.showYouTubePreview(e.target.value.trim());
+    };
+
     document.getElementById('resourceType').onchange = (e) => {
       const isFile = e.target.value === 'file';
       document.getElementById('resourceFile').style.display = isFile ? 'block' : 'none';
@@ -350,6 +396,13 @@ const CreateCourse = {
         }
         if (file.size > 10 * 1024 * 1024) {
           window.toast?.show("Fayl hajmi 10 MB dan oshmasligi kerak!", 'error');
+          return;
+        }
+        // format tekshirish (pdf, doc, docx, ppt, pptx, zip, jpg, png)
+        const allowedExts = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'jpg', 'jpeg', 'png'];
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (!allowedExts.includes(ext)) {
+          window.toast?.show("Fayl formati noto'g'ri! Faqat ruxsat etilgan formatlar: pdf, doc, docx, ppt, pptx, zip, jpg, png", 'error');
           return;
         }
         fd.append('file', file);
@@ -397,7 +450,6 @@ const CreateCourse = {
       e.preventDefault();
       const lTitle = document.getElementById('lessonTitle').value.trim();
       const lType = document.getElementById('lessonType').value;
-      const content = document.getElementById('lessonContent').value.trim();
       
       if (!lTitle) {
         window.toast?.show("Dars nomini kiriting!", 'error');
@@ -407,7 +459,6 @@ const CreateCourse = {
       const fd = new FormData();
       fd.append('title', lTitle);
       fd.append('lesson_type', lType);
-      fd.append('content', content);
 
       if (lType === 'video') {
         const vSource = document.getElementById('videoSource').value;
@@ -426,6 +477,16 @@ const CreateCourse = {
             if (dur) fd.append('duration_seconds', String(Math.round(dur)));
           }
         }
+      } else if (lType === 'text') {
+        const textVal = document.getElementById('lessonTextContent').value.trim();
+        fd.append('text_content', textVal);
+      } else if (lType === 'homework') {
+        const hwDesc = document.getElementById('lessonHomeworkDesc').value.trim();
+        const hwDeadline = document.getElementById('lessonHomeworkDeadline').value;
+        fd.append('homework_description', hwDesc);
+        if (hwDeadline) {
+          fd.append('homework_deadline_days', hwDeadline);
+        }
       }
 
       try {
@@ -440,7 +501,7 @@ const CreateCourse = {
         }
 
         // Savollarni saqlash
-        if (lType === 'quiz' || (lType === 'video' && this.quizQuestions.length > 0)) {
+        if (lType === 'quiz') {
           const validatedQuestions = this.collectQuizData();
           if (validatedQuestions) {
             await API.post(`/courses/lessons/${this.currentLessonId}/quiz/`, { questions: validatedQuestions });

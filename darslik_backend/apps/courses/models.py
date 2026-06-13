@@ -190,6 +190,7 @@ class Lesson(models.Model):
         TEXT  = 'text',  'Matn dars'
         QUIZ  = 'quiz',  'Test'
         LIVE  = 'live',  'Live dars'
+        HOMEWORK = 'homework', 'Vazifa'
 
     module           = models.ForeignKey(
                          Module, on_delete=models.CASCADE, related_name='lessons'
@@ -208,11 +209,16 @@ class Lesson(models.Model):
     duration_seconds = models.PositiveIntegerField(default=0)
 
     content          = models.TextField(blank=True)
+    text_content     = models.TextField(blank=True)
 
     live_url         = models.URLField(blank=True)
     live_scheduled   = models.DateTimeField(null=True, blank=True)
 
     is_free_preview  = models.BooleanField(default=False)
+
+    # Homework specifics
+    homework_description = models.TextField(blank=True)
+    homework_deadline_days = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Dars"

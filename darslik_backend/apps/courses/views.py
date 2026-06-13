@@ -671,7 +671,6 @@ class LessonCreateView(APIView):
         except Module.DoesNotExist:
             return error_response(message="Modul topilmadi", status_code=404)
 
-        # Check course ownership
         if module.course.teacher != request.user:
             return error_response(message="Ushbu kurs sizga tegishli emas", status_code=403)
 
@@ -680,8 +679,19 @@ class LessonCreateView(APIView):
         lesson_type = request.data.get('lesson_type', Lesson.LessonType.VIDEO)
         video_url = request.data.get('video_url', '') or ''
         content = request.data.get('content', '')
+        text_content = request.data.get('text_content', '')
         live_url = request.data.get('live_url', '') or ''
         live_scheduled = request.data.get('live_scheduled') or None
+
+        homework_description = request.data.get('homework_description', '')
+        homework_deadline_days = request.data.get('homework_deadline_days')
+        if homework_deadline_days == '' or homework_deadline_days is None:
+            homework_deadline_days = None
+        else:
+            try:
+                homework_deadline_days = int(homework_deadline_days)
+            except ValueError:
+                homework_deadline_days = None
 
         try:
             duration_seconds = int(request.data.get('duration_seconds') or 0)
@@ -703,8 +713,16 @@ class LessonCreateView(APIView):
                 return error_response(message="Tartib raqami butun son bo'lishi kerak", status_code=400)
 
         video_file = request.FILES.get('video_file')
-        if lesson_type == Lesson.LessonType.VIDEO and not video_file and not video_url:
-            return error_response(message="Video dars uchun fayl yoki video_url kiriting", status_code=400)
+        
+        # O'zaro tozalash (Backend logic)
+        if lesson_type == Lesson.LessonType.VIDEO:
+            if video_url:
+                video_file = None
+            elif video_file:
+                video_url = ''
+        else:
+            video_url = ''
+            video_file = None
 
         try:
             lesson = Lesson.objects.create(
@@ -716,9 +734,12 @@ class LessonCreateView(APIView):
                 video_file=video_file,
                 duration_seconds=duration_seconds,
                 content=content,
+                text_content=text_content,
                 live_url=live_url,
                 live_scheduled=live_scheduled,
-                is_free_preview=is_free_preview
+                is_free_preview=is_free_preview,
+                homework_description=homework_description,
+                homework_deadline_days=homework_deadline_days
             )
         except Exception as e:
             return error_response(message="Dars yaratishda xatolik", errors=str(e), status_code=400)
@@ -743,31 +764,56 @@ class LessonUpdateView(APIView):
         lesson_type = request.data.get('lesson_type')
         video_url = request.data.get('video_url')
         content = request.data.get('content')
+        text_content = request.data.get('text_content')
         live_url = request.data.get('live_url')
         live_scheduled = request.data.get('live_scheduled')
         is_free_preview = request.data.get('is_free_preview')
+        homework_description = request.data.get('homework_description')
+        homework_deadline_days = request.data.get('homework_deadline_days')
 
         if title is not None:
             lesson.title = title
         if lesson_type is not None:
             lesson.lesson_type = lesson_type
-        if video_url is not None:
-            lesson.video_url = video_url
         if content is not None:
             lesson.content = content
+        if text_content is not None:
+            lesson.text_content = text_content
         if live_url is not None:
             lesson.live_url = live_url
         if live_scheduled is not None:
             lesson.live_scheduled = live_scheduled
         if is_free_preview is not None:
             lesson.is_free_preview = str(is_free_preview).lower() in ('true', '1', 'yes')
+        
+        if homework_description is not None:
+            lesson.homework_description = homework_description
+        if homework_deadline_days is not None:
+            if homework_deadline_days == '' or homework_deadline_days is None:
+                lesson.homework_deadline_days = None
+            else:
+                try:
+                    lesson.homework_deadline_days = int(homework_deadline_days)
+                except ValueError:
+                    lesson.homework_deadline_days = None
 
+        # O'zaro tozalash va video manba yangilash
         video_file = request.FILES.get('video_file')
-        if video_file:
-            lesson.video_file = video_file
+        if lesson.lesson_type == Lesson.LessonType.VIDEO:
+            if video_file:
+                lesson.video_file = video_file
+                lesson.video_url = ''
+            elif video_url is not None:
+                lesson.video_url = video_url
+                if video_url != '':
+                    lesson.video_file = None
+        else:
+            lesson.video_url = ''
+            lesson.video_file = None
 
         lesson.save()
         serializer = LessonSerializer(lesson, context={'request': request})
+        return success_response(data=serializer.data, message="Dars muvaffaqiyatli yangilandi")
         return success_response(data=serializer.data, message="Dars muvaffaqiyatli yangilandi")
 
 

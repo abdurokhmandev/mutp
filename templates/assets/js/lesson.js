@@ -108,9 +108,15 @@ const LessonPage = {
 
     const descriptionContent = document.querySelector('#descriptionTab .tab-content');
     if (descriptionContent) {
-      descriptionContent.innerHTML = l.content
-        ? `<div>${l.content.replace(/\n/g, '<br>')}</div>`
-        : '<p>Dars tavsifi mavjud emas.</p>';
+      if (l.lesson_type === 'text') {
+        descriptionContent.innerHTML = l.text_content
+          ? `<div>${marked.parse(l.text_content)}</div>`
+          : (l.content ? `<div>${l.content.replace(/\n/g, '<br>')}</div>` : '<p>Matn dars mazmuni mavjud emas.</p>');
+      } else {
+        descriptionContent.innerHTML = l.content
+          ? `<div>${l.content.replace(/\n/g, '<br>')}</div>`
+          : '<p>Dars tavsifi mavjud emas.</p>';
+      }
     }
 
     // Reset tabs to description on load
@@ -226,6 +232,29 @@ const LessonPage = {
           <h2 style="font-family:'Plus Jakarta Sans';">Dars Testi</h2>
           <p style="margin-top: 10px; opacity:0.8; max-width: 500px;">Ushbu dars testdan iborat. Darsni tamomlash uchun pastdagi "Uyga vazifa" tabiga o'tib savollarga javob bering.</p>
         `;
+      }
+    } else if (lesson.lesson_type === 'homework') {
+      if (textContainer) {
+        textContainer.style.display = 'flex';
+        const isDone = lesson.current_progress?.is_completed;
+        textContainer.innerHTML = `
+          <div class="homework-banner">
+            <span style="font-size:48px;">📝</span>
+            <h3 style="font-family:'Plus Jakarta Sans'; margin: 8px 0;">${lesson.title}</h3>
+            <p style="font-size: 14px; opacity:0.9; max-width: 500px; margin-bottom: 12px;">${lesson.homework_description || "Vazifa tasviri kiritilmagan."}</p>
+            ${lesson.homework_deadline_days ? `<span class="deadline-badge">⏰ ${lesson.homework_deadline_days} kun ichida</span>` : ''}
+            <div style="margin-top: 12px;">
+              <button id="markHomeworkDone" class="btn" style="background:${isDone ? 'var(--muted)' : 'var(--duo-green)'}; border:none; color:white; padding:12px 24px; border-radius:16px; font-weight:700; cursor:${isDone ? 'default' : 'pointer'}; box-shadow:${isDone ? 'none' : '0 4px 0 var(--duo-green-dark)'};" ${isDone ? 'disabled' : ''}>
+                ${isDone ? 'Vazifa bajarildi ✓' : 'Vazifani bajardim ✓'}
+              </button>
+            </div>
+          </div>`;
+        
+        if (!isDone) {
+          document.getElementById('markHomeworkDone').onclick = () => this.completeLessonProgress(true);
+        } else {
+          if (nextBtn) nextBtn.style.display = 'flex';
+        }
       }
     }
   },

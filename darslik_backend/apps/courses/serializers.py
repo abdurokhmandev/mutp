@@ -250,8 +250,9 @@ class LessonDetailSerializer(serializers.ModelSerializer):
         model = Lesson
         fields = [
             'id', 'title', 'order', 'lesson_type', 'duration_seconds', 'duration_display',
-            'is_free_preview', 'video_url', 'video_file', 'content', 'live_url', 'live_scheduled',
-            'current_progress', 'resources', 'questions'
+            'is_free_preview', 'video_url', 'video_file', 'content', 'text_content',
+            'live_url', 'live_scheduled', 'current_progress', 'resources', 'questions',
+            'homework_description', 'homework_deadline_days'
         ]
 
     def get_video_file(self, obj):

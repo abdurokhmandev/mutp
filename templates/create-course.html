@@ -298,37 +298,74 @@
             <option value="video">Video dars</option>
             <option value="text">Matn dars</option>
             <option value="quiz">Test (Quiz)</option>
+            <option value="homework">Vazifa</option>
           </select>
         </div>
 
-        <div id="videoSourceGroup" class="form-group">
-          <label class="form-label">Video manbasi</label>
-          <select id="videoSource" class="form-control">
-            <option value="url">YouTube Havolasi</option>
-            <option value="file">Video fayl yuklash</option>
-          </select>
-        </div>
-        
-        <div id="videoUrlGroup" class="form-group">
-          <label class="form-label">YouTube Havolasi</label>
-          <input type="url" id="lessonVideoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=...">
+        <!-- Video dars maydonlari -->
+        <div id="videoFields" style="display:none; flex-direction:column; gap:16px;">
+          <div id="videoSourceGroup" class="form-group">
+            <label class="form-label">Video manbasi</label>
+            <div class="radio-cards" style="margin-bottom:12px;">
+              <div class="radio-card active" id="sourceUrlBtn" onclick="CreateCourse.setVideoSource('url')">YouTube Havolasi</div>
+              <div class="radio-card" id="sourceFileBtn" onclick="CreateCourse.setVideoSource('file')">Video fayl yuklash</div>
+            </div>
+            <input type="hidden" id="videoSource" value="url">
+          </div>
+          
+          <div id="videoUrlGroup" class="form-group">
+            <label class="form-label">YouTube Havolasi</label>
+            <input type="url" id="lessonVideoUrl" class="form-control" placeholder="https://www.youtube.com/watch?v=...">
+            <div id="ytPreview" style="display:none; margin-top:12px; border-radius:8px; overflow:hidden; border:1px solid var(--border); max-width:240px;">
+              <img id="ytPreviewImg" src="" style="width:100%; height:auto; display:block;">
+            </div>
+          </div>
+
+          <div id="videoFileGroup" class="form-group" style="display:none;">
+            <label class="form-label">Video fayli (Maks 100MB)</label>
+            <input type="file" id="lessonVideoFile" class="form-control" accept="video/mp4,video/*">
+          </div>
         </div>
 
-        <div id="videoFileGroup" class="form-group" style="display:none;">
-          <label class="form-label">Video fayli (Maks 100MB)</label>
-          <input type="file" id="lessonVideoFile" class="form-control" accept="video/mp4,video/*">
-        </div>
-        
-        <div id="textContentGroup" class="form-group" style="display:none;">
-          <label class="form-label">Matn mazmuni</label>
-          <textarea id="lessonContent" class="form-control" rows="5" placeholder="Dars matnini kiriting (Markdown yoki oddiy matn)..."></textarea>
+        <!-- Matn dars maydonlari -->
+        <div id="textFields" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Matn mazmuni (Markdown qo'llab-quvvatlanadi)</label>
+            <textarea id="lessonTextContent" class="form-control" rows="8" placeholder="Dars matnini kiriting (Markdown)..."></textarea>
+          </div>
         </div>
 
-        <!-- Resurs Qo'shish UI -->
-        <div class="resource-builder" style="border-top:1px solid var(--border); padding-top:16px;">
+        <!-- Vazifa maydonlari -->
+        <div id="homeworkFields" style="display:none; flex-direction:column; gap:16px;">
+          <div class="form-group">
+            <label class="form-label">Vazifa tavsifi</label>
+            <textarea id="lessonHomeworkDesc" class="form-control" rows="5" placeholder="Vazifa shartlarini va talablarini yozing..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bajarish muddati (kunlarda)</label>
+            <input type="number" id="lessonHomeworkDeadline" class="form-control" placeholder="Masalan: 3" min="1">
+          </div>
+        </div>
+
+        <!-- Test (Quiz) dars maydonlari -->
+        <div id="quizFields" style="display:none;">
+          <div class="homework-builder" style="border-top:none; padding-top:0;">
+            <div class="homework-builder-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <label style="font-weight:700; font-size:14px;">Test savollari</label>
+              <button type="button" id="addQuestionBtn" class="btn-secondary" style="font-size:12px; padding:6px 12px;">+ Savol qo'shish</button>
+            </div>
+            <div id="questionsList" style="max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:12px;"></div>
+          </div>
+        </div>
+
+        <!-- Qo'shimcha resurslar (Doim ko'rinadi) -->
+        <div id="resourceFields" class="resource-builder" style="border-top:1px solid var(--border); padding-top:16px;">
           <label style="font-weight:700; font-size:14px; margin-bottom:8px; display:block;">Qo'shimcha materiallar (PDF, havola va h.k.)</label>
+          <div id="resourceNotSavedWarning" style="color:var(--muted); font-size:13px; margin-bottom:8px; display:none;">
+            <em>Resurslarni qo'shish uchun avval darsni yarating (saqlang).</em>
+          </div>
           <div id="resourceList" style="margin-bottom:12px;"></div>
-          <div class="resource-add-row" style="display:flex; flex-wrap:wrap; gap:8px;">
+          <div class="resource-add-row" id="resourceAddRow" style="display:flex; flex-wrap:wrap; gap:8px;">
             <select id="resourceType" class="form-control" style="flex:1; min-width:120px;">
               <option value="file">Fayl yuklash</option>
               <option value="link">Havola qo'shish</option>
@@ -338,15 +375,6 @@
             <input type="url" id="resourceUrl" class="form-control" placeholder="https://..." style="display:none; flex:2; min-width:180px;">
             <button type="button" id="addResourceBtn" class="btn-secondary" style="padding:10px 16px;">+ Qo'shish</button>
           </div>
-        </div>
-
-        <!-- Uyga vazifa (Test savollari) builder -->
-        <div class="homework-builder" style="border-top:1px solid var(--border); padding-top:16px;">
-          <div class="homework-builder-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <label style="font-weight:700; font-size:14px;">Uyga vazifa (test savollari)</label>
-            <button type="button" id="addQuestionBtn" class="btn-secondary" style="font-size:12px; padding:6px 12px;">+ Savol qo'shish</button>
-          </div>
-          <div id="questionsList" style="max-height:250px; overflow-y:auto; display:flex; flex-direction:column; gap:12px;"></div>
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid var(--border); padding-top:16px; margin-top:8px;">
