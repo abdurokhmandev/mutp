@@ -476,7 +476,7 @@ const LessonPage = {
         <div class="section-title">${mod.title}</div>
         <ul class="section-list">
           ${(mod.lessons || []).map((lesson) => {
-            const active = lesson.id === this.lesson.id;
+            const active = this.lesson ? lesson.id === this.lesson.id : false;
             const done = lesson.is_completed;
             const icon = done ? 'ti-circle-check-filled icon-done' : active ? 'ti-player-play-filled icon-play' : 'ti-circle icon-lock';
             return `
