@@ -6,6 +6,19 @@ const LessonPage = {
   player: null,
   ytPlayer: null,
 
+  getMediaUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const apiBase = window.APP_CONFIG?.API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+    try {
+      const origin = new URL(apiBase).origin;
+      return origin + url;
+    } catch(e) {
+      if (apiBase.startsWith('/')) return url;
+      return apiBase.split('/api')[0] + url;
+    }
+  },
+
   getLessonId() {
     return new URLSearchParams(window.location.search).get('id');
   },
@@ -182,11 +195,12 @@ const LessonPage = {
     if (prevControls) prevControls.remove();
 
     if (lesson.lesson_type === 'video') {
-      const src = lesson.video_file || lesson.video_url;
+      let src = lesson.video_file || lesson.video_url;
       if (src) {
         if (this.isYouTubeUrl(src)) {
           this.initYouTube(src);
         } else {
+          src = this.getMediaUrl(src);
           if (videoEl) {
             videoEl.style.display = 'block';
             videoEl.src = src;
