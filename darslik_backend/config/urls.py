@@ -15,6 +15,9 @@ urlpatterns = [
     path('api/v1/courses/', include('apps.courses.urls')),
     path('api/v1/student/', include('apps.analytics.urls')),
 
+    path('api/v1/notifications/', include('apps.notifications.urls')),
+    path('api/v1/chat/', include('apps.chat.urls')),
+
     # API Documentation (drf-spectacular)
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
@@ -42,6 +45,7 @@ else:
         'lesson.html',
         'profile.html',
         'create-course.html',
+        'chat.html',
     ]
 
     def serve_frontend(request, filename='index.html'):
