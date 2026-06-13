@@ -814,7 +814,18 @@ class LessonUpdateView(APIView):
         lesson.save()
         serializer = LessonSerializer(lesson, context={'request': request})
         return success_response(data=serializer.data, message="Dars muvaffaqiyatli yangilandi")
-        return success_response(data=serializer.data, message="Dars muvaffaqiyatli yangilandi")
+
+    def delete(self, request, id):
+        try:
+            lesson = Lesson.objects.get(id=id)
+        except Lesson.DoesNotExist:
+            return error_response(message="Dars topilmadi", status_code=404)
+
+        if lesson.module.course.teacher != request.user:
+            return error_response(message="Ushbu dars sizga tegishli emas", status_code=403)
+
+        lesson.delete()
+        return success_response(message="Dars muvaffaqiyatli o'chirildi")
 
 
 class TeacherDashboardView(APIView):

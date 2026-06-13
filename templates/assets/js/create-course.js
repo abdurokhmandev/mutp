@@ -4,6 +4,19 @@ const CreateCourse = {
   thumbFile: null,
   categories: [],
 
+  getMediaUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const apiBase = window.APP_CONFIG?.API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+    try {
+      const origin = new URL(apiBase).origin;
+      return origin + url;
+    } catch(e) {
+      if (apiBase.startsWith('/')) return url;
+      return apiBase.split('/api')[0] + url;
+    }
+  },
+
   async init() {
     if (!App.requireAuth(['teacher'])) return;
 
@@ -110,7 +123,8 @@ const CreateCourse = {
       document.getElementById('coursePrice').value = this.course.price;
     }
     if (this.course.thumbnail) {
-      document.querySelector('.cp-thumb').innerHTML = `<img src="${this.course.thumbnail}" style="width:100%;height:100%;object-fit:cover">`;
+      const thumbUrl = this.getMediaUrl(this.course.thumbnail);
+      document.querySelector('.cp-thumb').innerHTML = `<img src="${thumbUrl}" style="width:100%;height:100%;object-fit:cover">`;
     }
     if (this.course.preview_video_url) {
       document.getElementById('coursePreviewVideo').value = this.course.preview_video_url;
@@ -212,7 +226,8 @@ const CreateCourse = {
               </div>
               <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-size:12px;color:var(--muted)">${l.duration_display || ''}</span>
-                <button type="button" class="btn-secondary btn-edit-lesson" data-module-id="${mod.id}" data-lesson-id="${l.id}" style="padding:4px 8px; border:none; cursor:pointer;"><i class="ti ti-edit"></i></button>
+                <button type="button" class="btn-secondary btn-edit-lesson" data-module-id="${mod.id}" data-lesson-id="${l.id}" style="padding:4px 8px; border:none; cursor:pointer;" title="Tahrirlash"><i class="ti ti-edit"></i></button>
+                <button type="button" class="btn-secondary btn-delete-lesson" data-lesson-id="${l.id}" style="padding:4px 8px; border:none; cursor:pointer; color:var(--rose);" title="O'chirish"><i class="ti ti-trash"></i></button>
               </div>
             </div>
           `).join('')}
@@ -235,6 +250,24 @@ const CreateCourse = {
         this.openLessonModal(btn.dataset.moduleId, btn.dataset.lessonId);
       });
     });
+
+    container.querySelectorAll('.btn-delete-lesson').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.deleteLesson(btn.dataset.lessonId);
+      });
+    });
+  },
+
+  async deleteLesson(lessonId) {
+    if (!confirm("Haqiqatan ham ushbu darsni o'chirmoqchimisiz?")) return;
+    try {
+      await API.delete(`/courses/lessons/${lessonId}/update/`);
+      window.toast?.show("Dars o'chirildi", 'success');
+      await this.refreshCourse();
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
   },
 
   currentModuleId: null,
