@@ -131,8 +131,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.User'
 
 # CORS
-CORS_ALLOWED_ORIGINS = env('CORS_ALLOWED_ORIGINS')
-CORS_ALLOW_ALL_ORIGINS = DEBUG  # For ease of dev, allow all in dev mode if CORS_ALLOWED_ORIGINS is empty
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Django REST Framework Settings
 REST_FRAMEWORK = {
