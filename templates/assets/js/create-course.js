@@ -165,6 +165,8 @@ const CreateCourse = {
       document.getElementById('enrollmentLimit').value = this.course.enrollment_limit || '';
     }
 
+    this.handlePrivacyToggle();
+
     if (this.course.status === 'published') {
       if (this.course.is_private) {
         document.getElementById('privateInviteSection').style.display = 'block';
@@ -1296,6 +1298,49 @@ const CreateCourse = {
       this.loadEnrolledStudents();
     } catch (e) {
       window.toast?.show(e.message || "Xatolik yuz berdi", 'error');
+    }
+  },
+
+  handlePrivacyToggle() {
+    const isPrivate = document.getElementById('isPrivate').checked;
+    const requireApproval = document.getElementById('requireApproval');
+    const enrollmentLimit = document.getElementById('enrollmentLimit');
+
+    const step5Tab = document.getElementById('step5-tab');
+    const step5Line = document.getElementById('step5-line');
+    const btnGoToStep5 = document.getElementById('btnGoToStep5');
+
+    if (!isPrivate) {
+      requireApproval.checked = false;
+      requireApproval.disabled = true;
+      enrollmentLimit.value = '';
+      enrollmentLimit.disabled = true;
+
+      if (step5Tab) step5Tab.style.display = 'none';
+      if (step5Line) step5Line.style.display = 'none';
+      if (btnGoToStep5) btnGoToStep5.style.display = 'none';
+    } else {
+      requireApproval.disabled = false;
+      enrollmentLimit.disabled = false;
+
+      if (step5Tab) step5Tab.style.display = 'flex';
+      if (step5Line) step5Line.style.display = 'block';
+      if (btnGoToStep5) btnGoToStep5.style.display = 'inline-block';
+      
+      this.handleApprovalToggle();
+    }
+  },
+
+  handleApprovalToggle() {
+    const requireApproval = document.getElementById('requireApproval').checked;
+    const manualAddSection = document.querySelector('#step5 div[style*="background:var(--surface)"]');
+    
+    if (manualAddSection) {
+      if (requireApproval) {
+        manualAddSection.style.display = 'block';
+      } else {
+        manualAddSection.style.display = 'none';
+      }
     }
   },
 };
