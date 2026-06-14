@@ -166,8 +166,8 @@ const LessonPage = {
     this.renderLessonPlayer(l);
 
     if (this.course) {
-      const progressFill = document.querySelector('.course-progress-fill');
-      const progressText = document.querySelector('.course-progress-text span:last-child');
+      const progressFill = document.querySelector('.sidebar-progress-fill');
+      const progressText = document.querySelector('.sidebar-progress-label span:last-child');
       const enrolled = this.course.is_enrolled;
       if (progressFill && enrolled) {
         let completedLessonsCount = 0;
@@ -713,7 +713,7 @@ const LessonPage = {
           const reactors = d.reactions[emoji] || [];
           const hasReacted = reactors.some(r => r.user_id === this.currentUser?.id);
           reactionsHtml += `
-            <button onclick="LessonPage.toggleReact(${d.id}, '${emoji}', 'discussion')" style="padding:4px 8px; border-radius:6px; border:1px solid ${hasReacted ? 'var(--purple)' : 'var(--border)'}; background:${hasReacted ? 'var(--purple-light)' : 'white'}; cursor:pointer; font-size:12px; margin-right:6px;">
+            <button onclick="LessonPage.toggleReact(${d.id}, '${emoji}', 'discussion')" style="padding:4px 8px; border-radius:6px; border:1px solid ${hasReacted ? 'var(--purple)' : 'var(--border)'}; background:${hasReacted ? 'var(--purple-light)' : 'var(--white)'}; cursor:pointer; font-size:12px; margin-right:6px;">
               ${emoji} ${reactors.length || ''}
             </button>`;
         });
@@ -726,7 +726,7 @@ const LessonPage = {
             const reactors = (r.reactions || {})[emoji] || [];
             const hasReacted = reactors.some(reactor => reactor.user_id === this.currentUser?.id);
             replyReacts += `
-              <button onclick="LessonPage.toggleReact(${r.id}, '${emoji}', 'reply')" style="padding:2px 6px; border-radius:6px; border:1px solid ${hasReacted ? 'var(--purple)' : 'var(--border)'}; background:${hasReacted ? 'var(--purple-light)' : 'white'}; cursor:pointer; font-size:11px; margin-right:4px;">
+              <button onclick="LessonPage.toggleReact(${r.id}, '${emoji}', 'reply')" style="padding:2px 6px; border-radius:6px; border:1px solid ${hasReacted ? 'var(--purple)' : 'var(--border)'}; background:${hasReacted ? 'var(--purple-light)' : 'var(--white)'}; cursor:pointer; font-size:11px; margin-right:4px;">
                 ${emoji} ${reactors.length || ''}
               </button>`;
           });
@@ -754,7 +754,7 @@ const LessonPage = {
         }).join('');
 
         return `
-          <div class="discussion-item" style="background:white; border:2px solid ${d.is_pinned ? 'var(--purple)' : 'var(--border)'}; border-radius:16px; padding:16px; position:relative; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
+          <div class="discussion-item" style="background:var(--white); border:2px solid ${d.is_pinned ? 'var(--purple)' : 'var(--border)'}; border-radius:16px; padding:16px; position:relative; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
             ${d.is_pinned ? '<span style="position:absolute; top:-10px; left:16px; background:var(--purple); color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px;">📌 PINLANGAN</span>' : ''}
             
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -793,12 +793,12 @@ const LessonPage = {
             </div>
 
             <!-- Replies Box -->
-            <div style="margin-top:16px; background:#f9fafb; border-radius:12px; padding:12px;">
+            <div style="margin-top:16px; background:var(--surface); border-radius:12px; padding:12px;">
               <div id="replies-list-${d.id}">${repliesListHtml}</div>
               
               <!-- Reply input -->
               <div style="margin-top:10px; display:flex; gap:8px;">
-                <input id="reply-input-${d.id}" type="text" placeholder="Javob yozish..." style="flex:1; padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:12px; outline:none; background:white;">
+                <input id="reply-input-${d.id}" type="text" placeholder="Javob yozish..." style="flex:1; padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:12px; outline:none; background:var(--white); color:var(--ink);">
                 <button onclick="LessonPage.submitReply(${d.id})" style="padding:6px 12px; border-radius:8px; background:var(--purple); color:white; border:none; font-size:12px; font-weight:600; cursor:pointer;">Yuborish</button>
               </div>
             </div>

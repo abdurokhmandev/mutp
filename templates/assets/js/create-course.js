@@ -231,12 +231,20 @@ const CreateCourse = {
   },
 
   async addModule() {
-    if (!this.course) {
+    if (!this.course?.slug) {
       window.toast?.show('Avval 1-qadamni saqlang', 'error');
       return;
     }
     const title = prompt("Bo'lim nomini kiriting:");
     if (!title?.trim()) return;
+
+    const addModBtn = document.getElementById('btnAddModule');
+    let originalBtnText = '';
+    if (addModBtn) {
+      originalBtnText = addModBtn.innerHTML;
+      addModBtn.disabled = true;
+      addModBtn.innerHTML = '⏳ Qo\'shilmoqda...';
+    }
 
     try {
       await API.post(`/courses/teacher/courses/${this.course.slug}/modules/`, { title: title.trim() });
@@ -244,6 +252,11 @@ const CreateCourse = {
       window.toast?.show("Bo'lim qo'shildi", 'success');
     } catch (e) {
       window.toast?.show(e.message, 'error');
+    } finally {
+      if (addModBtn) {
+        addModBtn.disabled = false;
+        addModBtn.innerHTML = originalBtnText;
+      }
     }
   },
 
@@ -585,6 +598,14 @@ const CreateCourse = {
         return;
       }
 
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      let originalBtnText = '';
+      if (submitBtn) {
+        originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '⏳ Saqlanmoqda...';
+      }
+
       const fd = new FormData();
       fd.append('title', lTitle);
       fd.append('lesson_type', lType);
@@ -595,6 +616,10 @@ const CreateCourse = {
           const vUrl = document.getElementById('lessonVideoUrl').value.trim();
           if (!vUrl) {
             window.toast?.show("YouTube havolasini kiriting!", 'error');
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = originalBtnText;
+            }
             return;
           }
           fd.append('video_url', vUrl);
@@ -637,6 +662,11 @@ const CreateCourse = {
         await this.refreshCourse();
       } catch (err) {
         window.toast?.show(err.message, 'error');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnText;
+        }
       }
     };
   },
