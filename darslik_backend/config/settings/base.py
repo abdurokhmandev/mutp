@@ -1,4 +1,5 @@
 import os
+import hashlib
 from pathlib import Path
 from datetime import timedelta
 import environ
@@ -168,7 +169,7 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': True,
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
+    'SIGNING_KEY': hashlib.sha256(SECRET_KEY.encode()).hexdigest(),
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
