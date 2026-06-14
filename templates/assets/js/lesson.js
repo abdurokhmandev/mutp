@@ -333,12 +333,35 @@ const LessonPage = {
     }
 
     const self = this;
+    let lastSaved = this.lesson.current_progress?.watched_seconds || 0;
+
     const triggerYTInit = () => {
       self.ytPlayer = new YT.Player('ytPlayer', {
         events: {
+          'onReady': function(e) {
+            if (lastSaved > 0) {
+              e.target.seekTo(lastSaved, true);
+            }
+          },
           'onStateChange': function(event) {
             if (event.data === YT.PlayerState.ENDED) {
-              self.completeLessonProgress(true); // video tugaganda progressni saqlash
+              self.completeLessonProgress(true);
+              clearInterval(self.ytPollInterval);
+            } else if (event.data === YT.PlayerState.PLAYING) {
+              clearInterval(self.ytPollInterval);
+              self.ytPollInterval = setInterval(async () => {
+                try {
+                  const time = self.ytPlayer.getCurrentTime();
+                  if (time && Math.abs(time - lastSaved) >= 5) {
+                    lastSaved = time;
+                    await API.patch(`/courses/lessons/${self.lesson.id}/progress/`, {
+                      watched_seconds: Math.floor(time)
+                    });
+                  }
+                } catch (e) {}
+              }, 5000);
+            } else {
+              clearInterval(self.ytPollInterval);
             }
           }
         }

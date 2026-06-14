@@ -72,6 +72,31 @@
   --bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ── DARK MODE THEME ── */
+[data-theme="dark"] {
+  --ink: #F3F4F6;
+  --ink-2: #E5E7EB;
+  --ink-3: #9CA3AF;
+  --muted: #6B7280;
+  --muted-2: #4B5563;
+  --border: #374151;
+  --border-2: #4B5563;
+  --surface: #1F2937;
+  --surface-2: #111827;
+  --white: #111827;
+  
+  --duo-green-bg: #14532D;
+  --duo-green-light: #166534;
+  --duo-blue-bg: #1e3a8a;
+  --duo-blue-light: #1e40af;
+  --duo-yellow-bg: #78350f;
+  --duo-yellow-light: #92400e;
+  --duo-purple-bg: #581c87;
+  --duo-purple-light: #6b21a8;
+  --duo-pink-bg: #831843;
+  --duo-pink-light: #9d174d;
+}
+
 /* ── TYPOGRAPHY ── */
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
