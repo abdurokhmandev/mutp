@@ -1,12 +1,16 @@
 import os
+import sys
 import django
 
-# Initialize Django settings inside bot process if it's run standalone
+# Append darslik_backend to python path to resolve config and apps imports
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(ROOT_DIR, 'darslik_backend'))
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.dev')
 try:
     django.setup()
-except Exception:
-    pass
+except Exception as e:
+    print("Django setup failed:", e)
 
 from django.conf import settings
 from aiogram import Bot, Dispatcher, types, F
