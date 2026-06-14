@@ -6,6 +6,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.static import serve as static_serve
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
+from apps.courses.views import InviteDetailView, InviteJoinView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -18,6 +19,10 @@ urlpatterns = [
     path('api/v1/notifications/', include('apps.notifications.urls')),
     path('api/v1/chat/', include('apps.chat.urls')),
     path('api/v1/teacher/', include('apps.teacher.urls')),
+
+    # Invite endpoints
+    path('api/v1/invite/<str:token>/', InviteDetailView.as_view(), name='api_invite_detail'),
+    path('api/v1/invite/<str:token>/join/', InviteJoinView.as_view(), name='api_invite_join'),
 
     # API Documentation (drf-spectacular)
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
@@ -48,6 +53,7 @@ else:
         'create-course.html',
         'chat.html',
         'homework.html',
+        'invite.html',
     ]
 
     def serve_frontend(request, filename='index.html'):
@@ -74,6 +80,11 @@ else:
         urlpatterns += [
             path(page, serve_frontend, {'filename': page}, name=f'frontend-{page.replace(".html", "")}'),
         ]
+
+    # Invite detail route for frontend
+    urlpatterns += [
+        path('invite/<str:token>/', serve_frontend, {'filename': 'invite.html'}, name='frontend-invite-detail'),
+    ]
 
     # CSS/JS fayllar
     urlpatterns += [

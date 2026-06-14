@@ -94,6 +94,9 @@ class Course(models.Model):
                     default=Status.DRAFT
                   )
     is_featured = models.BooleanField(default=False)
+    is_private = models.BooleanField(default=False)
+    enrollment_limit = models.PositiveIntegerField(null=True, blank=True)  # None = cheksiz
+    require_approval = models.BooleanField(default=False)  # True bo'lsa ustoz tasdiqlaydi
 
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
@@ -512,5 +515,53 @@ class HomeworkSubmission(models.Model):
 
     def __str__(self):
         return f"{self.student.full_name} — {self.homework.title}: {self.status}"
+
+
+class CourseInviteLink(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='invite_links')
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    max_uses = models.PositiveIntegerField(null=True, blank=True)  # None = cheksiz
+    use_count = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)  # None = muddatsiz
+
+    @property
+    def url(self):
+        return f"/invite/{self.token}/"
+
+    @property
+    def is_valid(self):
+        from django.utils import timezone
+        if not self.is_active:
+            return False
+        if self.max_uses and self.use_count >= self.max_uses:
+            return False
+        if self.expires_at and timezone.now() > self.expires_at:
+            return False
+        return True
+
+    def __str__(self):
+        return f"{self.course.title} — {self.token}"
+
+
+class EnrollmentRequest(models.Model):
+    STATUS = [
+        ('pending',  'Kutilmoqda'),
+        ('approved', 'Tasdiqlandi'),
+        ('rejected', 'Rad etildi'),
+    ]
+    course   = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollment_requests')
+    student  = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    invite_link = models.ForeignKey(CourseInviteLink, on_delete=models.SET_NULL, null=True, blank=True)
+    status   = models.CharField(max_length=10, choices=STATUS, default='pending')
+    message  = models.TextField(blank=True)  # o'quvchi qoldirgan izoh (ixtiyoriy)
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ['course', 'student']
+
 
 

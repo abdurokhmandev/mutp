@@ -32,6 +32,14 @@ const CreateCourse = {
         // Show delete button when editing existing course
         const deleteBtn = document.getElementById('btnDeleteCourse');
         if (deleteBtn) deleteBtn.style.display = 'inline-flex';
+
+        // Show step 5 tab
+        const step5Tab = document.getElementById('step5-tab');
+        const step5Line = document.getElementById('step5-line');
+        const btnGoToStep5 = document.getElementById('btnGoToStep5');
+        if (step5Tab) step5Tab.style.display = 'flex';
+        if (step5Line) step5Line.style.display = 'block';
+        if (btnGoToStep5) btnGoToStep5.style.display = 'inline-block';
       } catch (e) {
         window.toast?.show(e.message, 'error');
       }
@@ -145,6 +153,27 @@ const CreateCourse = {
         `).join('');
       }
     }
+    
+    // Fill privacy settings
+    if (document.getElementById('isPrivate')) {
+      document.getElementById('isPrivate').checked = this.course.is_private || false;
+    }
+    if (document.getElementById('requireApproval')) {
+      document.getElementById('requireApproval').checked = this.course.require_approval || false;
+    }
+    if (document.getElementById('enrollmentLimit')) {
+      document.getElementById('enrollmentLimit').value = this.course.enrollment_limit || '';
+    }
+
+    if (this.course.status === 'published') {
+      if (this.course.is_private) {
+        document.getElementById('privateInviteSection').style.display = 'block';
+        this.loadInviteLinks();
+      } else {
+        this.loadPublicInviteLink();
+      }
+    }
+
     this.updatePreview();
   },
 
@@ -160,6 +189,14 @@ const CreateCourse = {
         const res = await API.post('/courses/teacher/courses/create/', data);
         this.course = res.data;
         window.toast?.show('Kurs yaratildi', 'success');
+
+        // Show step 5 tab
+        const step5Tab = document.getElementById('step5-tab');
+        const step5Line = document.getElementById('step5-line');
+        const btnGoToStep5 = document.getElementById('btnGoToStep5');
+        if (step5Tab) step5Tab.style.display = 'flex';
+        if (step5Line) step5Line.style.display = 'block';
+        if (btnGoToStep5) btnGoToStep5.style.display = 'inline-block';
       } else {
         const res = await API.patch(`/courses/teacher/courses/${this.course.slug}/update/`, data);
         this.course = res.data;
@@ -760,9 +797,131 @@ const CreateCourse = {
       return;
     }
     try {
-      await API.post(`/courses/teacher/courses/${this.course.slug}/publish/`);
+      const isPrivate = document.getElementById('isPrivate').checked;
+      const requireApproval = document.getElementById('requireApproval').checked;
+      const enrollmentLimitVal = document.getElementById('enrollmentLimit').value;
+      const enrollmentLimit = enrollmentLimitVal ? parseInt(enrollmentLimitVal) : null;
+
+      const updateRes = await API.patch(`/courses/teacher/courses/${this.course.slug}/update/`, {
+        is_private: isPrivate,
+        require_approval: requireApproval,
+        enrollment_limit: enrollmentLimit
+      });
+      this.course = updateRes.data;
+
+      const res = await API.post(`/courses/teacher/courses/${this.course.slug}/publish/`);
       window.toast?.show('Kurs nashr etildi!', 'success');
-      setTimeout(() => { window.location.href = '/dashboard-teacher.html'; }, 1500);
+
+      if (this.course.is_private) {
+        document.getElementById('privateInviteSection').style.display = 'block';
+        this.loadInviteLinks();
+      } else {
+        const activeToken = res.invite_token || res.data?.invite_token;
+        const inviteUrl = `${window.location.origin}/invite/${activeToken}/`;
+        document.getElementById('publishSuccess').innerHTML = `
+          <div class="publish-success-card" style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-top:16px;">
+            <div style="font-size:24px; margin-bottom:8px;">🎉</div>
+            <h3 style="font-family:'Plus Jakarta Sans'; margin-bottom:12px;">Kurs nashr etildi!</h3>
+            <div class="invite-url-box" style="display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--white); border:1px solid var(--border); padding:8px 12px; border-radius:8px;">
+              <span style="font-family:monospace; font-size:13px; color:var(--blue); word-break:break-all;">${inviteUrl}</span>
+              <button onclick="CreateCourse.copyLink('${inviteUrl}')" class="btn-secondary" style="padding:6px 12px; font-size:13px; flex-shrink:0;">📋 Nusxa olish</button>
+            </div>
+            <p class="invite-hint" style="font-size:12px; color:var(--muted); margin-top:8px; margin-bottom:0;">Bu havolani do'stlaringizga ulashing</p>
+          </div>`;
+      }
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  copyLink(url) {
+    navigator.clipboard.writeText(url);
+    window.toast?.show('Havola nusxalandi!', 'success');
+  },
+
+  async createInviteLink() {
+    const maxUses = document.getElementById('newLinkMaxUses').value;
+    const expireDays = document.getElementById('newLinkExpireDays').value;
+    try {
+      await API.post(`/courses/${this.course.slug}/invite/create/`, {
+        max_uses: maxUses || null,
+        expires_days: expireDays || null
+      });
+      document.getElementById('newLinkMaxUses').value = '';
+      document.getElementById('newLinkExpireDays').value = '';
+      this.loadInviteLinks();
+      window.toast?.show('Havola yaratildi!', 'success');
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  async loadInviteLinks() {
+    try {
+      const res = await API.get(`/courses/${this.course.slug}/invite/links/`);
+      const links = res.data || [];
+      const container = document.getElementById('inviteLinksList');
+      container.innerHTML = links.map(l => {
+        const fullUrl = `${window.location.origin}/invite/${l.token}/`;
+        return `
+          <div class="invite-link-row">
+            <div class="invite-link-url">
+              <span>${fullUrl}</span>
+              <button onclick="CreateCourse.copyLink('${fullUrl}')" class="btn-xs">📋</button>
+            </div>
+            <div class="invite-link-meta">
+              ${l.max_uses ? `${l.use_count}/${l.max_uses} foydalanish` : 'Cheksiz'}
+              ${l.expires_at ? ` · ${new Date(l.expires_at).toLocaleDateString('uz-UZ')} gacha` : ''}
+            </div>
+            <div class="invite-link-actions">
+              <span class="badge ${l.is_active ? 'badge-green' : 'badge-gray'}">${l.is_active ? 'Faol' : 'O\'chirilgan'}</span>
+              <button onclick="CreateCourse.toggleLink('${l.token}')" class="btn-xs">${l.is_active ? 'O\'chirish' : 'Yoqish'}</button>
+              <button onclick="CreateCourse.deleteLink('${l.token}')" class="btn-xs danger">🗑</button>
+            </div>
+          </div>`;
+      }).join('');
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  async loadPublicInviteLink() {
+    try {
+      const res = await API.get(`/courses/${this.course.slug}/invite/links/`);
+      const links = res.data || [];
+      const activeLink = links.find(l => l.is_active);
+      if (activeLink) {
+        const inviteUrl = `${window.location.origin}/invite/${activeLink.token}/`;
+        document.getElementById('publishSuccess').innerHTML = `
+          <div class="publish-success-card" style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-top:16px;">
+            <h3 style="font-family:'Plus Jakarta Sans'; margin-bottom:12px;">Taklif havolasi</h3>
+            <div class="invite-url-box" style="display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--white); border:1px solid var(--border); padding:8px 12px; border-radius:8px;">
+              <span style="font-family:monospace; font-size:13px; color:var(--blue); word-break:break-all;">${inviteUrl}</span>
+              <button onclick="CreateCourse.copyLink('${inviteUrl}')" class="btn-secondary" style="padding:6px 12px; font-size:13px; flex-shrink:0;">📋 Nusxa olish</button>
+            </div>
+          </div>`;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  async toggleLink(token) {
+    try {
+      await API.patch(`/courses/${this.course.slug}/invite/${token}/toggle/`);
+      this.loadInviteLinks();
+      window.toast?.show('Havola holati o\'zgartirildi', 'success');
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  async deleteLink(token) {
+    if (!confirm("Haqiqatan ham bu havolani o'chirmoqchisiz?")) return;
+    try {
+      await API.delete(`/courses/${this.course.slug}/invite/${token}/`);
+      this.loadInviteLinks();
+      window.toast?.show('Havola o\'chirildi', 'success');
     } catch (e) {
       window.toast?.show(e.message, 'error');
     }
@@ -1071,6 +1230,76 @@ const CreateCourse = {
       window.toast?.show(err.message, 'error');
     }
   },
+
+  async loadEnrolledStudents() {
+    if (!this.course) return;
+    try {
+      const res = await API.get(`/courses/${this.course.slug}/enrolled-students/`);
+      const students = res.data || [];
+      
+      const titleEl = document.getElementById('enrolledStudentsTitle');
+      if (titleEl) {
+        const limitStr = this.course.enrollment_limit ? ` / ${this.course.enrollment_limit} ta limit` : '';
+        titleEl.textContent = `Kurs o'quvchilar (${students.length} ta yozilgan${limitStr})`;
+      }
+
+      const container = document.getElementById('enrolledStudentsList');
+      if (!container) return;
+
+      if (students.length === 0) {
+        container.innerHTML = '<p class="empty-state">Kursda hali o\'quvchilar yo\'q.</p>';
+        return;
+      }
+
+      container.innerHTML = students.map(s => {
+        const dateStr = s.enrolled_at ? new Date(s.enrolled_at).toLocaleDateString('uz-UZ') : '';
+        return `
+          <div class="resource-builder-item" style="display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-bottom: 8px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="avatar-xs" style="width:36px; height:36px; border-radius:50%; background:var(--duo-green-bg); color:var(--duo-green-dark); font-weight:700; display:flex; align-items:center; justify-content:center; text-transform:uppercase;">${s.student_name ? s.student_name[0] : '?'}</div>
+              <div>
+                <div style="font-weight:700; font-size:14px;">${s.student_name}</div>
+                <div style="font-size:12px; color:var(--muted);">Qo'shildi: ${dateStr} · Progress: ${s.progress_percent || 0}%</div>
+              </div>
+            </div>
+            <button type="button" class="btn-xs danger" onclick="CreateCourse.removeStudent(${s.student_id})" style="border:1px solid var(--rose-light); color:var(--rose); padding:6px 12px; border-radius:8px; cursor:pointer;">❌ Chiqarish</button>
+          </div>`;
+      }).join('');
+
+    } catch (e) {
+      window.toast?.show(e.message || "O'quvchilarni yuklashda xatolik", 'error');
+    }
+  },
+
+  async removeStudent(studentId) {
+    if (!confirm("Haqiqatan ham ushbu o'quvchini kursdan chiqarmoqchisiz?")) return;
+    try {
+      await API.delete(`/courses/${this.course.slug}/enrolled-students/?student_id=${studentId}`);
+      window.toast?.show("O'quvchi kursdan chiqarildi", 'success');
+      this.loadEnrolledStudents();
+    } catch (e) {
+      window.toast?.show(e.message || "Xatolik yuz berdi", 'error');
+    }
+  },
+
+  async addStudentManually() {
+    const emailInput = document.getElementById('manualStudentEmail');
+    const email = emailInput?.value?.trim();
+    if (!email) {
+      window.toast?.show("Email manzilini kiriting", "warning");
+      return;
+    }
+    try {
+      await API.post(`/courses/${this.course.slug}/enrolled-students/`, { email });
+      window.toast?.show("O'quvchi qo'shildi", 'success');
+      emailInput.value = '';
+      this.loadEnrolledStudents();
+    } catch (e) {
+      window.toast?.show(e.message || "Xatolik yuz berdi", 'error');
+    }
+  },
 };
+
+window.CreateCourse = CreateCourse;
 
 document.addEventListener('DOMContentLoaded', () => CreateCourse.init());

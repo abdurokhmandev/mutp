@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from apps.users.serializers import UserProfileSerializer
-from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse, LessonResource, Homework, HomeworkResource, HomeworkSubmission
+from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse, LessonResource, Homework, HomeworkResource, HomeworkSubmission, CourseInviteLink, EnrollmentRequest
 
 User = get_user_model()
 
@@ -337,5 +337,24 @@ class HomeworkSubmissionSerializer(serializers.ModelSerializer):
             'text_answer', 'file_answer', 'quiz_score', 'feedback', 'teacher_score',
             'submitted_at', 'reviewed_at', 'completed_at'
         ]
+
+
+class CourseInviteLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseInviteLink
+        fields = ['id', 'token', 'url', 'max_uses', 'use_count', 'is_active', 'created_by', 'created_at', 'expires_at']
+        read_only_fields = ['id', 'token', 'url', 'use_count', 'created_by', 'created_at']
+
+
+class EnrollmentRequestSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source='student.full_name', read_only=True)
+    course_title = serializers.CharField(source='course.title', read_only=True)
+    course_slug = serializers.CharField(source='course.slug', read_only=True)
+
+    class Meta:
+        model = EnrollmentRequest
+        fields = ['id', 'course', 'course_title', 'course_slug', 'student', 'student_name', 'invite_link', 'status', 'message', 'created_at', 'reviewed_at']
+        read_only_fields = ['id', 'course', 'course_title', 'course_slug', 'student', 'student_name', 'invite_link', 'status', 'created_at', 'reviewed_at']
+
 
 

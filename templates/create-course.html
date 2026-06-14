@@ -84,6 +84,19 @@
     .resource-builder-item { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; }
     .resource-builder-item .title { font-size: 13px; font-weight: 600; }
     .resource-builder-item .remove-btn { color: var(--rose); cursor: pointer; border: none; background: none; }
+
+    /* Invite link styles */
+    .invite-link-row { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .invite-link-url { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .invite-link-url span { font-family: monospace; font-size: 13px; color: var(--blue); word-break: break-all; }
+    .invite-link-meta { font-size: 12px; color: var(--muted); }
+    .invite-link-actions { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .btn-xs { padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border); background: var(--white); cursor: pointer; }
+    .btn-xs.danger { color: var(--rose); border-color: var(--rose-light); }
+    .btn-xs:hover { background: var(--surface-2); }
+    .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+    .badge-green { background: var(--green-light); color: var(--green); }
+    .badge-gray { background: var(--border); color: var(--muted); }
   </style>
 </head>
 <body>
@@ -111,6 +124,8 @@
         <div class="step" id="step3-tab"><div class="step-circle">3</div> Vazifalar</div>
         <div class="step-line"></div>
         <div class="step" id="step4-tab"><div class="step-circle">4</div> Nashr etish</div>
+        <div class="step-line" id="step5-line" style="display:none;"></div>
+        <div class="step" id="step5-tab" style="display:none;"><div class="step-circle">5</div> O'quvchilar</div>
       </div>
       
       <!-- Step 1 -->
@@ -241,9 +256,80 @@
           <h2 style="font-family:'Plus Jakarta Sans';margin-bottom:8px;">Deyarli tayyor!</h2>
           <p style="color:var(--muted);max-width:400px;margin:0 auto;">Kursni nashr etishdan oldin o'ng paneldagi ro'yxat to'liq bajarilganiga ishonch hosil qiling.</p>
         </div>
+
+        <div class="privacy-settings" style="margin-top: 24px;">
+          <div class="switch-wrap" style="margin-bottom: 12px;">
+            <div>
+              <div style="font-weight:700; font-size:15px;">Private kurs</div>
+              <div style="font-size:13px; color:var(--muted); margin-top:2px;">Faqat maxsus taklif havolasi orqali kirish mumkin</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="isPrivate" name="is_private">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="switch-wrap" style="margin-bottom: 12px;">
+            <div>
+              <div style="font-weight:700; font-size:15px;">Har bir o'quvchini qo'lda tasdiqlash</div>
+              <div style="font-size:13px; color:var(--muted); margin-top:2px;">True bo'lsa ustoz har bir arizani tasdiqlaydi</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="requireApproval" name="require_approval">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="form-group" style="margin-top: 16px;">
+            <label class="form-label">O'quvchilar chegarasi (bo'sh = cheksiz)</label>
+            <input type="number" id="enrollmentLimit" class="form-control" placeholder="Masalan: 10">
+          </div>
+        </div>
+
+        <!-- Nashr etilgandan keyin private kurs uchun -->
+        <div id="privateInviteSection" style="display:none; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+          <h4 style="font-family:'Plus Jakarta Sans'; margin-bottom:12px;">Maxsus taklif havolasi</h4>
+
+          <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <input type="number" id="newLinkMaxUses" class="form-control" placeholder="Maks foydalanuvchi (bo'sh = cheksiz)" style="flex:1;">
+            <input type="number" id="newLinkExpireDays" class="form-control" placeholder="Muddat (kun, bo'sh = cheksiz)" style="flex:1;">
+            <button onclick="CreateCourse.createInviteLink()" class="btn-primary" style="padding: 10px 16px;">+ Havola yaratish</button>
+          </div>
+
+          <div id="inviteLinksList" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+
+        <div id="publishSuccess" style="margin-top: 20px;"></div>
         
         <div style="display:flex; justify-content:space-between; margin-top:32px;">
           <button class="btn-secondary" onclick="nextStep(3)">Oldingi</button>
+          <button class="btn-primary" id="btnGoToStep5" style="display:none;" onclick="nextStep(5)">O'quvchilar <i class="ti ti-arrow-right"></i></button>
+        </div>
+      </div>
+
+      <!-- Step 5: O'quvchilar -->
+      <div class="step-content" id="step5">
+        <div style="margin-bottom:24px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h3 style="font-size:18px;font-family:'Plus Jakarta Sans';margin-bottom:4px;" id="enrolledStudentsTitle">Kurs o'quvchilari</h3>
+            <p style="font-size:13px;color:var(--muted);margin:0;">Kursga yozilgan yoki qo'shilgan o'quvchilar</p>
+          </div>
+        </div>
+
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:24px;">
+          <h4 style="font-size:14px; font-family:'Plus Jakarta Sans'; margin-bottom:12px;">Qo'lda o'quvchi qo'shish</h4>
+          <div style="display:flex; gap:8px;">
+            <input type="email" id="manualStudentEmail" class="form-control" placeholder="O'quvchi email manzili..." style="flex:1;">
+            <button onclick="CreateCourse.addStudentManually()" class="btn-primary" style="padding:10px 16px;">Qo'shish</button>
+          </div>
+        </div>
+
+        <div id="enrolledStudentsList" style="display:flex; flex-direction:column; gap:8px;">
+          <!-- Dynamically populated list of enrolled students -->
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-top:32px;">
+          <button class="btn-secondary" onclick="nextStep(4)">Oldingi</button>
         </div>
       </div>
       
@@ -305,6 +391,9 @@
       window.scrollTo(0, 0);
       if (step === 3 && typeof CreateCourse !== 'undefined') {
         CreateCourse.renderHomeworkList();
+      }
+      if (step === 5 && typeof CreateCourse !== 'undefined') {
+        CreateCourse.loadEnrolledStudents();
       }
     }
   </script>

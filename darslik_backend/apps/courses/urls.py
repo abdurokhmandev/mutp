@@ -31,7 +31,17 @@ from .views import (
     HomeworkResourceDeleteView,
     StudentCourseHomeworksView,
     LessonHomeworksView,
-    StudentHomeworkListView
+    StudentHomeworkListView,
+    InviteLinkCreateView,
+    InviteLinkListView,
+    InviteLinkToggleView,
+    InviteLinkDetailView,
+    InviteDetailView,
+    InviteJoinView,
+    EnrollmentRequestListView,
+    EnrollmentApproveView,
+    EnrollmentRejectView,
+    EnrolledStudentsListView
 )
 
 urlpatterns = [
@@ -79,5 +89,12 @@ urlpatterns = [
     path('homeworks/<int:id>/resources/', HomeworkResourceCreateView.as_view(), name='homework_resource_create'),
     path('homeworks/resources/<int:id>/', HomeworkResourceDeleteView.as_view(), name='homework_resource_delete'),
     path('<slug:slug>/homeworks/', StudentCourseHomeworksView.as_view(), name='student_course_homeworks'),
+
+    # Invite links
+    path('<slug:slug>/invite/create/',   InviteLinkCreateView.as_view(), name='invite_create'),
+    path('<slug:slug>/invite/links/',    InviteLinkListView.as_view(), name='invite_links'),
+    path('<slug:slug>/invite/<str:token>/toggle/', InviteLinkToggleView.as_view(), name='invite_toggle'),
+    path('<slug:slug>/invite/<str:token>/', InviteLinkDetailView.as_view(), name='invite_detail_teacher'),
+    path('<slug:slug>/enrolled-students/', EnrolledStudentsListView.as_view(), name='enrolled_students'),
 ]
 

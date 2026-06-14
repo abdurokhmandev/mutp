@@ -14,6 +14,7 @@ const TeacherDashboard = {
       await this.loadDashboard();
       await this.initNotifications();
       await this.initHomeworks();
+      await this.initRequests();
     } catch (e) {
       if (e.status === 403) {
         if (e.message?.includes('tasdiqlanmagan')) {
@@ -34,6 +35,7 @@ const TeacherDashboard = {
     ]);
     this.renderDashboard(dashRes.data);
     this.renderCourses(coursesRes.data);
+    this.populateCourseFilters(coursesRes.data);
   },
 
   updateSidebar() {
@@ -424,8 +426,112 @@ const TeacherDashboard = {
     document.getElementById('reviewScore').value = score || '';
 
     document.getElementById('reviewModal').style.display = 'flex';
+  },
+
+  populateCourseFilters(courses) {
+    const hwFilter = document.getElementById('hwCourseFilter');
+    const reqFilter = document.getElementById('requestCourseFilter');
+    const options = courses.map(c => `<option value="${c.slug}">${c.title}</option>`).join('');
+    
+    if (hwFilter) {
+      hwFilter.innerHTML = '<option value="">Barcha kurslar</option>' + options;
+    }
+    if (reqFilter) {
+      reqFilter.innerHTML = '<option value="">Barcha kurslar</option>' + options;
+    }
+  },
+
+  async initRequests() {
+    const courseFilter = document.getElementById('requestCourseFilter');
+    const statusFilter = document.getElementById('requestStatusFilter');
+
+    courseFilter?.addEventListener('change', () => this.loadEnrollmentRequests());
+    statusFilter?.addEventListener('change', () => this.loadEnrollmentRequests());
+
+    await this.loadEnrollmentRequests();
+  },
+
+  async loadEnrollmentRequests() {
+    const course = document.getElementById('requestCourseFilter')?.value || '';
+    const status = document.getElementById('requestStatusFilter')?.value || 'pending';
+    
+    let url = `/teacher/enrollment-requests/?status=${status}`;
+    if (course) url += `&course=${course}`;
+
+    try {
+      const res = await API.get(url);
+      const requests = res.data || [];
+      const badge = document.getElementById('requestsBadge');
+      
+      if (status === 'pending') {
+        if (requests.length > 0) {
+          badge.textContent = requests.length;
+          badge.style.display = 'inline-flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+
+      const container = document.getElementById('requestsList');
+      if (!container) return;
+
+      if (requests.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-2);font-size:13px; margin:0;">So\'rovlar topilmadi.</p>';
+        return;
+      }
+
+      container.innerHTML = requests.map(r => `
+        <div class="request-card" id="req-${r.id}">
+          <div class="request-student">
+            <div class="avatar-xs">${r.student_name ? r.student_name[0] : '?'}</div>
+            <div>
+              <div class="request-name">${r.student_name}</div>
+              <div class="request-course">${r.course_title}</div>
+            </div>
+          </div>
+          <div class="request-meta">
+            <div>📅 So'rov sanasi: ${new Date(r.created_at).toLocaleDateString('uz-UZ')}</div>
+            ${r.message ? `<div>💬 Izoh: "${r.message}"</div>` : ''}
+          </div>
+          ${r.status === 'pending' ? `
+            <div class="request-actions">
+              <button onclick="TeacherDashboard.approveRequest(${r.id})" class="btn-primary" style="padding: 6px 12px; font-size:12px; background:var(--duo-green); border:none; color:white; border-radius:6px; font-weight:600; cursor:pointer;">✅ Qabul</button>
+              <button onclick="TeacherDashboard.rejectRequest(${r.id})" class="btn-secondary" style="padding: 6px 12px; font-size:12px; border:1px solid var(--border); border-radius:6px; background:var(--white); cursor:pointer; color:var(--rose)">❌ Rad etish</button>
+            </div>
+          ` : `
+            <div class="request-actions" style="font-weight:600; font-size:12px; color:${r.status === 'approved' ? 'var(--green)' : 'var(--red)'}">
+              ${r.status === 'approved' ? 'Tasdiqlangan' : 'Rad etilgan'}
+            </div>
+          `}
+        </div>`).join('');
+    } catch (e) {
+      console.error("So'rovlarni yuklashda xatolik:", e);
+    }
+  },
+
+  async approveRequest(id) {
+    try {
+      await API.post(`/teacher/enrollment-requests/${id}/approve/`);
+      window.toast?.show("O'quvchi qabul qilindi — ularga bildirishnoma yuborildi", 'success');
+      this.loadEnrollmentRequests();
+    } catch (e) {
+      window.toast?.show(e.message || "Xatolik yuz berdi", 'error');
+    }
+  },
+
+  async rejectRequest(id) {
+    const reason = prompt("Rad etish sababi (ixtiyoriy):") || '';
+    try {
+      await API.post(`/teacher/enrollment-requests/${id}/reject/`, { reason });
+      window.toast?.show("So'rov rad etildi", 'info');
+      this.loadEnrollmentRequests();
+    } catch (e) {
+      window.toast?.show(e.message || "Xatolik yuz berdi", 'error');
+    }
   }
 };
+
+window.TeacherDashboard = TeacherDashboard;
 
 function closeReview() {
   document.getElementById('reviewModal').style.display = 'none';

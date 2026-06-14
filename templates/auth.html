@@ -261,9 +261,15 @@
       const user = await Auth.login(email, pass);
       if (user) {
         setTimeout(() => {
-          window.location.href = user.role === 'teacher'
-            ? '/dashboard-teacher.html'
-            : '/dashboard-student.html';
+          const redir = localStorage.getItem('redirect_after_login');
+          if (redir) {
+            localStorage.removeItem('redirect_after_login');
+            window.location.href = redir;
+          } else {
+            window.location.href = user.role === 'teacher'
+              ? '/dashboard-teacher.html'
+              : '/dashboard-student.html';
+          }
         }, 800);
       }
     }
@@ -287,9 +293,15 @@
       const user = await Auth.register(firstName, lastName, email, pass, currentRole, extra);
       if (user) {
         setTimeout(() => {
-          window.location.href = user.role === 'teacher'
-            ? '/dashboard-teacher.html'
-            : '/dashboard-student.html';
+          const redir = localStorage.getItem('redirect_after_login');
+          if (redir) {
+            localStorage.removeItem('redirect_after_login');
+            window.location.href = redir;
+          } else {
+            window.location.href = user.role === 'teacher'
+              ? '/dashboard-teacher.html'
+              : '/dashboard-student.html';
+          }
         }, 800);
       }
     }

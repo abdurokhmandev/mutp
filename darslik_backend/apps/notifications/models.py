@@ -8,6 +8,9 @@ class Notification(models.Model):
         HOMEWORK_SUBMITTED = 'homework_submitted', 'Homework Submitted'
         NEW_MESSAGE = 'new_message', 'New Message'
         HOMEWORK_REVIEWED = 'homework_reviewed', 'Homework Reviewed'
+        ENROLLMENT_REQUEST = 'enrollment_request', "Yozilish so'rovi"
+        ENROLLMENT_APPROVED = 'enrollment_approved', 'Yozilish tasdiqlandi'
+        ENROLLMENT_REJECTED = 'enrollment_rejected', 'Yozilish rad etildi'
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
     type = models.CharField(max_length=30, choices=Type.choices)

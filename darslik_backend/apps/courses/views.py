@@ -6,9 +6,10 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 
+from django.shortcuts import get_object_or_404
 from apps.core.utils import success_response, error_response
 from apps.users.models import User, TeacherProfile
-from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse, LessonResource, Homework, HomeworkResource, HomeworkSubmission
+from .models import Category, Course, Module, Lesson, Enrollment, LessonProgress, Review, Certificate, Question, AnswerOption, QuizAttempt, SavedCourse, LessonResource, Homework, HomeworkResource, HomeworkSubmission, CourseInviteLink, EnrollmentRequest
 from .permissions import IsTeacher, IsVerifiedTeacher, IsCourseOwner, IsEnrolledOrFreePreview
 from .serializers import (
     CategorySerializer,
@@ -25,7 +26,9 @@ from .serializers import (
     LessonResourceSerializer,
     HomeworkSerializer,
     HomeworkResourceSerializer,
-    HomeworkSubmissionSerializer
+    HomeworkSubmissionSerializer,
+    CourseInviteLinkSerializer,
+    EnrollmentRequestSerializer
 )
 
 
@@ -639,8 +642,24 @@ class CoursePublishView(APIView):
         course.status = Course.Status.PUBLISHED
         course.save()
 
+        # Ensure we have an invite link
+        link, created = CourseInviteLink.objects.get_or_create(
+            course=course,
+            created_by=request.user,
+            defaults={'max_uses': None, 'expires_at': None, 'is_active': True}
+        )
+
         serializer = CourseDetailSerializer(course, context={'request': request})
-        return success_response(data=serializer.data, message="Kurs muvaffaqiyatli nashr etildi")
+        payload = serializer.data
+        return Response({
+            "success": True,
+            "message": "Kurs muvaffaqiyatli nashr etildi",
+            "invite_token": str(link.token),
+            "data": {
+                **payload,
+                "invite_token": str(link.token)
+            }
+        })
 
 
 class ModuleCreateView(APIView):
@@ -1324,4 +1343,292 @@ class StudentHomeworkListView(APIView):
                 } if submission else None
             })
         return success_response(data=data, message="O'quvchi vazifalari ro'yxati")
+
+
+class InviteLinkCreateView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher, IsCourseOwner]
+
+    def post(self, request, slug):
+        course = get_object_or_404(Course, slug=slug, teacher=request.user)
+        max_uses = request.data.get('max_uses')
+        expires_days = request.data.get('expires_days')
+        expires_at = None
+        if expires_days:
+            from django.utils import timezone
+            from datetime import timedelta
+            expires_at = timezone.now() + timedelta(days=int(expires_days))
+
+        if max_uses:
+            max_uses = int(max_uses)
+        else:
+            max_uses = None
+
+        link = CourseInviteLink.objects.create(
+            course=course,
+            created_by=request.user,
+            max_uses=max_uses,
+            expires_at=expires_at
+        )
+        
+        payload = {
+            'token': str(link.token),
+            'url': f"/invite/{link.token}/",
+            'max_uses': link.max_uses
+        }
+        return Response({
+            "success": True,
+            "message": "Taklif havolasi yaratildi",
+            "data": payload,
+            **payload
+        })
+
+
+class InviteLinkListView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def get(self, request, slug):
+        course = get_object_or_404(Course, slug=slug, teacher=request.user)
+        links = CourseInviteLink.objects.filter(course=course).order_by('-created_at')
+        serializer = CourseInviteLinkSerializer(links, many=True)
+        return success_response(data=serializer.data)
+
+
+class InviteLinkToggleView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def patch(self, request, slug, token):
+        link = get_object_or_404(CourseInviteLink, token=token, course__slug=slug, course__teacher=request.user)
+        link.is_active = not link.is_active
+        link.save()
+        return success_response(data={'is_active': link.is_active}, message="Havola holati o'zgartirildi")
+
+
+class InviteLinkDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def delete(self, request, slug, token):
+        link = get_object_or_404(CourseInviteLink, token=token, course__slug=slug, course__teacher=request.user)
+        link.delete()
+        return success_response(message="Havola o'chirildi")
+
+
+class InviteDetailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, token):
+        link = get_object_or_404(CourseInviteLink, token=token)
+        course = link.course
+
+        # Check validity
+        is_valid = link.is_valid
+        reason = None
+        if not link.is_active:
+            reason = 'inactive'
+        elif link.max_uses and link.use_count >= link.max_uses:
+            reason = 'full'
+        elif link.expires_at and timezone.now() > link.expires_at:
+            reason = 'expired'
+
+        # Enrollment limit check
+        if is_valid and course.enrollment_limit:
+            current_count = Enrollment.objects.filter(course=course).count()
+            if current_count >= course.enrollment_limit:
+                is_valid = False
+                reason = 'full'
+
+        already_enrolled = False
+        if request.user.is_authenticated:
+            already_enrolled = Enrollment.objects.filter(course=course, student=request.user).exists()
+
+        # Build course data
+        course_data = {
+            'id': course.id,
+            'title': course.title,
+            'slug': course.slug,
+            'instructor_name': course.teacher.full_name,
+            'total_lessons': Lesson.objects.filter(module__course=course).count(),
+            'level': course.get_level_display(),
+            'price': float(course.price),
+            'is_free': course.is_free,
+            'thumbnail': request.build_absolute_uri(course.thumbnail.url) if course.thumbnail else None,
+            'enrollment_limit': course.enrollment_limit,
+            'require_approval': course.require_approval,
+        }
+
+        link_info = {
+            'is_valid': is_valid,
+            'use_count': link.use_count,
+            'max_uses': link.max_uses,
+            'already_enrolled': already_enrolled,
+            'reason': reason
+        }
+
+        return success_response(data={
+            'course': course_data,
+            'link_info': link_info
+        })
+
+
+class InviteJoinView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, token):
+        link = get_object_or_404(CourseInviteLink, token=token)
+        course = link.course
+
+        if not link.is_valid:
+            return error_response(message="Havola muddati o'tgan yoki noto'g'ri")
+
+        # Limit tekshiruvi
+        current_count = Enrollment.objects.filter(course=course).count()
+        if course.enrollment_limit and current_count >= course.enrollment_limit:
+            return error_response(message=f"Kursga maksimal o'quvchilar ({course.enrollment_limit} ta) yozilgan")
+
+        # Allaqachon yozilganmi?
+        if Enrollment.objects.filter(course=course, student=request.user).exists():
+            return error_response(message="Siz allaqachon bu kursga yozilgangiz")
+
+        from apps.notifications.models import Notification
+
+        if course.require_approval:
+            # So'rov yaratish
+            req, created = EnrollmentRequest.objects.get_or_create(
+                course=course, student=request.user,
+                defaults={'invite_link': link, 'message': request.data.get('message', '')}
+            )
+            if not created:
+                return error_response(message="So'rovingiz allaqachon yuborilgan")
+            
+            # Ustozga notification
+            Notification.objects.create(
+                recipient=course.teacher,
+                type='enrollment_request',
+                title='Yangi yozilish so\'rovi',
+                message=f'{request.user.full_name} "{course.title}" kursiga kirishni so\'radi',
+                link='dashboard-teacher.html#requests-section'
+            )
+            return success_response(data={'status': 'pending', 'message': "So'rovingiz ustozga yuborildi"})
+        else:
+            # Darhol yozilish
+            Enrollment.objects.create(course=course, student=request.user)
+            link.use_count += 1
+            link.save()
+            Notification.objects.create(
+                recipient=course.teacher,
+                type='new_enrollment',
+                title='Yangi o\'quvchi',
+                message=f'{request.user.full_name} "{course.title}" kursiga yozildi',
+                link='dashboard-teacher.html#students-section'
+            )
+            return success_response(data={'status': 'enrolled', 'course_slug': course.slug, 'message': "Muvaffaqiyatli yozildingiz!"})
+
+
+class EnrollmentRequestListView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def get(self, request):
+        status = request.query_params.get('status', 'pending')
+        course_slug = request.query_params.get('course')
+
+        qs = EnrollmentRequest.objects.filter(course__teacher=request.user)
+        if status:
+            qs = qs.filter(status=status)
+        if course_slug:
+            qs = qs.filter(course__slug=course_slug)
+
+        serializer = EnrollmentRequestSerializer(qs, many=True)
+        return success_response(data=serializer.data)
+
+
+class EnrollmentApproveView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def post(self, request, req_id):
+        req = get_object_or_404(EnrollmentRequest, id=req_id, course__teacher=request.user)
+        req.status = 'approved'
+        req.reviewed_at = timezone.now()
+        req.save()
+        # Enrollment yaratish
+        Enrollment.objects.get_or_create(course=req.course, student=req.student)
+        if req.invite_link:
+            req.invite_link.use_count += 1
+            req.invite_link.save()
+        # O'quvchiga notification
+        from apps.notifications.models import Notification
+        Notification.objects.create(
+            recipient=req.student,
+            type='enrollment_approved',
+            title='Kursga qabul qilindingiz! 🎉',
+            message=f'"{req.course.title}" kursiga kirishingiz tasdiqlandi',
+            link=f'course-detail.html?slug={req.course.slug}'
+        )
+        return success_response(message="Muvaffaqiyatli tasdiqlandi")
+
+
+class EnrollmentRejectView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def post(self, request, req_id):
+        req = get_object_or_404(EnrollmentRequest, id=req_id, course__teacher=request.user)
+        req.status = 'rejected'
+        req.reviewed_at = timezone.now()
+        req.save()
+        # O'quvchiga notification
+        from apps.notifications.models import Notification
+        reason = request.data.get('reason', '')
+        Notification.objects.create(
+            recipient=req.student,
+            type='enrollment_rejected',
+            title='Kursga kirish rad etildi',
+            message=f'"{req.course.title}" kursiga kirishingiz rad etildi. Sabab: {reason}',
+            link='courses.html'
+        )
+        return success_response(message="Rad etildi")
+
+
+class EnrolledStudentsListView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def get(self, request, slug):
+        course = get_object_or_404(Course, slug=slug, teacher=request.user)
+        enrollments = Enrollment.objects.filter(course=course).select_related('student').order_by('-enrolled_at')
+        
+        data = []
+        for e in enrollments:
+            data.append({
+                'id': e.id,
+                'student_id': e.student.id,
+                'student_name': e.student.full_name,
+                'avatar': request.build_absolute_uri(e.student.avatar.url) if e.student.avatar else None,
+                'enrolled_at': e.enrolled_at,
+                'progress_percent': e.progress_percent,
+                'is_completed': e.is_completed
+            })
+        return success_response(data=data)
+
+    def delete(self, request, slug):
+        course = get_object_or_404(Course, slug=slug, teacher=request.user)
+        student_id = request.data.get('student_id') or request.query_params.get('student_id')
+        if not student_id:
+            return error_response(message="Student ID berilmagan")
+        enrollment = get_object_or_404(Enrollment, course=course, student_id=student_id)
+        enrollment.delete()
+        return success_response(message="O'quvchi kursdan chiqarildi")
+
+    def post(self, request, slug):
+        course = get_object_or_404(Course, slug=slug, teacher=request.user)
+        email = request.data.get('email')
+        if not email:
+            return error_response(message="Email manzili kiritilmagan")
+        try:
+            student = User.objects.get(email=email, role='student')
+        except User.DoesNotExist:
+            return error_response(message="Bunday o'quvchi topilmadi")
+            
+        enrollment, created = Enrollment.objects.get_or_create(course=course, student=student)
+        if not created:
+            return error_response(message="O'quvchi allaqachon kursga qo'shilgan")
+            
+        return success_response(message="O'quvchi muvaffaqiyatli qo'shildi")
+
 
