@@ -5,6 +5,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView as SimpleJWTTokenRefreshView
 
 from apps.core.utils import success_response, error_response
+from django.conf import settings
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
