@@ -643,11 +643,15 @@ class CoursePublishView(APIView):
         course.save()
 
         # Ensure we have an invite link
-        link, created = CourseInviteLink.objects.get_or_create(
-            course=course,
-            created_by=request.user,
-            defaults={'max_uses': None, 'expires_at': None, 'is_active': True}
-        )
+        link = CourseInviteLink.objects.filter(course=course, is_active=True).first()
+        if not link:
+            link = CourseInviteLink.objects.create(
+                course=course,
+                created_by=request.user,
+                max_uses=None,
+                expires_at=None,
+                is_active=True
+            )
 
         serializer = CourseDetailSerializer(course, context={'request': request})
         payload = serializer.data
