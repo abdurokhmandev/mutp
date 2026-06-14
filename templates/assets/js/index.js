@@ -50,8 +50,19 @@ const IndexPage = {
     const students = this.allCourses.reduce((s, c) => s + (c.student_count || 0), 0);
     const statEls = document.querySelectorAll('.hero-stats [data-count]');
     if (statEls.length >= 2) {
+      const actualStudents = Math.max(students, count * 10);
       statEls[1].setAttribute('data-count', String(count));
-      if (statEls[0]) statEls[0].setAttribute('data-count', String(Math.max(students, count * 10)));
+      if (statEls[0]) statEls[0].setAttribute('data-count', String(actualStudents));
+
+      statEls.forEach(el => {
+        if (typeof window.runCounter === 'function') {
+          window.runCounter(el);
+        } else {
+          const suffix = el.dataset.suffix || '';
+          const target = parseInt(el.getAttribute('data-count')) || 0;
+          el.textContent = target.toLocaleString('uz-UZ') + suffix;
+        }
+      });
     }
   },
 
