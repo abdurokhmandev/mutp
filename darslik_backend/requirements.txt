@@ -9,3 +9,5 @@ gunicorn>=21.2.0
 dj-database-url>=2.1.0
 drf-spectacular>=0.27.1
 psycopg2-binary>=2.9.9
+aiogram>=3.0.0
+
