@@ -368,7 +368,15 @@ const CourseDetail = {
         this.loadForumDiscussions();
       }
 
+      // Hide spinner & show content
+      document.querySelectorAll('.detail-hero, .detail-layout').forEach(el => el.classList.add('loaded-state'));
+      const spinner = document.getElementById('loadingSpinner');
+      if (spinner) spinner.style.display = 'none';
+
     } catch (error) {
+      const spinner = document.getElementById('loadingSpinner');
+      if (spinner) spinner.style.display = 'none';
+      document.querySelectorAll('.detail-hero, .detail-layout').forEach(el => el.classList.add('loaded-state'));
       window.toast?.show(error.message, 'error');
     }
   },
@@ -456,15 +464,15 @@ const CourseDetail = {
 
         // Bind mark as done
         container.querySelectorAll('.mark-done-btn').forEach(btn => {
-          btn.onclick = async () => {
+          btn.onclick = () => {
             const hwId = btn.dataset.hwId;
-            try {
-              await API.post(`/courses/homeworks/${hwId}/submit/`);
+            const hwCard = btn.closest('.homework-card');
+            const hwTitle = hwCard.querySelector('.homework-card-title').textContent;
+            App.showHomeworkModal(hwId, hwTitle, async (formData) => {
+              await API.post(`/courses/homeworks/${hwId}/submit/`, formData);
               window.toast?.show("Vazifa muvaffaqiyatli topshirildi!", 'success');
               this.loadHomeworks();
-            } catch (err) {
-              window.toast?.show(err.message, 'error');
-            }
+            });
           };
         });
 
@@ -503,8 +511,8 @@ const CourseDetail = {
             const btnCopy = document.getElementById('btnCopyBannerInvite');
             if (btnCopy) {
               btnCopy.onclick = async () => {
-                try {
-                  await navigator.clipboard.writeText(data.invite_url);
+                const copied = await App.copyToClipboard(data.invite_url);
+                if (copied) {
                   const original = btnCopy.textContent;
                   btnCopy.textContent = '✅ Nusxalandi!';
                   btnCopy.style.background = '#15803d';
@@ -512,14 +520,8 @@ const CourseDetail = {
                     btnCopy.textContent = original;
                     btnCopy.style.background = '#16A34A';
                   }, 2000);
-                } catch {
-                  const input = document.createElement('input');
-                  input.value = data.invite_url;
-                  document.body.appendChild(input);
-                  input.select();
-                  document.execCommand('copy');
-                  document.body.removeChild(input);
-                  window.toast?.show('Havola nusxalandi!', 'success');
+                } else {
+                  window.toast?.show('Nusxalash imkonsiz', 'error');
                 }
               };
             }
@@ -532,8 +534,8 @@ const CourseDetail = {
             const btnCopy = document.getElementById('btnCopyBannerInvite');
             if (btnCopy) {
               btnCopy.onclick = async () => {
-                try {
-                  await navigator.clipboard.writeText(data.course_url);
+                const copied = await App.copyToClipboard(data.course_url);
+                if (copied) {
                   const original = btnCopy.textContent;
                   btnCopy.textContent = '✅ Nusxalandi!';
                   btnCopy.style.background = '#15803d';
@@ -541,14 +543,8 @@ const CourseDetail = {
                     btnCopy.textContent = original;
                     btnCopy.style.background = '#16A34A';
                   }, 2000);
-                } catch {
-                  const input = document.createElement('input');
-                  input.value = data.course_url;
-                  document.body.appendChild(input);
-                  input.select();
-                  document.execCommand('copy');
-                  document.body.removeChild(input);
-                  window.toast?.show('Havola nusxalandi!', 'success');
+                } else {
+                  window.toast?.show('Nusxalash imkonsiz', 'error');
                 }
               };
             }

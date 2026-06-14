@@ -99,6 +99,33 @@ const App = {
       .replace(/\n/g, '<br>');
   },
 
+  async copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        console.warn("navigator.clipboard failed, falling back", err);
+      }
+    }
+    try {
+      const el = document.createElement('textarea');
+      el.value = text;
+      el.setAttribute('readonly', '');
+      el.style.position = 'absolute';
+      el.style.left = '-9999px';
+      document.body.appendChild(el);
+      el.select();
+      const success = document.execCommand('copy');
+      document.body.removeChild(el);
+      if (!success) throw new Error("copy command failed");
+      return true;
+    } catch (err) {
+      console.error("Clipboard copy failed completely", err);
+      return false;
+    }
+  },
+
   updateNav() {
     const user = this.getUser();
     const nameEl = document.querySelector('[data-user-name]');
@@ -168,6 +195,95 @@ const App = {
 
   async logout() {
     await Auth.logout();
+  },
+
+  showHomeworkModal(homeworkId, title, callback) {
+    const existing = document.getElementById('hwSubmitModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'hwSubmitModal';
+    modal.style = `
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center; z-index: 10000;
+      font-family: 'Plus Jakarta Sans', sans-serif; opacity: 0; transition: opacity 0.2s ease;
+    `;
+
+    modal.innerHTML = `
+      <div style="background: white; border-radius: 24px; width: 90%; max-width: 480px; padding: 32px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); transform: scale(0.95); transition: transform 0.2s ease;">
+        <h3 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 800; color: var(--ink);">Vazifani topshirish</h3>
+        <p style="margin: 0 0 20px 0; font-size: 14px; color: var(--muted);">${title}</p>
+        
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">Yozma javob (ixtiyoriy):</label>
+          <textarea id="hwTextAnswer" placeholder="Vazifa javobini shu yerga yozishingiz mumkin..." rows="4" style="width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 12px; font-size: 13.5px; font-family: inherit; outline: none; resize: vertical; box-sizing: border-box;"></textarea>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+          <label style="display: block; font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 6px;">Fayl yuklash (ixtiyoriy):</label>
+          <div style="border: 2px dashed var(--border); border-radius: 12px; padding: 16px; text-align: center; cursor: pointer; position: relative;" id="hwFileDropzone">
+            <input type="file" id="hwFileAnswer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
+            <div id="hwFileInfo" style="color: var(--muted); font-size: 13px;">
+              <i class="ti ti-cloud-upload" style="font-size: 24px; color: var(--duo-green); display: block; margin-bottom: 6px;"></i>
+              Faylni sudrab keling yoki bosing
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button id="hwCancelBtn" style="padding: 10px 20px; border: none; border-radius: 12px; background: var(--surface); color: var(--ink-2); font-weight: 700; font-size: 13.5px; cursor: pointer;">Bekor qilish</button>
+          <button id="hwSubmitBtn" style="padding: 10px 24px; border: none; border-radius: 12px; background: var(--duo-green); color: white; font-weight: 700; font-size: 13.5px; cursor: pointer; box-shadow: 0 4px 0 var(--duo-green-dark); transition: transform 0.1s;">Yuborish</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+    
+    setTimeout(() => {
+      modal.style.opacity = '1';
+      modal.firstElementChild.style.transform = 'scale(1)';
+    }, 10);
+
+    const fileInput = modal.querySelector('#hwFileAnswer');
+    const fileInfo = modal.querySelector('#hwFileInfo');
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        const name = fileInput.files[0].name;
+        const size = (fileInput.files[0].size / 1024 / 1024).toFixed(2);
+        fileInfo.innerHTML = `<i class="ti ti-file" style="font-size: 24px; color: var(--duo-green); display: block; margin-bottom: 6px;"></i> <strong>${name}</strong> (${size} MB)`;
+      }
+    });
+
+    const closeModal = () => {
+      modal.style.opacity = '0';
+      modal.firstElementChild.style.transform = 'scale(0.95)';
+      setTimeout(() => modal.remove(), 200);
+    };
+
+    modal.querySelector('#hwCancelBtn').addEventListener('click', closeModal);
+    modal.querySelector('#hwSubmitBtn').addEventListener('click', async () => {
+      const text = modal.querySelector('#hwTextAnswer').value.trim();
+      const file = fileInput.files[0];
+
+      const btn = modal.querySelector('#hwSubmitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Yuborilmoqda...';
+
+      const formData = new FormData();
+      if (text) formData.append('text_answer', text);
+      if (file) formData.append('file_answer', file);
+
+      try {
+        await callback(formData);
+        closeModal();
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = 'Yuborish';
+        window.toast?.show(e.message || 'Xatolik yuz berdi', 'error');
+      }
+    });
   },
 };
 

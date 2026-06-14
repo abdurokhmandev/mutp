@@ -81,10 +81,44 @@
       .detail-layout { flex-direction: column; margin-top: 32px; padding: 0 20px;}
       .right-sidebar { width: 100%; position: static; order: -1; }
       .learning-grid { grid-template-columns: 1fr; }
+    
+    /* Loading Skeleton */
+    .detail-hero, .detail-layout {
+      opacity: 0;
+      transition: opacity 0.25s ease-in-out;
+    }
+    .loaded-state {
+      opacity: 1 !important;
+    }
+    #loadingSpinner {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--duo-green);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      z-index: 9999;
     }
   </style>
 </head>
 <body>
+  
+  <div id="loadingSpinner">
+    <div class="spinner-icon" style="width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--duo-green); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <span>Yuklanmoqda...</span>
+  </div>
+
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
 
   <!-- Navbar -->
   <nav class="nav">

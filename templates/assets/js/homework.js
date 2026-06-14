@@ -213,9 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (text) fd.append('text_answer', text);
       if (selectedFile) fd.append('file_answer', selectedFile);
 
-      await API.post(`/courses/homeworks/${hwId}/submit/`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      await API.post(`/courses/homeworks/${hwId}/submit/`, fd);
       
       loadHomework();
     } catch (err) {

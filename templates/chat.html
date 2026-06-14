@@ -139,6 +139,11 @@
           <div class="chat-header-role" id="headerRole"></div>
         </div>
       </div>
+      
+      <!-- Connection Loss Banner -->
+      <div id="connLossBanner" style="display:none; background:#FFF1F2; color:#E11D48; padding:8px 16px; text-align:center; font-weight:700; font-size:13px; border-bottom:1px solid #FDA4AF; align-items:center; justify-content:center; gap:8px;">
+        <span>⚠️ Tarmoq bilan aloqa uzildi. Qayta ulanishga harakat qilinmoqda...</span>
+      </div>
       <div class="chat-messages" id="chatMessages"></div>
       
       <!-- Upload preview area -->
@@ -323,10 +328,15 @@ const ChatApp = {
     try {
       const res = await API.get(`/chat/channels/${this.activeConvId}/messages/`);
       const msgs = res.data || [];
+      const banner = document.getElementById('connLossBanner');
+      if (banner) banner.style.display = 'none';
       if (msgs.length !== this.lastMsgCount) {
         this.renderMessages(msgs);
       }
-    } catch {}
+    } catch (e) {
+      const banner = document.getElementById('connLossBanner');
+      if (banner) banner.style.display = 'flex';
+    }
   },
 
   selectedFile: null,

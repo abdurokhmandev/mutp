@@ -59,6 +59,9 @@ const LessonPage = {
         }, 1500);
         return;
       }
+      const spinner = document.getElementById('loadingSpinner');
+      if (spinner) spinner.style.display = 'none';
+      document.querySelectorAll('.lesson-nav, .lesson-layout').forEach(el => el.classList.add('loaded-state'));
       window.toast?.show(e.message, 'error');
     }
   },
@@ -192,6 +195,11 @@ const LessonPage = {
         window.location.href = `/lesson.html?id=${next.id}&slug=${this.course?.slug || ''}`;
       };
     }
+
+    // Unhide content and hide spinner
+    document.querySelectorAll('.lesson-nav, .lesson-layout').forEach(el => el.classList.add('loaded-state'));
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner) spinner.style.display = 'none';
   },
 
   renderLessonPlayer(lesson) {
