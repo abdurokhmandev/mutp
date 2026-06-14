@@ -4,7 +4,7 @@ import django
 
 # Append darslik_backend to python path to resolve config and apps imports
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(os.path.join(ROOT_DIR, 'darslik_backend'))
+sys.path.append(ROOT_DIR)
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.dev')
 try:
