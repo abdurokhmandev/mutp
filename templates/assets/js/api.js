@@ -83,7 +83,9 @@ const API = {
       data = await response.json();
     } catch {
       if (!response.ok) {
-        throw Object.assign(new Error(this.parseError({}, response.status)), { status: response.status });
+        const text = await response.text().catch(() => '');
+        console.error('API Non-JSON Error Response:', text);
+        throw Object.assign(new Error(this.parseError({}, response.status)), { status: response.status, rawResponse: text });
       }
       return {};
     }
