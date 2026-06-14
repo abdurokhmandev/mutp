@@ -84,15 +84,20 @@ const TeacherDashboard = {
         const c = colors[i % colors.length];
         const pct = Math.round(e.progress_percent || 0);
         return `
-          <div class="student-item">
-            <div class="st-av" style="background:${c.bg};color:${c.fg}">${App.initials(e.student_name)}</div>
-            <div style="flex:1;min-width:0">
-              <div class="st-name">${e.student_name}</div>
-              <div class="st-course">${e.course_title}</div>
+          <div class="student-item" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;">
+            <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
+              <div class="st-av" style="background:${c.bg};color:${c.fg}; display:flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:50%; font-weight:700; flex-shrink:0;">${App.initials(e.student_name)}</div>
+              <div style="flex:1;min-width:0">
+                <div class="st-name" style="font-weight:600; font-size:13px;">${e.student_name}</div>
+                <div class="st-course" style="font-size:11px; color:var(--text-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${e.course_title}</div>
+              </div>
             </div>
-            <div class="prog-wrap">
-              <div class="prog-pct" style="color:${c.fg}">${pct}%</div>
-              <div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${c.fg}"></div></div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div class="prog-wrap" style="text-align:right;">
+                <div class="prog-pct" style="color:${c.fg}; font-size:11px; font-weight:700;">${pct}%</div>
+                <div class="prog-bar" style="width:50px; height:4px; background:var(--border); border-radius:2px; overflow:hidden;"><div class="prog-fill" style="width:${pct}%;height:100%;background:${c.fg}"></div></div>
+              </div>
+              <button onclick="openDirectChat(${e.student_id}, event)" class="btn-xs btn-message" style="padding:4px 8px; font-size:11px; cursor:pointer; height:auto; width:auto; margin:0; background:var(--duo-green); border-color:var(--duo-green); color:white; border-radius:6px; border:none;">💬 Xabar</button>
             </div>
           </div>
         `;
@@ -778,5 +783,35 @@ window.regenerateInviteLink = async function(slug, btn) {
     btn.disabled = false;
     btn.innerHTML = '🔄 Yangi havola';
 };
+
+async function openDirectChat(userId, event) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        localStorage.setItem('redirect_after_login', window.location.href);
+        window.location.href = '/auth.html?next=chat';
+        return;
+    }
+
+    const btn = event.currentTarget;
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳...';
+
+    try {
+        const res = await API.post(`/chat/direct/${userId}/`, {});
+        if (res.success && res.data?.channel_id) {
+            window.location.href = `/chat.html?channel=${res.data.channel_id}`;
+        } else {
+            window.toast?.show(res.message || 'Xatolik yuz berdi', 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    } catch (e) {
+        window.toast?.show('Server bilan bog\'lanishda xato', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+window.openDirectChat = openDirectChat;
 
 document.addEventListener('DOMContentLoaded', () => TeacherDashboard.init());

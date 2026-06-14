@@ -964,6 +964,7 @@ class TeacherDashboardView(APIView):
         for enrollment in recent_qs:
             recent_enrollments.append({
                 "id": enrollment.id,
+                "student_id": enrollment.student.id,
                 "student_name": enrollment.student.full_name,
                 "course_title": enrollment.course.title,
                 "price": float(enrollment.course.price),

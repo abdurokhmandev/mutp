@@ -165,15 +165,16 @@ const ChatApp = {
     App.updateNav();
     this.currentUser = App.getUser();
     await this.loadConversations();
-    // Auto-open if ?conv=ID in URL
+    // Auto-open if ?conv=ID or ?channel=ID or ?user=ID in URL
     const params = new URLSearchParams(location.search);
     if (params.get('conv')) this.openConv(parseInt(params.get('conv')));
+    else if (params.get('channel')) this.openConv(parseInt(params.get('channel')));
     else if (params.get('user')) await this.startOrOpenConv(parseInt(params.get('user')));
   },
 
   async loadConversations() {
     try {
-      const res = await API.get('/chat/');
+      const res = await API.get('/chat/channels/');
       this.conversations = res.data || [];
       this.renderConvList(this.conversations);
     } catch (e) {
@@ -188,15 +189,16 @@ const ChatApp = {
       return;
     }
     el.innerHTML = convs.map(c => {
-      const other = c.other_user;
-      const initials = this.initials(other?.full_name || '?');
-      const lastMsg = c.last_message?.content || '';
+      const isDirect = c.channel_type === 'direct';
+      const displayName = isDirect ? (c.other_user?.full_name || 'Shaxsiy chat') : c.name;
+      const initials = this.initials(displayName);
+      const lastMsg = c.last_message?.text || '';
       const unread = c.unread_count || 0;
       return `
         <div class="conv-item ${this.activeConvId === c.id ? 'active' : ''}" id="conv-${c.id}" onclick="ChatApp.openConv(${c.id})">
           <div class="conv-av">${initials}</div>
           <div class="conv-info">
-            <div class="conv-name">${other?.full_name || '—'}</div>
+            <div class="conv-name">${displayName}</div>
             <div class="conv-last">${lastMsg ? (lastMsg.length > 35 ? lastMsg.slice(0, 35) + '…' : lastMsg) : 'Hali xabar yo\'q'}</div>
           </div>
           ${unread ? `<span class="conv-badge">${unread}</span>` : ''}
@@ -205,9 +207,11 @@ const ChatApp = {
   },
 
   filterConvs(q) {
-    const filtered = this.conversations.filter(c =>
-      (c.other_user?.full_name || '').toLowerCase().includes(q.toLowerCase())
-    );
+    const filtered = this.conversations.filter(c => {
+      const isDirect = c.channel_type === 'direct';
+      const displayName = isDirect ? (c.other_user?.full_name || '') : c.name;
+      return displayName.toLowerCase().includes(q.toLowerCase());
+    });
     this.renderConvList(filtered);
   },
 
@@ -224,26 +228,27 @@ const ChatApp = {
 
     // Find conv data
     const conv = this.conversations.find(c => c.id === convId);
-    if (conv?.other_user) {
-      document.getElementById('headerAv').textContent = this.initials(conv.other_user.full_name);
-      document.getElementById('headerName').textContent = conv.other_user.full_name;
-      document.getElementById('headerRole').textContent = conv.other_user.role === 'teacher' ? 'Ustoz' : "O'quvchi";
+    if (conv) {
+      const isDirect = conv.channel_type === 'direct';
+      const displayName = isDirect ? (conv.other_user?.full_name || 'Shaxsiy chat') : conv.name;
+      document.getElementById('headerAv').textContent = this.initials(displayName);
+      document.getElementById('headerName').textContent = displayName;
+      document.getElementById('headerRole').textContent = isDirect ? (conv.other_user?.role === 'teacher' ? 'Ustoz' : "O'quvchi") : "Guruh";
     }
 
     await this.loadMessages();
     clearInterval(this.pollTimer);
-    this.pollTimer = setInterval(() => this.pollMessages(), 5000);
+    this.pollTimer = setInterval(() => this.pollMessages(), 3000);
   },
 
   async startOrOpenConv(userId) {
     try {
-      const res = await API.post('/chat/', { user_id: userId });
-      const conv = res.data;
-      if (!this.conversations.find(c => c.id === conv.id)) {
-        this.conversations.unshift(conv);
-        this.renderConvList(this.conversations);
+      const res = await API.post(`/chat/direct/${userId}/`, {});
+      const channelId = res.data?.channel_id;
+      if (channelId) {
+        await this.loadConversations();
+        this.openConv(channelId);
       }
-      this.openConv(conv.id);
     } catch (e) {
       window.toast?.show(e.message || 'Xatolik', 'error');
     }
@@ -254,7 +259,7 @@ const ChatApp = {
     const el = document.getElementById('chatMessages');
     el.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
     try {
-      const res = await API.get(`/chat/${this.activeConvId}/messages/`);
+      const res = await API.get(`/chat/channels/${this.activeConvId}/messages/`);
       this.renderMessages(res.data || []);
     } catch (e) {
       el.innerHTML = `<div style="padding:20px;color:var(--text-2)">Yuklanmadi: ${e.message}</div>`;
@@ -265,7 +270,7 @@ const ChatApp = {
   async pollMessages() {
     if (!this.activeConvId) return;
     try {
-      const res = await API.get(`/chat/${this.activeConvId}/messages/`);
+      const res = await API.get(`/chat/channels/${this.activeConvId}/messages/`);
       const msgs = res.data || [];
       if (msgs.length !== this.lastMsgCount) {
         this.renderMessages(msgs);
@@ -284,7 +289,7 @@ const ChatApp = {
         <div class="msg ${isMine ? 'mine' : 'theirs'}">
           ${!isMine ? `<div class="msg-av">${this.initials(m.sender_name)}</div>` : ''}
           <div>
-            <div class="msg-bubble">${this.escHtml(m.content)}</div>
+            <div class="msg-bubble">${this.escHtml(m.text)}</div>
             <div class="msg-time">${time}</div>
           </div>
         </div>`;
@@ -303,7 +308,6 @@ const ChatApp = {
     input.style.height = 'auto';
 
     // Optimistic render
-    const me = this.currentUser;
     const el = document.getElementById('chatMessages');
     const time = new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
     el.insertAdjacentHTML('beforeend', `
@@ -316,7 +320,7 @@ const ChatApp = {
     el.scrollTop = el.scrollHeight;
 
     try {
-      await API.post(`/chat/${this.activeConvId}/messages/`, { content });
+      await API.post(`/chat/channels/${this.activeConvId}/messages/`, { text: content });
       await this.loadMessages();
       await this.loadConversations();
     } catch (e) {

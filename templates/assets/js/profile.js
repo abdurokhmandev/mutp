@@ -6,17 +6,31 @@ const ProfilePage = {
     const dash = document.getElementById('dashboardLink');
     if (dash) dash.href = App.dashboardUrl(localStorage.getItem('user_role'));
 
+    const params = new URLSearchParams(location.search);
+    const userId = params.get('id');
+    const currentUser = App.getUser();
+    
+    // Check if viewing someone else's profile
+    const isOthersProfile = userId && currentUser && (String(userId) !== String(currentUser.id));
+
     try {
-      const result = await API.get('/auth/profile/');
-      this.render(result.data);
-      await this.loadCourses(result.data.role);
+      let result;
+      if (isOthersProfile) {
+        result = await API.get(`/auth/profile/${userId}/`);
+      } else {
+        result = await API.get('/auth/profile/');
+      }
+      this.render(result.data, isOthersProfile);
+      await this.loadCourses(result.data.role, isOthersProfile, userId);
     } catch (e) {
       window.toast?.show(e.message, 'error');
     }
   },
 
-  render(user) {
-    localStorage.setItem('user_data', JSON.stringify(user));
+  render(user, isOthersProfile = false) {
+    if (!isOthersProfile) {
+      localStorage.setItem('user_data', JSON.stringify(user));
+    }
 
     const nameEl = document.querySelector('.profile-name');
     const avatarEl = document.querySelector('.profile-avatar');
@@ -37,10 +51,12 @@ const ProfilePage = {
     const emailEl = document.querySelector('[data-profile-email]');
     if (emailEl) emailEl.textContent = user.email;
 
-    document.getElementById('editFirstName').value = user.first_name || '';
-    document.getElementById('editLastName').value = user.last_name || '';
-    document.getElementById('editPhone').value = user.phone || '';
-    document.getElementById('editBio').value = user.bio || '';
+    if (!isOthersProfile) {
+      document.getElementById('editFirstName').value = user.first_name || '';
+      document.getElementById('editLastName').value = user.last_name || '';
+      document.getElementById('editPhone').value = user.phone || '';
+      document.getElementById('editBio').value = user.bio || '';
+    }
 
     const infoList = document.querySelector('.info-list');
     if (infoList) {
@@ -68,24 +84,44 @@ const ProfilePage = {
       infoList.innerHTML = html;
     }
 
-    const logoutBtn = document.querySelector('[data-logout]');
-    if (logoutBtn) logoutBtn.onclick = (e) => { e.preventDefault(); Auth.logout(); };
+    const btnContainer = document.getElementById('profileButtonsContainer');
+    if (btnContainer) {
+      if (isOthersProfile) {
+        btnContainer.innerHTML = `
+          <button onclick="openDirectChat(${user.id}, event)" class="btn-primary" style="background:var(--duo-green); border-color:var(--duo-green); color:white; padding:8px 16px; font-size:13px; border-radius:8px; display:flex; align-items:center; gap:4px; cursor:pointer; font-weight:700;">
+            💬 Xabar yozish
+          </button>
+        `;
+      } else {
+        btnContainer.innerHTML = `
+          <button class="btn-secondary" onclick="openModal()"><i class="ti ti-edit"></i> Tahrirlash</button>
+          <button class="btn-secondary" data-logout style="margin-left:8px;">Chiqish</button>
+        `;
+        const logoutBtn = document.querySelector('[data-logout]');
+        if (logoutBtn) logoutBtn.onclick = (e) => { e.preventDefault(); Auth.logout(); };
+      }
+    }
   },
 
-  async loadCourses(role) {
+  async loadCourses(role, isOthersProfile = false, userId = null) {
     const grid = document.querySelector('.p-courses-grid');
     if (!grid) return;
 
     try {
       let courses = [];
       if (role === 'teacher') {
-        const res = await API.get('/courses/teacher/courses/');
-        courses = res.data || [];
+        const url = isOthersProfile ? `/auth/teachers/${userId}/` : '/courses/teacher/courses/';
+        const res = await API.get(url);
+        courses = isOthersProfile ? (res.data?.courses || []) : (res.data || []);
         grid.innerHTML = courses.map((c) => Courses.renderCourseCard(c)).join('');
       } else {
-        const res = await API.get('/courses/student/enrollments/');
-        const enrollments = res.data || [];
-        grid.innerHTML = enrollments.map((e) => Courses.renderCourseCard(e.course)).join('');
+        if (isOthersProfile) {
+          grid.innerHTML = '<p style="color:var(--text-2); font-size:13px; padding:20px;">O\'quvchi kurslari faqat uning o\'ziga ko\'rinadi</p>';
+        } else {
+          const res = await API.get('/courses/student/enrollments/');
+          const enrollments = res.data || [];
+          grid.innerHTML = enrollments.map((e) => Courses.renderCourseCard(e.course)).join('');
+        }
       }
     } catch {
       grid.innerHTML = '<p style="color:var(--muted)">Kurslar topilmadi</p>';
@@ -124,5 +160,35 @@ function openModal() {
 function closeModal() {
   document.getElementById('editModal')?.classList.remove('active');
 }
+
+async function openDirectChat(userId, event) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        localStorage.setItem('redirect_after_login', window.location.href);
+        window.location.href = '/auth.html?next=chat';
+        return;
+    }
+
+    const btn = event.currentTarget;
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳...';
+
+    try {
+        const res = await API.post(`/chat/direct/${userId}/`, {});
+        if (res.success && res.data?.channel_id) {
+            window.location.href = `/chat.html?channel=${res.data.channel_id}`;
+        } else {
+            window.toast?.show(res.message || 'Xatolik yuz berdi', 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    } catch (e) {
+        window.toast?.show('Server bilan bog\'lanishda xato', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+window.openDirectChat = openDirectChat;
 
 document.addEventListener('DOMContentLoaded', () => ProfilePage.init());

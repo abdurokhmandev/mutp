@@ -209,7 +209,8 @@ const CourseDetail = {
         instBox.onmouseout = () => { instBox.style.background = 'transparent'; };
         
         if (instructor.id) {
-          instBox.onclick = () => {
+          instBox.onclick = (e) => {
+            if (e.target.closest('button')) return;
             window.location.href = `/profile.html?id=${instructor.id}`;
           };
         }
@@ -229,6 +230,10 @@ const CourseDetail = {
               <div class="courses-count"><i class="ti ti-video"></i> ${instructor.courses_count || 0} ta Kurs</div>
             </div>
             <div class="inst-bio" style="font-size:13px;line-height:1.5;color:var(--muted);">${instructor.bio || "Bu o'qituvchi hali bio qo'shmagan."}</div>
+            <div class="instructor-actions" style="margin-top:12px; display:flex; gap:8px;">
+              <button onclick="window.location.href='/profile.html?id=${instructor.id}'" class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:8px; cursor:pointer; width:auto; border:1px solid var(--border);">👤 Profil</button>
+              <button onclick="openDirectChat(${instructor.id}, event)" class="btn-primary btn-message" style="padding:6px 12px; font-size:12px; border-radius:8px; cursor:pointer; width:auto; margin:0; background:var(--duo-green); border-color:var(--duo-green); color:white;">💬 Xabar yozish</button>
+            </div>
           </div>
         `;
       }
@@ -555,5 +560,35 @@ const CourseDetail = {
     }
   },
 };
+
+async function openDirectChat(userId, event) {
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        localStorage.setItem('redirect_after_login', window.location.href);
+        window.location.href = '/auth.html?next=chat';
+        return;
+    }
+
+    const btn = event.currentTarget;
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳...';
+
+    try {
+        const res = await API.post(`/chat/direct/${userId}/`, {});
+        if (res.success && res.data?.channel_id) {
+            window.location.href = `/chat.html?channel=${res.data.channel_id}`;
+        } else {
+            window.toast?.show(res.message || 'Xatolik yuz berdi', 'error');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    } catch (e) {
+        window.toast?.show('Server bilan bog\'lanishda xato', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+window.openDirectChat = openDirectChat;
 
 window.CourseDetail = CourseDetail;

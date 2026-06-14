@@ -581,5 +581,76 @@ class CourseInvite(models.Model):
         super().save(*args, **kwargs)
 
 
+class Discussion(models.Model):
+    """Kurs yoki dars darajasidagi muhokama mavzusi"""
+    class DiscussionType(models.TextChoices):
+        LESSON = 'lesson', 'Dars muhokamasi'
+        COURSE = 'course', 'Kurs muhokamasi'
+
+    discussion_type = models.CharField(max_length=10, choices=DiscussionType)
+    course          = models.ForeignKey(
+                        Course, on_delete=models.CASCADE,
+                        related_name='discussions'
+                      )
+    lesson          = models.ForeignKey(
+                        Lesson, null=True, blank=True,
+                        on_delete=models.CASCADE, related_name='discussions'
+                      )
+    author          = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    title           = models.CharField(max_length=300, blank=True)
+    text            = models.TextField()
+    video_timestamp = models.PositiveIntegerField(null=True, blank=True)  # sekund
+    is_pinned       = models.BooleanField(default=False)
+    is_resolved     = models.BooleanField(default=False)
+    views_count     = models.PositiveIntegerField(default=0)
+    created_at      = models.DateTimeField(auto_now_add=True)
+    updated_at      = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_pinned', '-created_at']
+        verbose_name = "Muhokama"
+
+
+class DiscussionReply(models.Model):
+    """Muhokamaga javob"""
+    discussion  = models.ForeignKey(
+                    Discussion, on_delete=models.CASCADE, related_name='replies'
+                  )
+    author      = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    text        = models.TextField()
+    parent      = models.ForeignKey(
+                    'self', null=True, blank=True,
+                    on_delete=models.SET_NULL, related_name='children'
+                  )
+    is_accepted = models.BooleanField(default=False)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+
+class DiscussionReaction(models.Model):
+    """Muhokama yoki javobga reakciya"""
+    class TargetType(models.TextChoices):
+        DISCUSSION = 'discussion', 'Muhokama'
+        REPLY      = 'reply',      'Javob'
+
+    target_type = models.CharField(max_length=15, choices=TargetType)
+    discussion  = models.ForeignKey(
+                    Discussion, null=True, blank=True,
+                    on_delete=models.CASCADE, related_name='reactions'
+                  )
+    reply       = models.ForeignKey(
+                    DiscussionReply, null=True, blank=True,
+                    on_delete=models.CASCADE, related_name='reactions'
+                  )
+    user        = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    emoji       = models.CharField(max_length=10)
+
+    class Meta:
+        unique_together = ['target_type', 'discussion', 'reply', 'user', 'emoji']
+
+
+
 
 

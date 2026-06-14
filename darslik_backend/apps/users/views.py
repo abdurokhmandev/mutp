@@ -93,6 +93,15 @@ class ProfileView(APIView):
         return error_response(message="Xatolik yuz berdi", errors=serializer.errors, status_code=400)
 
 
+class UserProfileDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        user = get_object_or_404(User, id=id)
+        serializer = UserProfileSerializer(user, context={'request': request})
+        return success_response(data=serializer.data, message="Foydalanuvchi profili")
+
+
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 

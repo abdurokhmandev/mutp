@@ -1,97 +1,238 @@
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from rest_framework.response import Response
 from apps.core.utils import success_response, error_response
-from .models import Conversation, Message
-from .serializers import ConversationSerializer, MessageSerializer
+from .models import Channel, ChannelMember, Message, MessageReaction
+from .serializers import ChannelSerializer, MessageSerializer
 
 User = get_user_model()
 
 
-class ConversationListView(APIView):
-    """Foydalanuvchi suhbatlari ro'yxati"""
+class ChannelListView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        convs = Conversation.objects.filter(participants=request.user)
-        serializer = ConversationSerializer(convs, many=True, context={'request': request})
-        return success_response(data=serializer.data, message="Suhbatlar")
+        channels = Channel.objects.filter(members=request.user, is_archived=False)
+        serializer = ChannelSerializer(channels, many=True, context={'request': request})
+        return success_response(data=serializer.data, message="Kanallar ro'yxati")
 
     def post(self, request):
-        """Yangi suhbat boshlash (boshqa foydalanuvchi ID bilan)"""
-        other_id = request.data.get('user_id')
-        if not other_id:
-            return error_response(message="user_id kiritilishi shart", status_code=400)
+        """Yangi guruh ochish (Ustozlar/Adminlar uchun)"""
+        name = request.data.get('name', '').strip()
+        description = request.data.get('description', '').strip()
+        if not name:
+            return error_response(message="Guruh nomi kiritilishi shart", status_code=400)
 
-        try:
-            other = User.objects.get(pk=other_id)
-        except User.DoesNotExist:
-            return error_response(message="Foydalanuvchi topilmadi", status_code=404)
-
-        if other == request.user:
-            return error_response(message="O'zingiz bilan suhbat boshlash mumkin emas", status_code=400)
-
-        # Mavjud suhbatni qidirish
-        conv = (
-            Conversation.objects
-            .filter(participants=request.user)
-            .filter(participants=other)
-            .first()
+        channel = Channel.objects.create(
+            name=name,
+            description=description,
+            channel_type=Channel.ChannelType.CUSTOM,
+            creator=request.user
         )
-        if not conv:
-            conv = Conversation.objects.create()
-            conv.participants.add(request.user, other)
+        ChannelMember.objects.create(channel=channel, user=request.user, role=ChannelMember.Role.ADMIN)
 
-        serializer = ConversationSerializer(conv, context={'request': request})
-        return success_response(data=serializer.data, message="Suhbat")
+        serializer = ChannelSerializer(channel, context={'request': request})
+        return success_response(data=serializer.data, message="Guruh yaratildi", status_code=201)
+
+
+class DirectChatView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        if str(request.user.id) == str(user_id):
+            return error_response(message="O'zingizga xabar yoza olmaysiz", status_code=400)
+
+        other_user = get_object_or_404(User, id=user_id)
+
+        # Qidirish
+        existing = Channel.objects.filter(
+            channel_type=Channel.ChannelType.DIRECT,
+            members=request.user
+        ).filter(members=other_user).first()
+
+        if existing:
+            return success_response(data={'channel_id': existing.id, 'is_new': False})
+
+        # Yangi yaratish
+        channel = Channel.objects.create(
+            channel_type=Channel.ChannelType.DIRECT,
+            name=f"{request.user.full_name} & {other_user.full_name}",
+            creator=request.user,
+        )
+        ChannelMember.objects.bulk_create([
+            ChannelMember(channel=channel, user=request.user, role=ChannelMember.Role.MEMBER),
+            ChannelMember(channel=channel, user=other_user, role=ChannelMember.Role.MEMBER),
+        ])
+
+        return success_response(data={
+            'channel_id': channel.id,
+            'is_new': True,
+            'other_user': {
+                'id': other_user.id,
+                'name': other_user.full_name,
+                'role': getattr(other_user, 'role', ''),
+            }
+        }, status_code=201)
 
 
 class MessageListCreateView(APIView):
-    """Suhbat xabarlari ro'yxati va yangi xabar yuborish"""
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, conv_id):
-        try:
-            conv = Conversation.objects.get(pk=conv_id, participants=request.user)
-        except Conversation.DoesNotExist:
-            return error_response(message="Suhbat topilmadi", status_code=404)
-
-        # Mark messages as read
-        conv.messages.filter(is_read=False).exclude(sender=request.user).update(is_read=True)
-
+    def get(self, request, channel_id):
+        channel = get_object_or_404(Channel, id=channel_id, members=request.user)
+        after_id = request.query_params.get('after')
         before_id = request.query_params.get('before')
-        qs = conv.messages.all()
+
+        qs = channel.messages.filter(is_deleted=False)
+        if after_id:
+            qs = qs.filter(id__gt=after_id)
         if before_id:
-            qs = qs.filter(pk__lt=before_id)
+            qs = qs.filter(id__lt=before_id)
+
         messages = qs.order_by('-created_at')[:50]
-        serializer = MessageSerializer(reversed(list(messages)), many=True)
+        # O'qilgan vaqtni yangilash
+        ChannelMember.objects.filter(channel=channel, user=request.user).update(last_read=timezone.now())
+
+        serializer = MessageSerializer(reversed(list(messages)), many=True, context={'request': request})
         return success_response(data=serializer.data, message="Xabarlar")
 
-    def post(self, request, conv_id):
-        try:
-            conv = Conversation.objects.get(pk=conv_id, participants=request.user)
-        except Conversation.DoesNotExist:
-            return error_response(message="Suhbat topilmadi", status_code=404)
+    def post(self, request, channel_id):
+        channel = get_object_or_404(Channel, id=channel_id, members=request.user)
+        text = request.data.get('text', '').strip()
+        msg_type = request.data.get('message_type', Message.MessageType.TEXT)
+        parent_id = request.data.get('parent')
 
-        content = request.data.get('content', '').strip()
-        if not content:
-            return error_response(message="Xabar matni bo'sh bo'lishi mumkin emas", status_code=400)
+        file_obj = request.FILES.get('file')
+        file_name = ""
+        file_size = None
+        if file_obj:
+            file_name = file_obj.name
+            file_size = file_obj.size
+            if not text:
+                text = file_name
 
-        msg = Message.objects.create(conversation=conv, sender=request.user, content=content)
-        conv.save()  # update updated_at
+        if not text and not file_obj:
+            return error_response(message="Xabar matni yoki fayl bo'sh bo'lishi mumkin emas", status_code=400)
 
-        # Create notification for recipient
-        try:
-            from apps.notifications.models import Notification
-            other = conv.participants.exclude(pk=request.user.pk).first()
-            if other:
-                Notification.objects.create(
-                    recipient=other,
-                    type=Notification.Type.NEW_MESSAGE,
-                    message=f"{request.user.full_name} sizga xabar yubordi"
-                )
-        except Exception:
-            pass
+        parent = None
+        if parent_id:
+            parent = get_object_or_404(Message, id=parent_id, channel=channel)
 
-        serializer = MessageSerializer(msg)
-        return success_response(data=serializer.data, message="Xabar yuborildi")
+        msg = Message.objects.create(
+            channel=channel,
+            sender=request.user,
+            message_type=msg_type,
+            text=text,
+            file=file_obj,
+            file_name=file_name,
+            file_size=file_size,
+            parent=parent
+        )
+        ChannelMember.objects.filter(channel=channel, user=request.user).update(last_read=timezone.now())
+
+        serializer = MessageSerializer(msg, context={'request': request})
+        return success_response(data=serializer.data, message="Xabar yuborildi", status_code=201)
+
+
+class MessageDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, id):
+        msg = get_object_or_404(Message, id=id, sender=request.user)
+        text = request.data.get('text', '').strip()
+        if not text:
+            return error_response(message="Matn bo'sh bo'lishi mumkin emas", status_code=400)
+
+        msg.text = text
+        msg.is_edited = True
+        msg.edited_at = timezone.now()
+        msg.save()
+
+        serializer = MessageSerializer(msg, context={'request': request})
+        return success_response(data=serializer.data, message="Xabar tahrirlandi")
+
+    def delete(self, request, id):
+        msg = get_object_or_404(Message, id=id, sender=request.user)
+        msg.is_deleted = True
+        msg.save()
+        return success_response(message="Xabar o'chirildi")
+
+
+class MessageReactView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        msg = get_object_or_404(Message, id=id)
+        emoji = request.data.get('emoji', '').strip()
+        if not emoji:
+            return error_response(message="Emoji tanlanishi kerak", status_code=400)
+
+        react, created = MessageReaction.objects.get_or_create(
+            message=msg,
+            user=request.user,
+            emoji=emoji
+        )
+        if not created:
+            react.delete()
+            return success_response(message="Reaksiya olib tashlandi")
+
+        return success_response(message="Reaksiya qo'shildi")
+
+
+class ChannelReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        channel = get_object_or_404(Channel, id=id, members=request.user)
+        ChannelMember.objects.filter(channel=channel, user=request.user).update(last_read=timezone.now())
+        return success_response(message="O'qilgan deb belgilandi")
+
+
+class ChannelUnreadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        channel = get_object_or_404(Channel, id=id, members=request.user)
+        member = channel.channelmember_set.filter(user=request.user).first()
+        if not member:
+            return success_response(data={'unread_count': 0})
+
+        qs = channel.messages.all()
+        if member.last_read:
+            qs = qs.filter(created_at__gt=member.last_read)
+        unread = qs.exclude(sender=request.user).count()
+        return success_response(data={'unread_count': unread})
+
+
+class ChannelMembersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        channel = get_object_or_404(Channel, id=id)
+        # Faqat admin a'zo qo'sha oladi
+        get_object_or_404(ChannelMember, channel=channel, user=request.user, role=ChannelMember.Role.ADMIN)
+
+        user_id = request.data.get('user_id')
+        user = get_object_or_404(User, id=user_id)
+
+        member, created = ChannelMember.objects.get_or_create(
+            channel=channel,
+            user=user,
+            defaults={'role': ChannelMember.Role.MEMBER}
+        )
+        if not created:
+            return error_response(message="Foydalanuvchi allaqachon a'zo", status_code=400)
+
+        return success_response(message="A'zo muvaffaqiyatli qo'shildi")
+
+    def delete(self, request, id, user_id):
+        channel = get_object_or_404(Channel, id=id)
+        # Faqat admin a'zoni chiqarib yubora oladi
+        get_object_or_404(ChannelMember, channel=channel, user=request.user, role=ChannelMember.Role.ADMIN)
+
+        member = get_object_or_404(ChannelMember, channel=channel, user_id=user_id)
+        member.delete()
+        return success_response(message="A'zo muvaffaqiyatli chiqarildi")
