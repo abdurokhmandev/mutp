@@ -33,7 +33,7 @@ class SendOTPView(APIView):
                 message="Avval Telegram botga kiring va raqamingizni ulashing",
                 errors={
                     "error": "bot_not_started",
-                    "bot_url": "https://t.me/MUTP_bot"
+                    "bot_url": "https://t.me/mutpbot"
                 },
                 status_code=400
             )
