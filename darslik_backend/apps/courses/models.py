@@ -97,6 +97,7 @@ class Course(models.Model):
     is_private = models.BooleanField(default=False)
     enrollment_limit = models.PositiveIntegerField(null=True, blank=True)  # None = cheksiz
     require_approval = models.BooleanField(default=False)  # True bo'lsa ustoz tasdiqlaydi
+    max_students = models.PositiveIntegerField(null=True, blank=True)
 
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
@@ -562,6 +563,23 @@ class EnrollmentRequest(models.Model):
 
     class Meta:
         unique_together = ['course', 'student']
+
+
+class CourseInvite(models.Model):
+    course           = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='invites')
+    token            = models.CharField(max_length=32, unique=True)
+    max_students     = models.PositiveIntegerField(null=True, blank=True)
+    require_approval = models.BooleanField(default=False)
+    used_count       = models.PositiveIntegerField(default=0)
+    is_active        = models.BooleanField(default=True)
+    created_at       = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            import secrets
+            self.token = secrets.token_urlsafe(16)
+        super().save(*args, **kwargs)
+
 
 
 

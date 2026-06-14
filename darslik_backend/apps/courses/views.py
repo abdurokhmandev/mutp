@@ -136,9 +136,8 @@ class EnrollView(APIView):
         except Course.DoesNotExist:
             return error_response(message="Kurs topilmadi", status_code=404)
 
-        # In MVP/testing phase, allow enrolling in paid courses for free
-        # if not course.is_free:
-        #     return error_response(message="Bu kurs pullik. Uni sotib olish uchun to'lov tizimidan foydalaning.", status_code=400)
+        if not course.is_free and course.price > 0:
+            return error_response(message="Bu kurs pullik. Uni sotib olish uchun to'lov tizimidan foydalaning.", status_code=400)
 
         # Check existing enrollment
         existing = Enrollment.objects.filter(student=request.user, course=course).exists()
@@ -628,42 +627,60 @@ class CoursePublishView(APIView):
 
     def post(self, request, slug):
         try:
-            course = Course.objects.get(slug=slug, teacher=request.user)
-        except Course.DoesNotExist:
-            return error_response(message="Kurs topilmadi", status_code=404)
+            try:
+                course = Course.objects.get(slug=slug, teacher=request.user)
+            except Course.DoesNotExist:
+                return error_response(message="Kurs topilmadi", status_code=404)
 
-        if not course.title:
-            return error_response(message="Kurs nomi kiritilmagan", status_code=400)
+            if not course.title:
+                return error_response(message="Kurs nomi kiritilmagan", status_code=400)
 
-        lesson_count = Lesson.objects.filter(module__course=course).count()
-        if lesson_count == 0:
-            return error_response(message="Nashr etish uchun kamida 1 ta dars qo'shing", status_code=400)
+            lesson_count = Lesson.objects.filter(module__course=course).count()
+            if lesson_count == 0:
+                return error_response(message="Nashr etish uchun kamida 1 ta dars qo'shing", status_code=400)
 
-        course.status = Course.Status.PUBLISHED
-        course.save()
+            is_private       = request.data.get('is_private', False)
+            require_approval = request.data.get('require_approval', False)
+            max_students     = request.data.get('max_students') or None
+            if max_students is not None:
+                max_students = int(max_students)
 
-        # Ensure we have an invite link
-        link = CourseInviteLink.objects.filter(course=course, is_active=True).first()
-        if not link:
-            link = CourseInviteLink.objects.create(
-                course=course,
-                created_by=request.user,
-                max_uses=None,
-                expires_at=None,
-                is_active=True
-            )
+            course.is_private       = is_private
+            course.require_approval = require_approval
+            course.max_students     = max_students
+            course.enrollment_limit = max_students
+            course.status           = Course.Status.PUBLISHED
+            course.save()
 
-        serializer = CourseDetailSerializer(course, context={'request': request})
-        payload = serializer.data
-        return Response({
-            "success": True,
-            "message": "Kurs muvaffaqiyatli nashr etildi",
-            "invite_token": str(link.token),
-            "data": {
-                **payload,
-                "invite_token": str(link.token)
-            }
-        })
+            invite_url = ""
+            token = ""
+            if is_private:
+                from .models import CourseInvite
+                invite = CourseInvite.objects.create(
+                    course=course,
+                    require_approval=require_approval,
+                    max_students=max_students,
+                )
+                invite_url = request.build_absolute_uri(f"/invite/{invite.token}/")
+                token = invite.token
+            else:
+                invite_url = request.build_absolute_uri(f"/course-detail.html?slug={course.slug}")
+
+            return Response({
+                "success": True,
+                "message": "Kurs muvaffaqiyatli nashr etildi",
+                "invite_url": invite_url,
+                "invite_token": token,
+                "is_private": is_private,
+                "require_approval": require_approval
+            })
+        except Exception as e:
+            import traceback
+            return Response({
+                "success": False,
+                "message": str(e),
+                "traceback": traceback.format_exc()
+            }, status=500)
 
 
 class ModuleCreateView(APIView):
@@ -1420,23 +1437,46 @@ class InviteDetailView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, token):
-        link = get_object_or_404(CourseInviteLink, token=token)
-        course = link.course
-
-        # Check validity
-        is_valid = link.is_valid
-        reason = None
-        if not link.is_active:
-            reason = 'inactive'
-        elif link.max_uses and link.use_count >= link.max_uses:
-            reason = 'full'
-        elif link.expires_at and timezone.now() > link.expires_at:
-            reason = 'expired'
+        from .models import CourseInvite, CourseInviteLink
+        
+        # Try CourseInvite first
+        invite = CourseInvite.objects.filter(token=token).first()
+        link = None
+        if invite:
+            course = invite.course
+            is_valid = invite.is_active
+            reason = None
+            if not invite.is_active:
+                reason = 'inactive'
+            elif invite.max_students and invite.used_count >= invite.max_students:
+                is_valid = False
+                reason = 'full'
+            
+            use_count = invite.used_count
+            max_uses = invite.max_students
+        else:
+            # Fallback to CourseInviteLink
+            link = get_object_or_404(CourseInviteLink, token=token)
+            course = link.course
+            is_valid = link.is_valid
+            reason = None
+            if not link.is_active:
+                reason = 'inactive'
+            elif link.max_uses and link.use_count >= link.max_uses:
+                is_valid = False
+                reason = 'full'
+            elif link.expires_at and timezone.now() > link.expires_at:
+                is_valid = False
+                reason = 'expired'
+            
+            use_count = link.use_count
+            max_uses = link.max_uses
 
         # Enrollment limit check
-        if is_valid and course.enrollment_limit:
+        if is_valid and (course.enrollment_limit or course.max_students):
+            limit = course.max_students or course.enrollment_limit
             current_count = Enrollment.objects.filter(course=course).count()
-            if current_count >= course.enrollment_limit:
+            if current_count >= limit:
                 is_valid = False
                 reason = 'full'
 
@@ -1455,14 +1495,14 @@ class InviteDetailView(APIView):
             'price': float(course.price),
             'is_free': course.is_free,
             'thumbnail': request.build_absolute_uri(course.thumbnail.url) if course.thumbnail else None,
-            'enrollment_limit': course.enrollment_limit,
+            'enrollment_limit': course.max_students or course.enrollment_limit,
             'require_approval': course.require_approval,
         }
 
         link_info = {
             'is_valid': is_valid,
-            'use_count': link.use_count,
-            'max_uses': link.max_uses,
+            'use_count': use_count,
+            'max_uses': max_uses,
             'already_enrolled': already_enrolled,
             'reason': reason
         }
@@ -1477,16 +1517,29 @@ class InviteJoinView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, token):
-        link = get_object_or_404(CourseInviteLink, token=token)
-        course = link.course
+        from .models import CourseInvite, CourseInviteLink
+        
+        invite = CourseInvite.objects.filter(token=token).first()
+        link = None
+        
+        if invite:
+            course = invite.course
+            is_valid = invite.is_active
+            if invite.max_students and invite.used_count >= invite.max_students:
+                is_valid = False
+        else:
+            link = get_object_or_404(CourseInviteLink, token=token)
+            course = link.course
+            is_valid = link.is_valid
 
-        if not link.is_valid:
+        if not is_valid:
             return error_response(message="Havola muddati o'tgan yoki noto'g'ri")
 
         # Limit tekshiruvi
+        limit = course.max_students or course.enrollment_limit
         current_count = Enrollment.objects.filter(course=course).count()
-        if course.enrollment_limit and current_count >= course.enrollment_limit:
-            return error_response(message=f"Kursga maksimal o'quvchilar ({course.enrollment_limit} ta) yozilgan")
+        if limit and current_count >= limit:
+            return error_response(message=f"Kursga maksimal o'quvchilar ({limit} ta) yozilgan")
 
         # Allaqachon yozilganmi?
         if Enrollment.objects.filter(course=course, student=request.user).exists():
@@ -1515,8 +1568,13 @@ class InviteJoinView(APIView):
         else:
             # Darhol yozilish
             Enrollment.objects.create(course=course, student=request.user)
-            link.use_count += 1
-            link.save()
+            if invite:
+                invite.used_count += 1
+                invite.save()
+            elif link:
+                link.use_count += 1
+                link.save()
+                
             Notification.objects.create(
                 recipient=course.teacher,
                 type='new_enrollment',

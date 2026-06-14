@@ -33,16 +33,20 @@ const CreateCourse = {
         const deleteBtn = document.getElementById('btnDeleteCourse');
         if (deleteBtn) deleteBtn.style.display = 'inline-flex';
 
-        // Show step 5 tab
-        const step5Tab = document.getElementById('step5-tab');
-        const step5Line = document.getElementById('step5-line');
-        const btnGoToStep5 = document.getElementById('btnGoToStep5');
-        if (step5Tab) step5Tab.style.display = 'flex';
-        if (step5Line) step5Line.style.display = 'block';
-        if (btnGoToStep5) btnGoToStep5.style.display = 'inline-block';
+        // Show step 5 tab if private
+        if (this.course.is_private) {
+          const step5Tab = document.getElementById('step5-tab');
+          const step5Line = document.getElementById('step5-line');
+          const btnGoToStep5 = document.getElementById('btnGoToStep5');
+          if (step5Tab) step5Tab.style.display = 'flex';
+          if (step5Line) step5Line.style.display = 'block';
+          if (btnGoToStep5) btnGoToStep5.style.display = 'inline-block';
+        }
       } catch (e) {
         window.toast?.show(e.message, 'error');
       }
+    } else {
+      this.selectCourseType('public');
     }
 
     this.bindEvents();
@@ -80,7 +84,7 @@ const CreateCourse = {
     document.getElementById('btnAddModule')?.addEventListener('click', () => this.addModule());
     document.getElementById('btnSaveDraft')?.addEventListener('click', () => this.saveStep1(true));
     document.getElementById('btnStep1Next')?.addEventListener('click', () => this.saveStep1(false));
-    document.getElementById('btnPublish')?.addEventListener('click', () => this.publish());
+    document.getElementById('btnPublish')?.addEventListener('click', () => this.handleStep4Action());
     document.getElementById('addHomeworkBtn')?.addEventListener('click', () => this.openHomeworkModal());
     document.getElementById('btnDeleteCourse')?.addEventListener('click', () => this.deleteCourse());
 
@@ -165,7 +169,8 @@ const CreateCourse = {
       document.getElementById('enrollmentLimit').value = this.course.enrollment_limit || '';
     }
 
-    this.handlePrivacyToggle();
+    this.selectCourseType(this.course.is_private ? 'private' : 'public');
+    this.handleApprovalToggle();
 
     if (this.course.status === 'published') {
       if (this.course.is_private) {
@@ -793,46 +798,141 @@ const CreateCourse = {
     });
   },
 
-  async publish() {
+  async handleStep4Action() {
     if (!this.course) {
       window.toast?.show('Avval kursni saqlang', 'error');
       return;
     }
-    try {
-      const isPrivate = document.getElementById('isPrivate').checked;
-      const requireApproval = document.getElementById('requireApproval').checked;
-      const enrollmentLimitVal = document.getElementById('enrollmentLimit').value;
-      const enrollmentLimit = enrollmentLimitVal ? parseInt(enrollmentLimitVal) : null;
+    const isPrivate = document.getElementById('isPrivate').checked;
 
-      const updateRes = await API.patch(`/courses/teacher/courses/${this.course.slug}/update/`, {
-        is_private: isPrivate,
-        require_approval: requireApproval,
-        enrollment_limit: enrollmentLimit
-      });
-      this.course = updateRes.data;
+    if (!isPrivate) {
+      // Holat A confirmation modal
+      const modal = document.getElementById('publishConfirmModal');
+      const modalBody = document.getElementById('publishModalBody');
+      modalBody.innerHTML = `
+        <div style="text-align: center; padding: 16px 0;">
+          <div style="font-size: 48px; margin-bottom: 16px;">✅</div>
+          <h3 style="font-family: 'Plus Jakarta Sans'; font-size: 20px; font-weight: 700; margin-bottom: 12px; color: var(--ink);">Kursni nashr etishga tayyormisiz?</h3>
+          <p style="color: var(--muted); font-size: 14px; margin-bottom: 16px;">Kurs katalogda ko'rinadi va har kim yozila oladi.</p>
+          <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; font-size: 13px; font-family: monospace; word-break: break-all; margin-bottom: 24px; color: var(--blue);">
+            🔗 Havola avtomatik yaratiladi:<br>
+            ${window.location.origin}/courses/${this.course.slug}/
+          </div>
+          <div style="display: flex; gap: 12px; justify-content: center;">
+            <button type="button" onclick="CreateCourse.closePublishModal()" class="btn-secondary" style="padding: 10px 20px;">BEKOR QILISH</button>
+            <button type="button" onclick="CreateCourse.executePublish()" class="btn-primary" style="padding: 10px 20px; background: #16A34A; border-color: #16A34A;">✓ NASHR ETISH</button>
+          </div>
+        </div>
+      `;
+      modal.style.display = 'flex';
+    } else {
+      // Private course: Save settings first, then publish and show invite modal (B or C)
+      try {
+        const requireApproval = document.getElementById('requireApproval').checked;
+        const enrollmentLimitVal = document.getElementById('enrollmentLimit').value;
+        const enrollmentLimit = enrollmentLimitVal ? parseInt(enrollmentLimitVal) : null;
 
-      const res = await API.post(`/courses/teacher/courses/${this.course.slug}/publish/`);
-      window.toast?.show('Kurs nashr etildi!', 'success');
+        window.toast?.show("Kurs nashr etilmoqda...", "info");
+        
+        const res = await API.post(`/courses/teacher/courses/${this.course.slug}/publish/`, {
+          is_private: true,
+          require_approval: requireApproval,
+          max_students: enrollmentLimit
+        });
+        window.toast?.show('Kurs muvaffaqiyatli nashr etildi! 🎉', 'success');
 
-      if (this.course.is_private) {
-        document.getElementById('privateInviteSection').style.display = 'block';
-        this.loadInviteLinks();
-      } else {
-        const activeToken = res.invite_token || res.data?.invite_token;
-        const inviteUrl = `${window.location.origin}/invite/${activeToken}/`;
-        document.getElementById('publishSuccess').innerHTML = `
-          <div class="publish-success-card" style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; margin-top:16px;">
-            <div style="font-size:24px; margin-bottom:8px;">🎉</div>
-            <h3 style="font-family:'Plus Jakarta Sans'; margin-bottom:12px;">Kurs nashr etildi!</h3>
-            <div class="invite-url-box" style="display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--white); border:1px solid var(--border); padding:8px 12px; border-radius:8px;">
-              <span style="font-family:monospace; font-size:13px; color:var(--blue); word-break:break-all;">${inviteUrl}</span>
-              <button onclick="CreateCourse.copyLink('${inviteUrl}')" class="btn-secondary" style="padding:6px 12px; font-size:13px; flex-shrink:0;">📋 Nusxa olish</button>
+        const inviteToken = res.invite_token || res.data?.invite_token || res.data?.token || "";
+        const inviteUrl = res.invite_url || res.data?.invite_url || `${window.location.origin}/invite/${inviteToken}/`;
+        
+        const limitText = enrollmentLimit ? `(chegara: ${enrollmentLimit} o'quvchi)` : '';
+
+        const modal = document.getElementById('publishConfirmModal');
+        const modalBody = document.getElementById('publishModalBody');
+
+        if (!requireApproval) {
+          // Holat B
+          modalBody.innerHTML = `
+            <div style="text-align: center; padding: 16px 0;">
+              <div style="font-size: 48px; margin-bottom: 16px;">🔗</div>
+              <h3 style="font-family: 'Plus Jakarta Sans'; font-size: 20px; font-weight: 700; margin-bottom: 12px; color: var(--ink);">Taklif havolasi</h3>
+              <p style="color: var(--muted); font-size: 14px; margin-bottom: 16px;">
+                Quyidagi havolani o'quvchilarga yuboring ${limitText}:
+              </p>
+              <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; font-size: 13px; font-family: monospace; word-break: break-all; margin-bottom: 12px; color: var(--blue);">
+                ${inviteUrl}
+              </div>
+              <button type="button" id="btnCopyInvite" onclick="CreateCourse.copyInviteLink('${inviteUrl}')" class="btn-secondary" style="width: 100%; margin-bottom: 16px; padding: 10px 16px;">📋 NUSXA OLISH</button>
+              <p style="font-size: 13px; color: var(--muted); margin-bottom: 24px;">
+                O'quvchi havolaga kirib, darhol yoziladi (tasdiqlash talab etilmaydi)
+              </p>
+              <div style="display: flex; gap: 12px; justify-content: center;">
+                <button type="button" onclick="CreateCourse.closePublishModal()" class="btn-secondary" style="padding: 10px 20px;">YOPISH</button>
+                <button type="button" onclick="CreateCourse.completePublishPrivate()" class="btn-primary" style="padding: 10px 20px; background: #16A34A; border-color: #16A34A;">✓ TAYYOR</button>
+              </div>
             </div>
-            <p class="invite-hint" style="font-size:12px; color:var(--muted); margin-top:8px; margin-bottom:0;">Bu havolani do'stlaringizga ulashing</p>
-          </div>`;
+          `;
+        } else {
+          // Holat C
+          modalBody.innerHTML = `
+            <div style="text-align: center; padding: 16px 0;">
+              <div style="font-size: 48px; margin-bottom: 16px;">🔒</div>
+              <h3 style="font-family: 'Plus Jakarta Sans'; font-size: 20px; font-weight: 700; margin-bottom: 12px; color: var(--ink);">Taklif havolasi (Tasdiqlash bilan)</h3>
+              <p style="color: var(--muted); font-size: 14px; margin-bottom: 16px;">
+                Quyidagi havolani o'quvchilarga yuboring ${limitText}:
+              </p>
+              <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; font-size: 13px; font-family: monospace; word-break: break-all; margin-bottom: 12px; color: var(--blue);">
+                ${inviteUrl}
+              </div>
+              <button type="button" id="btnCopyInvite" onclick="CreateCourse.copyInviteLink('${inviteUrl}')" class="btn-secondary" style="width: 100%; margin-bottom: 16px; padding: 10px 16px;">📋 NUSXA OLISH</button>
+              <p style="font-size: 13px; color: #b45309; margin-bottom: 24px; font-weight: 500;">
+                ⚠️ O'quvchi havolaga kirgach, ariza yuboradi — siz tasdiqlashingiz kerak bo'ladi (Ustoz panelingizda ko'rinadi)
+              </p>
+              <div style="display: flex; gap: 12px; justify-content: center;">
+                <button type="button" onclick="CreateCourse.closePublishModal()" class="btn-secondary" style="padding: 10px 20px;">YOPISH</button>
+                <button type="button" onclick="CreateCourse.completePublishPrivate()" class="btn-primary" style="padding: 10px 20px; background: #16A34A; border-color: #16A34A;">✓ TAYYOR</button>
+              </div>
+            </div>
+          `;
+        }
+        modal.style.display = 'flex';
+      } catch (e) {
+        window.toast?.show(e.message || "Nashr etishda xatolik yuz berdi", 'error');
       }
+    }
+  },
+
+  async executePublish() {
+    try {
+      window.toast?.show("Nashr etilmoqda...", "info");
+      await API.post(`/courses/teacher/courses/${this.course.slug}/publish/`);
+      window.toast?.show('Kurs muvaffaqiyatli nashr etildi! 🎉', 'success');
+      this.closePublishModal();
+      setTimeout(() => {
+        window.location.href = 'dashboard-teacher.html';
+      }, 1200);
     } catch (e) {
-      window.toast?.show(e.message, 'error');
+      window.toast?.show(e.message || "Nashr etishda xatolik yuz berdi", 'error');
+    }
+  },
+
+  closePublishModal() {
+    document.getElementById('publishConfirmModal').style.display = 'none';
+  },
+
+  completePublishPrivate() {
+    this.closePublishModal();
+    nextStep(5);
+  },
+
+  copyInviteLink(url) {
+    navigator.clipboard.writeText(url);
+    window.toast?.show('Havola nusxalandi!', 'success');
+    const copyBtn = document.getElementById('btnCopyInvite');
+    if (copyBtn) {
+      copyBtn.textContent = 'Nusxalandi! ✓';
+      copyBtn.style.background = '#F0FDF4';
+      copyBtn.style.color = '#16A34A';
+      copyBtn.style.borderColor = '#16A34A';
     }
   },
 
@@ -1301,6 +1401,60 @@ const CreateCourse = {
     }
   },
 
+  selectCourseType(type) {
+    const isPrivate = (type === 'private');
+    document.getElementById('isPrivate').checked = isPrivate;
+
+    const publicCard = document.getElementById('publicTypeCard');
+    const publicCheck = document.getElementById('publicRadioCheck');
+    const privateCard = document.getElementById('privateTypeCard');
+    const privateCheck = document.getElementById('privateRadioCheck');
+
+    if (isPrivate) {
+      publicCard.style.borderColor = '#D1D5DB';
+      publicCard.style.background = 'white';
+      publicCard.style.color = 'var(--ink)';
+      publicCheck.textContent = '○';
+      publicCheck.style.color = '#D1D5DB';
+
+      privateCard.style.borderColor = '#16A34A';
+      privateCard.style.background = '#F0FDF4';
+      privateCard.style.color = '#16A34A';
+      privateCheck.textContent = '✓';
+      privateCheck.style.color = '#16A34A';
+
+      document.getElementById('privateSettingsFields').style.display = 'flex';
+      document.getElementById('publicHelpInfo').style.display = 'none';
+
+      const btnAction = document.getElementById('btnStep4Action');
+      if (btnAction) {
+        btnAction.innerHTML = `O'QUVCHILAR <i class="ti ti-arrow-right"></i>`;
+      }
+    } else {
+      publicCard.style.borderColor = '#16A34A';
+      publicCard.style.background = '#F0FDF4';
+      publicCard.style.color = '#16A34A';
+      publicCheck.textContent = '✓';
+      publicCheck.style.color = '#16A34A';
+
+      privateCard.style.borderColor = '#D1D5DB';
+      privateCard.style.background = 'white';
+      privateCard.style.color = 'var(--ink)';
+      privateCheck.textContent = '○';
+      privateCheck.style.color = '#D1D5DB';
+
+      document.getElementById('privateSettingsFields').style.display = 'none';
+      document.getElementById('publicHelpInfo').style.display = 'block';
+
+      const btnAction = document.getElementById('btnStep4Action');
+      if (btnAction) {
+        btnAction.innerHTML = `NASHR ETISH <i class="ti ti-arrow-right"></i>`;
+      }
+    }
+
+    this.handlePrivacyToggle();
+  },
+
   handlePrivacyToggle() {
     const isPrivate = document.getElementById('isPrivate').checked;
     const requireApproval = document.getElementById('requireApproval');
@@ -1332,9 +1486,23 @@ const CreateCourse = {
   },
 
   handleApprovalToggle() {
-    const requireApproval = document.getElementById('requireApproval').checked;
+    const requireApprovalCheckbox = document.getElementById('requireApproval');
+    const requireApproval = requireApprovalCheckbox.checked;
+    const wrap = requireApprovalCheckbox.closest('.switch-wrap');
+
+    if (wrap) {
+      if (requireApproval) {
+        wrap.style.borderColor = '#16A34A';
+        wrap.style.background = '#F0FDF4';
+        wrap.style.color = '#16A34A';
+      } else {
+        wrap.style.borderColor = '#D1D5DB';
+        wrap.style.background = 'white';
+        wrap.style.color = 'var(--ink)';
+      }
+    }
+
     const manualAddSection = document.querySelector('#step5 div[style*="background:var(--surface)"]');
-    
     if (manualAddSection) {
       if (requireApproval) {
         manualAddSection.style.display = 'block';

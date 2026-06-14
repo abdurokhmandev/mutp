@@ -258,31 +258,52 @@
         </div>
 
         <div class="privacy-settings" style="margin-top: 24px;">
-          <div class="switch-wrap" style="margin-bottom: 12px;">
-            <div>
-              <div style="font-weight:700; font-size:15px;">Private kurs</div>
-              <div style="font-size:13px; color:var(--muted); margin-top:2px;">Faqat maxsus taklif havolasi orqali kirish mumkin</div>
+          <label class="form-label" style="font-weight: 700; margin-bottom: 12px; display: block;">Kurs turi</label>
+          <div style="display:flex; flex-direction:column; gap:12px; margin-bottom: 20px;">
+            <!-- Public option -->
+            <div class="radio-card active" id="publicTypeCard" onclick="CreateCourse.selectCourseType('public')" style="text-align:left; padding:16px; display:flex; justify-content:space-between; align-items:center; border:2px solid #16A34A; background:#F0FDF4; color:#16A34A; border-radius:12px; cursor:pointer;">
+              <div>
+                <div style="font-weight:700; font-size:15px; display:flex; align-items:center; gap:8px;">🌐 Public kurs (katalogda ko'rinadi)</div>
+                <div style="font-size:13px; color:var(--muted); margin-top:2px;">Kurs katalogda ko'rinadi, har kim yozila oladi</div>
+              </div>
+              <div class="radio-check" id="publicRadioCheck" style="font-weight:700; font-size:18px;">✓</div>
             </div>
-            <label class="switch">
-              <input type="checkbox" id="isPrivate" name="is_private" onchange="CreateCourse.handlePrivacyToggle()">
-              <span class="slider"></span>
-            </label>
+
+            <!-- Private option -->
+            <div class="radio-card" id="privateTypeCard" onclick="CreateCourse.selectCourseType('private')" style="text-align:left; padding:16px; display:flex; justify-content:space-between; align-items:center; border:2px solid #D1D5DB; background:white; color:var(--ink); border-radius:12px; cursor:pointer;">
+              <div>
+                <div style="font-weight:700; font-size:15px; display:flex; align-items:center; gap:8px;">🔒 Private kurs (katalogda ko'rinmaydi)</div>
+                <div style="font-size:13px; color:var(--muted); margin-top:2px;">Faqat maxsus taklif havolasi orqali kirish mumkin</div>
+              </div>
+              <div class="radio-check" id="privateRadioCheck" style="font-weight:700; font-size:18px; color:#D1D5DB;">○</div>
+            </div>
           </div>
 
-          <div class="switch-wrap" style="margin-bottom: 12px;">
-            <div>
-              <div style="font-weight:700; font-size:15px;">Har bir o'quvchini qo'lda tasdiqlash</div>
-              <div style="font-size:13px; color:var(--muted); margin-top:2px;">True bo'lsa ustoz har bir arizani tasdiqlaydi</div>
-            </div>
-            <label class="switch">
-              <input type="checkbox" id="requireApproval" name="require_approval" onchange="CreateCourse.handleApprovalToggle()">
-              <span class="slider"></span>
-            </label>
+          <!-- Hidden inputs to match backend requirements -->
+          <input type="checkbox" id="isPrivate" name="is_private" style="display:none;">
+
+          <!-- Public help info -->
+          <div id="publicHelpInfo" style="margin-top: 16px; padding: 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; font-size: 13.5px; color: #1e3a8a; line-height: 1.5;">
+            ℹ️ Kurs katalogda ko'rinadi va har kim yozila oladi. <br> Nashr etilgandan keyin avtomatik havola yaratiladi.
           </div>
 
-          <div class="form-group" style="margin-top: 16px;">
-            <label class="form-label">O'quvchilar chegarasi (bo'sh = cheksiz)</label>
-            <input type="number" id="enrollmentLimit" class="form-control" placeholder="Masalan: 10">
+          <!-- Private options wrapping container -->
+          <div id="privateSettingsFields" style="display:none; margin-top: 16px; display:flex; flex-direction:column; gap:16px;">
+            <div class="switch-wrap" style="margin-bottom: 0;">
+              <div>
+                <div style="font-weight:700; font-size:15px;">Har bir o'quvchini qo'lda tasdiqlash</div>
+                <div style="font-size:13px; color:var(--muted); margin-top:2px;">True bo'lsa ustoz har bir arizani tasdiqlaydi</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="requireApproval" name="require_approval" onchange="CreateCourse.handleApprovalToggle()">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="form-group" style="margin-top: 0;">
+              <label class="form-label">O'quvchilar chegarasi (bo'sh = cheksiz)</label>
+              <input type="number" id="enrollmentLimit" class="form-control" placeholder="Masalan: 10">
+            </div>
           </div>
         </div>
 
@@ -303,7 +324,7 @@
         
         <div style="display:flex; justify-content:space-between; margin-top:32px;">
           <button class="btn-secondary" onclick="nextStep(3)">Oldingi</button>
-          <button class="btn-primary" id="btnGoToStep5" style="display:none;" onclick="nextStep(5)">O'quvchilar <i class="ti ti-arrow-right"></i></button>
+          <button class="btn-primary" id="btnStep4Action" onclick="CreateCourse.handleStep4Action()">NASHR ETISH <i class="ti ti-arrow-right"></i></button>
         </div>
       </div>
 
@@ -397,6 +418,15 @@
       }
     }
   </script>
+
+  <!-- Publish Confirmation Modal -->
+  <div id="publishConfirmModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+    <div class="modal-content" style="background:var(--white); border-radius:16px; width:100%; max-width:520px; padding:24px; box-shadow:0 8px 30px rgba(0,0,0,0.15); display:flex; flex-direction:column; gap:16px;">
+      <div id="publishModalBody">
+        <!-- Will be dynamically populated for Holat A, Holat B, and Holat C -->
+      </div>
+    </div>
+  </div>
 
   <!-- Dars Tahrirlash Modali -->
   <div id="lessonModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
