@@ -30,6 +30,8 @@ def format_phone(phone: str) -> str:
 async def save_or_update_telegram_user_api(chat_id, phone, username, first_name):
     # Try to get backend URL from env, else fallback to local/internal URLs
     backend_url = os.environ.get('BACKEND_API_URL', 'http://127.0.0.1:8000').rstrip('/')
+    if backend_url and not backend_url.startswith(('http://', 'https://')):
+        backend_url = 'https://' + backend_url
     url = f"{backend_url}/api/auth/telegram-user/"
     
     headers = {
