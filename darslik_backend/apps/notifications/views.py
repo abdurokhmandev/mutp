@@ -30,3 +30,12 @@ class NotificationMarkReadView(APIView):
             # Mark all as read
             Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
         return success_response(message="Belgilandi")
+
+
+class NotificationUnreadCountView(APIView):
+    """O'qilmagan bildirishnomalar sonini qaytarish"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+        return success_response(data={'count': count})

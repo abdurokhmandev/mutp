@@ -1096,19 +1096,62 @@ class HomeworkSubmitView(APIView):
         except Homework.DoesNotExist:
             return error_response(message="Vazifa topilmadi", status_code=404)
 
-        # Check enrollment
         if not Enrollment.objects.filter(student=request.user, course=homework.course).exists():
             return error_response(message="Siz ushbu kursga yozilmagansiz", status_code=403)
 
         submission, created = HomeworkSubmission.objects.get_or_create(
             homework=homework,
-            student=request.user,
-            defaults={'status': 'submitted', 'completed_at': timezone.now()}
+            student=request.user
         )
-        if not created:
+
+        if homework.type == 'quiz':
+            raw_answers = request.data.get('answers', {})
+            answers = {}
+            if isinstance(raw_answers, list):
+                for item in raw_answers:
+                    if isinstance(item, dict) and 'question_id' in item:
+                        answers[str(item['question_id'])] = item.get('answer_id')
+            elif isinstance(raw_answers, dict):
+                answers = raw_answers
+
+            questions = Question.objects.filter(homework=homework)
+            total = questions.count()
+            if total == 0:
+                return error_response(message="Ushbu vazifa uchun test savollari mavjud emas", status_code=400)
+
+            correct_count = 0
+            for q in questions:
+                selected_option_id = answers.get(str(q.id))
+                correct_option = AnswerOption.objects.filter(question=q, is_correct=True).first()
+                if selected_option_id and correct_option and int(selected_option_id) == correct_option.id:
+                    correct_count += 1
+
+            score = (correct_count / total) * 100.0
+            submission.quiz_score = score
             submission.status = 'submitted'
+            submission.submitted_at = timezone.now()
             submission.completed_at = timezone.now()
             submission.save()
+        else:
+            # Written/File homework
+            text_answer = request.data.get('text_answer', '')
+            file_answer = request.FILES.get('file_answer', None)
+
+            submission.text_answer = text_answer
+            if file_answer:
+                submission.file_answer = file_answer
+            submission.status = 'submitted'
+            submission.submitted_at = timezone.now()
+            submission.completed_at = timezone.now()
+            submission.save()
+
+        # Update lesson progress if appropriate
+        if homework.after_lesson:
+            enrollment = Enrollment.objects.filter(student=request.user, course=homework.course).first()
+            if enrollment:
+                progress, _ = LessonProgress.objects.get_or_create(enrollment=enrollment, lesson=homework.after_lesson)
+                progress.is_completed = True
+                progress.save()
 
         serializer = HomeworkSubmissionSerializer(submission, context={'request': request})
         return success_response(data=serializer.data, message="Vazifa topshirildi")
@@ -1166,4 +1209,86 @@ class HomeworkResourceDeleteView(APIView):
 
         res.delete()
         return success_response(message="Material o'chirildi")
+
+
+class LessonHomeworksView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, lesson_id):
+        try:
+            lesson = Lesson.objects.get(id=lesson_id)
+        except Lesson.DoesNotExist:
+            return error_response(message="Dars topilmadi", status_code=404)
+
+        if not Enrollment.objects.filter(student=request.user, course=lesson.module.course).exists() and lesson.module.course.teacher != request.user:
+            return error_response(message="Siz ushbu kursga yozilmagansiz", status_code=403)
+
+        homeworks = Homework.objects.filter(after_lesson=lesson).order_by('order')
+        serializer = HomeworkSerializer(homeworks, many=True, context={'request': request})
+        return success_response(data=serializer.data, message="Dars vazifalari")
+
+
+class TeacherHomeworksListView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def get(self, request):
+        homeworks = Homework.objects.filter(course__teacher=request.user).order_by('-created_at')
+        data = []
+        for hw in homeworks:
+            sub_count = HomeworkSubmission.objects.filter(homework=hw, status='submitted').count()
+            data.append({
+                'id': hw.id,
+                'title': hw.title,
+                'course_title': hw.course.title,
+                'submission_count': sub_count,
+                'type': hw.type,
+                'deadline_days': hw.deadline_days
+            })
+        return success_response(data=data, message="Ustoz vazifalari ro'yxati")
+
+
+class TeacherHomeworkSubmissionsView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def get(self, request, hw_id):
+        from django.shortcuts import get_object_or_404
+        homework = get_object_or_404(Homework, id=hw_id)
+        if homework.course.teacher != request.user:
+            return error_response(message="Ruxsat berilmagan", status_code=403)
+
+        submissions = HomeworkSubmission.objects.filter(homework=homework).order_by('-submitted_at')
+        serializer = HomeworkSubmissionSerializer(submissions, many=True, context={'request': request})
+        return success_response(data=serializer.data, message="Vazifa topshiriqlari")
+
+
+class HomeworkReviewView(APIView):
+    permission_classes = [IsAuthenticated, IsVerifiedTeacher]
+
+    def post(self, request, sub_id):
+        from django.shortcuts import get_object_or_404
+        from apps.notifications.models import Notification
+        submission = get_object_or_404(HomeworkSubmission, id=sub_id)
+        if submission.homework.course.teacher != request.user:
+            return error_response(message="Ruxsat yo'q", status_code=403)
+
+        submission.feedback = request.data.get('feedback', '')
+        score = request.data.get('score', None)
+        if score is not None:
+            try:
+                submission.teacher_score = int(score)
+            except ValueError:
+                pass
+        submission.status = 'reviewed'
+        submission.reviewed_at = timezone.now()
+        submission.save()
+
+        # Notification — o'quvchiga "Ustozingiz vazifangizni tekshirdi"
+        Notification.objects.create(
+            recipient=submission.student,
+            type='homework_reviewed',
+            title='Vazifa tekshirildi',
+            message=f'"{submission.homework.title}" vazifangiz tekshirildi. Ball: {submission.teacher_score}/100',
+            link=f'homework.html?id={submission.homework.id}'
+        )
+        return success_response(message="Vazifa tekshirildi")
 

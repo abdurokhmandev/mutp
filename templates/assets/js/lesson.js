@@ -64,11 +64,11 @@ const LessonPage = {
   },
 
   initTabs() {
-    document.querySelectorAll('.tabs .tab').forEach(tab => {
+    document.querySelectorAll('.lesson-tabs .tab-btn').forEach(tab => {
       tab.addEventListener('click', () => {
         if (tab.classList.contains('disabled')) return;
         
-        document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.lesson-tabs .tab-btn').forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         
         const targetTab = tab.dataset.tab;
@@ -76,7 +76,8 @@ const LessonPage = {
           pane.style.display = 'none';
         });
         
-        const pane = document.getElementById(`${targetTab}Tab`);
+        const paneId = targetTab === 'description' ? 'descriptionTab' : `tab-${targetTab}`;
+        const pane = document.getElementById(paneId);
         if (pane) pane.style.display = 'block';
       });
     });
@@ -133,17 +134,17 @@ const LessonPage = {
     }
 
     // Reset tabs to description on load
-    document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.lesson-tabs .tab-btn').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
 
     // Auto-switch to quiz/homework tab for quiz lessons
     if (l.lesson_type === 'quiz') {
-      const hwTabHeader = document.querySelector('.tabs .tab[data-tab="homework"]');
+      const hwTabHeader = document.querySelector('.lesson-tabs .tab-btn[data-tab="homework"]');
       if (hwTabHeader) hwTabHeader.classList.add('active');
-      const hwTabPane = document.getElementById('homeworkTab');
+      const hwTabPane = document.getElementById('tab-homework');
       if (hwTabPane) hwTabPane.style.display = 'block';
     } else {
-      const descTabHeader = document.querySelector('.tabs .tab[data-tab="description"]');
+      const descTabHeader = document.querySelector('.lesson-tabs .tab-btn[data-tab="description"]');
       if (descTabHeader) descTabHeader.classList.add('active');
       const descTabPane = document.getElementById('descriptionTab');
       if (descTabPane) descTabPane.style.display = 'block';
@@ -151,7 +152,7 @@ const LessonPage = {
 
     // Render resources and quiz
     this.renderResources(l);
-    this.renderQuizUI(l);
+    this.renderHomeworkTab(l);
 
 
     // Player va Bannerlarni render qilish
@@ -360,146 +361,119 @@ const LessonPage = {
   },
 
   renderResources(lesson) {
-    const container = document.querySelector('.resources-tab-content');
+    const container = document.querySelector('#tab-resources');
     if (!container) return;
 
     if (!lesson.resources || lesson.resources.length === 0) {
-      container.innerHTML = `<p class="empty-state">Bu darsga hali resurslar qo'shilmagan.</p>`;
+      container.innerHTML = `<div class="empty-state">📎 Bu darsga resurslar qo'shilmagan.</div>`;
       return;
     }
 
     container.innerHTML = lesson.resources.map(r => {
-      const icon = r.resource_type === 'link' ? '🔗' : this.getFileIcon(r.title);
-      let href = r.resource_type === 'link' ? r.url : this.getMediaUrl(r.file);
-      const sizeLabel = r.file_size ? this.formatFileSize(r.file_size) : '';
+      const href = r.resource_type === 'link' ? r.url : r.file;
       return `
-        <a href="${href}" target="_blank" rel="noopener noreferrer" class="resource-item" download>
-          <span class="resource-icon">${icon}</span>
-          <div class="resource-info">
-            <span class="resource-title">${r.title}</span>
-            <span class="resource-meta">${r.resource_type === 'link' ? 'Havola' : (sizeLabel || 'Yuklab olish')}</span>
+        <a href="${href}" target="_blank" class="resource-row">
+          <span class="resource-row-icon">${r.resource_type === 'link' ? '🔗' : this.getFileIcon(r.title)}</span>
+          <div class="resource-row-info">
+            <span class="resource-row-title">${r.title}</span>
+            <span class="resource-row-meta">${r.resource_type === 'link' ? 'Havola' : this.formatFileSize(r.file_size)}</span>
           </div>
-          <span class="resource-download">⬇</span>
+          <span class="resource-row-dl">⬇</span>
         </a>`;
     }).join('');
   },
 
-  getFileIcon(filename) {
-    if (!filename) return '📎';
-    const ext = filename.split('.').pop().toLowerCase();
-    const map = { pdf: '📄', doc: '📝', docx: '📝', ppt: '📊', pptx: '📊', zip: '🗂️', jpg: '🖼️', png: '🖼️' };
-    return map[ext] || '📎';
+  getFileIcon(title) {
+    if (!title) return '📎';
+    const ext = title.split('.').pop().toLowerCase();
+    if (['pdf'].includes(ext)) return '📕';
+    if (['doc', 'docx'].includes(ext)) return '📘';
+    if (['xls', 'xlsx'].includes(ext)) return '📗';
+    if (['zip', 'rar'].includes(ext)) return '📦';
+    if (['png', 'jpg', 'jpeg', 'svg'].includes(ext)) return '🖼️';
+    return '📎';
   },
 
   formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
-    return (bytes/1024/1024).toFixed(1) + ' MB';
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   },
 
-  renderQuizUI(lesson) {
-    const container = document.querySelector('.homework-tab-content');
+  renderHomeworkTab(lesson) {
+    const container = document.querySelector('#tab-homework');
     if (!container) return;
 
-    if (!lesson.questions || lesson.questions.length === 0) {
-      container.innerHTML = `<p class="empty-state">Bu darsga uyga vazifa biriktirilmagan.</p>`;
-      return;
-    }
-
-    container.innerHTML = `
-      <div class="quiz-wrapper">
-        <h3 style="color: var(--ink); margin-bottom: 8px;">📝 Uyga vazifa — ${lesson.questions.length} savol</h3>
-        <p class="quiz-pass-note" style="color: var(--muted); font-size:13px; margin-bottom: 16px;">O'tish balli: 70%</p>
-        <div id="quizQuestionsList"></div>
-        <button id="submitQuizBtn" class="btn" style="background:var(--duo-green); border:none; color:white; padding:12px 24px; border-radius:16px; font-weight:700; cursor:pointer; box-shadow: 0 4px 0 var(--duo-green-dark); font-size:15px; margin-top: 12px; display: block; width: 100%; transition: transform 0.1s;">Tekshirish</button>
-        <div id="quizResultAlert" style="display:none; margin-top:16px;"></div>
-      </div>`;
-
-    const qList = document.getElementById('quizQuestionsList');
-    lesson.questions.forEach((q, idx) => {
-      const qDiv = document.createElement('div');
-      qDiv.className = 'quiz-question';
-      qDiv.innerHTML = `
-        <p class="quiz-q-text">${idx+1}. ${q.text}</p>
-        <div class="quiz-options">
-          ${q.options.map(opt => `
-            <label class="quiz-option">
-              <input type="radio" name="q${q.id}" value="${opt.id}">
-              <span style="color: var(--ink-2); font-size: 14px;">${opt.text}</span>
-            </label>`).join('')}
-        </div>`;
-      qList.appendChild(qDiv);
-    });
-
-    document.getElementById('submitQuizBtn').onclick = async () => {
-      const answers = lesson.questions.map(q => {
-        const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
-        return { question_id: q.id, answer_id: selected ? parseInt(selected.value) : null };
-      });
-
-      const unanswered = answers.filter(a => a.answer_id === null);
-      if (unanswered.length > 0 && !confirm("Barcha savollarga javob bermadingiz. Baribir tekshirasizmi?")) {
+    API.get(`/courses/lessons/${lesson.id}/homeworks/`).then(res => {
+      const homeworks = res.data.results || res.data;
+      if (!homeworks?.length) {
+        container.innerHTML = `<div class="empty-state">📋 Bu darsga uyga vazifa biriktirilmagan.</div>`;
         return;
       }
-
-      const submitBtn = document.getElementById('submitQuizBtn');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Hisoblanmoqda...';
-
-      try {
-        const res = await API.post(`/courses/lessons/${lesson.id}/quiz/submit/`, { answers });
-        const resultDiv = document.getElementById('quizResultAlert');
-        resultDiv.style.display = 'block';
-        
-        const passed = res.data.is_passed ?? res.data.passed;
-        const score = res.data.score;
-        
-        resultDiv.innerHTML = `
-          <div class="quiz-score ${passed ? 'passed' : 'failed'}">
-            Natija: ${score}% — ${passed ? "O'tdingiz! ✅" : "O'ta olmadingiz ❌"}
-          </div>
-          <button id="retryQuizBtn" class="btn" style="background:var(--ink); border:none; color:white; padding:10px 20px; border-radius:12px; font-weight:600; cursor:pointer; margin-top:12px; display:block; width:100%;">Qayta urinish</button>`;
-        
-        document.getElementById('retryQuizBtn').onclick = () => this.renderQuizUI(lesson);
-        
-        if (passed) {
-          window.toast?.show("Tabriklaymiz! Testdan muvaffaqiyatli o'tdingiz.", "success");
-          await this.loadLesson(lesson.id);
-        } else {
-          window.toast?.show("Afsuski, o'tish ballini to'play olmadingiz.", "error");
-        }
-      } catch (err) {
-        window.toast?.show(err.message || "Test topshirishda xatolik", "error");
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Tekshirish';
-      }
-    };
+      container.innerHTML = homeworks.map(hw => {
+        const statusIcon = hw.my_submission?.status === 'submitted' || hw.my_submission?.status === 'reviewed' ? '✅' : '📝';
+        const statusLabel = hw.my_submission?.status === 'submitted' ? 'Topshirilgan' : (hw.my_submission?.status === 'reviewed' ? 'Tekshirilgan' : 'Bajarilmagan');
+        const statusClass = hw.my_submission?.status === 'submitted' || hw.my_submission?.status === 'reviewed' ? 'submitted' : 'pending';
+        return `
+          <div class="hw-preview-card">
+            <div class="hw-preview-icon">${statusIcon}</div>
+            <div class="hw-preview-info">
+              <div class="hw-preview-title">${hw.title}</div>
+              <div class="hw-preview-meta">
+                ${hw.deadline_days ? `⏰ ${hw.deadline_days} kun muddat` : 'Muddat belgilanmagan'}
+                <span class="hw-status-badge ${statusClass}">${statusLabel}</span>
+              </div>
+            </div>
+            <a href="homework.html?id=${hw.id}" class="btn-hero">Boshlash →</a>
+          </div>`;
+      }).join('');
+    });
   },
 
-  renderSidebar() {
-    const container = document.querySelector('.sidebar-content');
-    if (!container || !this.course?.modules) return;
 
-    container.innerHTML = this.course.modules.map((mod) => `
-      <div class="section-group">
-        <div class="section-title">${mod.title}</div>
-        <ul class="section-list">
-          ${(mod.lessons || []).map((lesson) => {
-            const active = this.lesson ? lesson.id === this.lesson.id : false;
-            const done = lesson.is_completed;
-            const icon = done ? 'ti-circle-check-filled icon-done' : active ? 'ti-player-play-filled icon-play' : 'ti-circle icon-lock';
-            return `
-              <li class="s-lesson ${active ? 'active' : ''}" data-lesson-id="${lesson.id}" onclick="window.location.href='/lesson.html?id=${lesson.id}&slug=${this.course.slug}'">
-                <i class="ti ${icon} icon"></i>
-                ${lesson.title}
-                <div style="font-size:11px;color:var(--muted);margin-top:2px;">${lesson.duration_display || ''}</div>
-              </li>
-            `;
-          }).join('')}
-        </ul>
+
+  renderSidebar() {
+    const sidebar = document.querySelector('.lesson-sidebar');
+    if (!sidebar || !this.course) return;
+
+    let html = `
+      <div class="sidebar-header">
+        <div class="sidebar-progress-bar-wrap">
+          <div class="sidebar-progress-label"><span></span><span>${this.course.progress || 0}%</span></div>
+          <div class="sidebar-progress-bar"><div class="sidebar-progress-fill" style="width:${this.course.progress || 0}%"></div></div>
+        </div>
       </div>
-    `).join('');
+      <div class="sidebar-content">`;
+
+    (this.course.modules || []).forEach(module => {
+      html += `<div class="sidebar-module">
+        <div class="sidebar-module-title">${module.title}</div>`;
+      (module.lessons || []).forEach(lesson => {
+        const isCurrent = this.lesson ? lesson.id === this.lesson.id : false;
+        const statusIcon = lesson.is_completed ? '✓' : (isCurrent ? '▶' : '·');
+        const statusClass = lesson.is_completed ? 'done' : (isCurrent ? 'current' : '');
+        const duration = this.formatSidebarDuration(lesson.duration_seconds);
+        html += `
+          <div class="sidebar-lesson ${statusClass}" data-lesson-id="${lesson.id}"
+               onclick="window.location.href='lesson.html?id=${lesson.id}&slug=${this.course.slug}'">
+            <span class="sidebar-lesson-icon">${statusIcon}</span>
+            <span class="sidebar-lesson-title">${lesson.title}</span>
+            <span class="sidebar-lesson-duration">${duration}</span>
+          </div>`;
+      });
+      html += `</div>`;
+    });
+    html += `</div>`;
+
+    sidebar.innerHTML = html;
+  },
+
+  formatSidebarDuration(seconds) {
+    if (!seconds) return '';
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   },
 
   initPlayer() {

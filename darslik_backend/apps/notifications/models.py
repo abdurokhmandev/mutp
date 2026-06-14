@@ -7,11 +7,13 @@ class Notification(models.Model):
         QUIZ_COMPLETED = 'quiz_completed', 'Quiz Completed'
         HOMEWORK_SUBMITTED = 'homework_submitted', 'Homework Submitted'
         NEW_MESSAGE = 'new_message', 'New Message'
-        # new_comment reserved for future use
+        HOMEWORK_REVIEWED = 'homework_reviewed', 'Homework Reviewed'
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
     type = models.CharField(max_length=30, choices=Type.choices)
+    title = models.CharField(max_length=100, blank=True)
     message = models.CharField(max_length=255)
+    link = models.CharField(max_length=255, blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

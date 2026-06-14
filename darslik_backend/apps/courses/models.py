@@ -362,7 +362,8 @@ class Certificate(models.Model):
 
 class Question(models.Model):
     """Test savoli"""
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='questions')
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='questions', null=True, blank=True)
+    homework = models.ForeignKey('Homework', on_delete=models.CASCADE, related_name='questions', null=True, blank=True)
     text = models.TextField()
     order = models.PositiveSmallIntegerField(default=1)
 
@@ -372,7 +373,7 @@ class Question(models.Model):
         ordering = ['order']
 
     def __str__(self):
-        return f"{self.lesson.title} — {self.text[:30]}"
+        return f"{self.lesson.title if self.lesson else self.homework.title} — {self.text[:30]}"
 
 
 class AnswerOption(models.Model):
@@ -440,9 +441,14 @@ class LessonResource(models.Model):
 
 
 class Homework(models.Model):
+    TYPE_CHOICES = [
+        ('quiz', 'Test'),
+        ('written', 'Yozma')
+    ]
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='homeworks')
     title = models.CharField(max_length=200)
     description = models.TextField()
+    type = models.CharField(max_length=15, choices=TYPE_CHOICES, default='written')
     after_lesson = models.ForeignKey(
         'Lesson', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='homeworks', help_text="Qaysi darsdan keyin ko'rsatiladi"
@@ -477,10 +483,26 @@ class HomeworkResource(models.Model):
 
 
 class HomeworkSubmission(models.Model):
-    STATUS_CHOICES = [('pending', 'Kutilmoqda'), ('submitted', 'Topshirilgan'), ('reviewed', 'Ko\'rib chiqilgan')]
+    STATUS_CHOICES = [
+        ('pending', 'Kutilmoqda'),
+        ('submitted', 'Topshirilgan'),
+        ('reviewed', 'Ko\'rib chiqilgan')
+    ]
     homework = models.ForeignKey(Homework, on_delete=models.CASCADE, related_name='submissions')
     student = models.ForeignKey('users.User', on_delete=models.CASCADE)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending')
+    
+    # Yozma javob
+    text_answer = models.TextField(blank=True)
+    file_answer = models.FileField(upload_to='hw_submissions/', blank=True, null=True)
+    # Test natija
+    quiz_score = models.FloatField(null=True, blank=True)
+    # Ustoz izohi
+    feedback = models.TextField(blank=True)
+    teacher_score = models.PositiveIntegerField(null=True, blank=True)  # 0-100
+    
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

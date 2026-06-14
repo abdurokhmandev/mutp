@@ -118,6 +118,34 @@
     .prog-bar { height: 4px; border-radius: 99px; background: var(--bg); margin-top: 4px; overflow: hidden; }
     .prog-fill { height: 100%; border-radius: 99px; }
 
+    /* Notifications Dropdown */
+    .notif-item { display: flex; gap: 12px; padding: 12px 16px; border-bottom: 2px solid var(--border); cursor: pointer; transition: background 0.2s; }
+    .notif-item:hover { background: var(--bg); }
+    .notif-item.unread { background: var(--duo-green-bg); }
+    .notif-type-icon { font-size: 20px; flex-shrink: 0; }
+    .notif-text { display: flex; flex-direction: column; gap: 4px; }
+    .notif-title { font-size: 13px; font-weight: 700; color: var(--text); }
+    .notif-msg { font-size: 12px; color: var(--text-2); line-height: 1.4; }
+    .notif-time { font-size: 10px; color: var(--text-2); }
+
+    /* Teacher Homework Cards & Modal */
+    .teacher-hw-row { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 2px solid var(--border); transition: background 0.2s; }
+    .teacher-hw-row:hover { background: var(--bg); }
+    .teacher-hw-row:last-child { border-bottom: none; }
+    .teacher-hw-info { display: flex; flex-direction: column; gap: 4px; }
+    .teacher-hw-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .teacher-hw-meta { font-size: 12px; color: var(--text-2); }
+
+    .submission-card { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border: 2px solid var(--border); border-radius: 12px; background: var(--surface); gap: 12px; }
+    .submission-student { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; }
+    .submission-status { font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+    .submission-status.pending { background: rgba(243, 156, 18, 0.1); color: var(--amber); }
+    .submission-status.submitted { background: rgba(243, 156, 18, 0.1); color: var(--amber); }
+    .submission-status.reviewed { background: rgba(46, 204, 113, 0.1); color: var(--green); }
+    .submission-date { font-size: 12px; color: var(--text-2); }
+    .review-btn { background: var(--duo-green); border: none; color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+    .review-btn:hover { background: var(--duo-green-dark); }
+
     /* ── Activity ── */
     .activity-list { padding: 0 20px; }
     .activity-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 2px solid var(--border); align-items: flex-start; }
@@ -160,7 +188,8 @@
     <a class="nav-item active" href="/dashboard-teacher.html"><i class="ti ti-layout-dashboard"></i>Boshqaruv</a>
     <a class="nav-item" href="/create-course.html"><i class="ti ti-video"></i>Kurslarim</a>
     <a class="nav-item" href="#students-section"><i class="ti ti-users"></i>O'quvchilar</a>
-<a class="nav-item" href="/chat.html"><i class="ti ti-message"></i>Chat</a>
+    <a class="nav-item" href="#homeworks-section"><i class="ti ti-clipboard-list"></i>Vazifalar <span class="sidebar-badge" id="pendingHwBadge" style="display:none; background: var(--rose); color: white; padding: 2px 6px; border-radius: 99px; font-size: 10px; margin-left: auto;"></span></a>
+    <a class="nav-item" href="/chat.html"><i class="ti ti-message"></i>Chat</a>
     <a class="nav-item" href="#chart-section"><i class="ti ti-chart-bar"></i>Tahlil</a>
     <span class="nav-section">Sahifalar</span>
     <a class="nav-item" href="/index.html"><i class="ti ti-home"></i>Bosh sahifa</a>
@@ -187,7 +216,21 @@
       </div>
       <div class="topbar-right">
         <div class="btn-icon"><i class="ti ti-search"></i></div>
-        <div class="btn-icon"><i class="ti ti-bell"></i><span class="notif-dot"></span></div>
+        <div class="notif-wrapper" style="position: relative;">
+          <div class="btn-icon" id="notifBell" style="cursor: pointer; position: relative;">
+            <i class="ti ti-bell"></i>
+            <span class="notif-badge" id="notifBadge" style="display:none; position: absolute; top: 0; right: 0; background: var(--rose); color: white; border-radius: 50%; font-size: 10px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-weight: bold;">0</span>
+          </div>
+          <div class="notif-dropdown" id="notifDropdown" style="display: none; position: absolute; top: 45px; right: 0; background: var(--white); border: 1px solid var(--border); border-radius: 12px; width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 100; max-height: 400px; overflow-y: auto;">
+            <div style="padding: 12px 16px; font-weight: 700; border-bottom: 1px solid var(--border); font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+              <span>Bildirishnomalar</span>
+              <span style="font-size: 12px; font-weight: normal; color: var(--duo-green); cursor: pointer;" onclick="API.post('/notifications/read-all/').then(() => { loadUnreadCount(); loadNotifications(); })">Barchasini o'qish</span>
+            </div>
+            <div id="notifList">
+              <div class="notif-empty" style="padding: 24px; text-align: center; color: var(--muted); font-size: 13px;">Bildirishnomalar yo'q</div>
+            </div>
+          </div>
+        </div>
         <a href="/create-course.html" class="btn-add" style="text-decoration:none"><i class="ti ti-plus"></i>Yangi kurs</a>
       </div>
     </div>
@@ -268,6 +311,38 @@
               <div style="position:relative;width:100%;height:200px">
                 <canvas id="revenueChart" role="img" aria-label="Yanvar-iyun daromad va o'quvchilar o'sishi grafigi">Daromad: Yan 800K, Fev 950K, Mar 1.1M, Apr 1.0M, May 1.15M, Iyun 1.24M.</canvas>
               </div>
+          </div>
+
+          <!-- Homeworks section -->
+          <div class="card" id="homeworks-section" style="margin-top: 24px;">
+            <div class="card-head" style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="card-head-title">📋 Uyga Vazifalar</span>
+              <div style="display: flex; gap: 8px;">
+                <select id="hwCourseFilter" style="border:1px solid var(--border); border-radius:8px; padding:4px 8px; font-size:12px; outline:none;">
+                  <option value="">Barcha kurslar</option>
+                </select>
+                <select id="hwStatusFilter" style="border:1px solid var(--border); border-radius:8px; padding:4px 8px; font-size:12px; outline:none;">
+                  <option value="">Barcha holatlar</option>
+                  <option value="pending">Tekshirilmagan</option>
+                  <option value="reviewed">Tekshirilgan</option>
+                </select>
+              </div>
+            </div>
+            
+            <!-- Homework list container -->
+            <div id="teacherHwList" style="display: flex; flex-direction: column; gap: 12px; padding: 16px 0;">
+              <p style="text-align: center; color: var(--muted); font-size: 13px;">Yuklanmoqda...</p>
+            </div>
+
+            <!-- Submissions list container (hidden by default) -->
+            <div id="hwSubmissionsContainer" style="display: none; border-top: 1px solid var(--border); padding: 20px; margin-top: 20px; background: var(--bg);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h4 id="submissionsTitle" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 700; color: var(--text);">Topshiriqlar</h4>
+                <button class="action-link" onclick="document.getElementById('hwSubmissionsContainer').style.display='none'">Yopish</button>
+              </div>
+              <div class="submissions-list" id="submissionsList" style="display: flex; flex-direction: column; gap: 10px;">
+                <!-- Submissions will load here -->
+              </div>
             </div>
           </div>
         </div>
@@ -286,6 +361,37 @@
 
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Review Modal -->
+<div class="modal" id="reviewModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+  <div class="modal-content" style="max-width:640px; background: var(--white); border-radius: 20px; width: 90%; padding: 24px; display: flex; flex-direction: column; gap: 20px; border: 2px solid var(--border);">
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 16px;">
+      <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 18px; font-weight: 700; margin: 0;">Vazifani tekshirish</h3>
+      <button class="modal-close" onclick="closeReview()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-2); outline: none;">&times;</button>
+    </div>
+    <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+      <div class="student-answer-section" style="border: 2px solid var(--border); border-radius: 12px; padding: 16px; background: var(--bg);">
+        <h4 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 8px;">O'quvchi javobi:</h4>
+        <p id="reviewAnswerText" style="font-size: 14px; color: var(--text); line-height: 1.5; white-space: pre-wrap; margin-bottom: 12px;"></p>
+        <a id="reviewAnswerFile" href="" target="_blank" style="display:none; font-size: 13px; font-weight: 600; color: var(--duo-green); text-decoration: none;"><i class="ti ti-paperclip"></i> Yuklangan faylni ko'rish</a>
+      </div>
+      <div class="review-form" style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 13px; font-weight: 600;">Izoh:</label>
+          <textarea id="reviewFeedback" rows="4" placeholder="O'quvchiga izoh yozing..." style="width: 100%; border: 2px solid var(--border); border-radius: 8px; padding: 10px; font-size: 13px; outline: none;"></textarea>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 13px; font-weight: 600;">Ball (0–100):</label>
+          <input type="number" id="reviewScore" min="0" max="100" placeholder="85" style="border: 2px solid var(--border); border-radius: 8px; padding: 10px; font-size: 13px; outline: none; width: 120px;">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; border-top: 2px solid var(--border); padding-top: 16px;">
+      <button class="btn-secondary" onclick="closeReview()" style="padding: 10px 20px; font-size: 13px; border-radius: 10px; cursor: pointer; border: 2px solid var(--border); background: var(--surface)">Bekor qilish</button>
+      <button class="btn-primary" onclick="submitReview()" style="background: var(--duo-green); border: none; color: white; padding: 10px 20px; font-size: 13px; border-radius: 10px; font-weight: 600; cursor: pointer; box-shadow: 0 3px 0 var(--duo-green-dark)">Izoh va ball yuborish ✓</button>
     </div>
   </div>
 </div>

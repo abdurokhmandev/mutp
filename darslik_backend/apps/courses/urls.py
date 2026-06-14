@@ -29,7 +29,8 @@ from .views import (
     HomeworkSubmitView,
     HomeworkResourceCreateView,
     HomeworkResourceDeleteView,
-    StudentCourseHomeworksView
+    StudentCourseHomeworksView,
+    LessonHomeworksView
 )
 
 urlpatterns = [
@@ -49,6 +50,7 @@ urlpatterns = [
     path('lessons/<int:id>/quiz/submit/', LessonQuizSubmitView.as_view(), name='lesson_quiz_submit'),
     path('lessons/<int:id>/resources/',  LessonResourceCreateView.as_view(), name='lesson_resources'),
     path('lessons/resources/<int:id>/', LessonResourceDeleteView.as_view(), name='resource_delete'),
+    path('lessons/<int:lesson_id>/homeworks/', LessonHomeworksView.as_view(), name='lesson_homeworks'),
 
     # Sertifikat
     path('certificates/<str:code>/',     CertificateView.as_view(), name='certificate_view'),
@@ -70,6 +72,7 @@ urlpatterns = [
     # Homework / Vazifalar
     path('teacher/courses/<slug:slug>/homeworks/', HomeworkListCreateView.as_view(), name='homework_list_create'),
     path('teacher/courses/homeworks/<int:id>/', HomeworkDetailView.as_view(), name='homework_detail'),
+    path('homeworks/<int:id>/', HomeworkDetailView.as_view(), name='homework_detail_student'),
     path('homeworks/<int:id>/submit/', HomeworkSubmitView.as_view(), name='homework_submit'),
     path('homeworks/<int:id>/resources/', HomeworkResourceCreateView.as_view(), name='homework_resource_create'),
     path('homeworks/resources/<int:id>/', HomeworkResourceDeleteView.as_view(), name='homework_resource_delete'),

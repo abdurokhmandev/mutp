@@ -17,6 +17,7 @@ urlpatterns = [
 
     path('api/v1/notifications/', include('apps.notifications.urls')),
     path('api/v1/chat/', include('apps.chat.urls')),
+    path('api/v1/teacher/', include('apps.teacher.urls')),
 
     # API Documentation (drf-spectacular)
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
@@ -46,6 +47,7 @@ else:
         'profile.html',
         'create-course.html',
         'chat.html',
+        'homework.html',
     ]
 
     def serve_frontend(request, filename='index.html'):

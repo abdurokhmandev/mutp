@@ -159,10 +159,20 @@ class CourseDetailSerializer(CourseListSerializer):
     is_enrolled = serializers.SerializerMethodField()
     is_saved = serializers.SerializerMethodField()
     instructor = InstructorMiniSerializer(source='teacher', read_only=True)
+    progress = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
-        fields = CourseListSerializer.Meta.fields + ['description', 'total_duration_seconds', 'modules', 'is_enrolled', 'is_saved', 'instructor']
+        fields = CourseListSerializer.Meta.fields + ['description', 'total_duration_seconds', 'modules', 'is_enrolled', 'is_saved', 'instructor', 'progress']
+
+    def get_progress(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user or request.user.is_anonymous:
+            return 0
+        enrollment = Enrollment.objects.filter(student=request.user, course=obj).first()
+        if enrollment:
+            return int(enrollment.progress_percent)
+        return 0
 
     def get_is_enrolled(self, obj):
         request = self.context.get('request')
@@ -290,12 +300,14 @@ class HomeworkResourceSerializer(serializers.ModelSerializer):
 
 class HomeworkSerializer(serializers.ModelSerializer):
     resources = HomeworkResourceSerializer(many=True, read_only=True)
+    questions = QuestionSerializer(many=True, read_only=True)
     submission_status = serializers.SerializerMethodField()
     after_lesson_title = serializers.CharField(source='after_lesson.title', read_only=True)
+    my_submission = serializers.SerializerMethodField()
 
     class Meta:
         model = Homework
-        fields = ['id', 'title', 'description', 'after_lesson', 'after_lesson_title', 'deadline_days', 'order', 'resources', 'submission_status']
+        fields = ['id', 'title', 'description', 'type', 'after_lesson', 'after_lesson_title', 'deadline_days', 'order', 'resources', 'questions', 'submission_status', 'my_submission']
 
     def get_submission_status(self, obj):
         request = self.context.get('request')
@@ -304,6 +316,15 @@ class HomeworkSerializer(serializers.ModelSerializer):
         sub = HomeworkSubmission.objects.filter(homework=obj, student=request.user).first()
         return sub.status if sub else 'pending'
 
+    def get_my_submission(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user or request.user.is_anonymous:
+            return None
+        sub = HomeworkSubmission.objects.filter(homework=obj, student=request.user).first()
+        if sub:
+            return HomeworkSubmissionSerializer(sub, context=self.context).data
+        return None
+
 
 class HomeworkSubmissionSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source='student.full_name', read_only=True)
@@ -311,6 +332,10 @@ class HomeworkSubmissionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = HomeworkSubmission
-        fields = ['id', 'homework', 'homework_title', 'student', 'student_name', 'status', 'completed_at']
+        fields = [
+            'id', 'homework', 'homework_title', 'student', 'student_name', 'status',
+            'text_answer', 'file_answer', 'quiz_score', 'feedback', 'teacher_score',
+            'submitted_at', 'reviewed_at', 'completed_at'
+        ]
 
 
