@@ -1,6 +1,7 @@
 import os
 import sys
 import django
+import httpx
 
 # Append darslik_backend to python path to resolve config and apps imports
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -16,8 +17,6 @@ from django.conf import settings
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
-from apps.users.models import TelegramUser
-from asgiref.sync import sync_to_async
 
 dp = Dispatcher()
 
@@ -28,17 +27,34 @@ def format_phone(phone: str) -> str:
         phone = '+' + phone
     return phone
 
-@sync_to_async
-def save_or_update_telegram_user(chat_id, phone, username, first_name):
-    tg_user, created = TelegramUser.objects.update_or_create(
-        chat_id=chat_id,
-        defaults={
-            'phone': phone,
-            'username': username or '',
-            'first_name': first_name or '',
-        }
-    )
-    return tg_user, created
+async def save_or_update_telegram_user_api(chat_id, phone, username, first_name):
+    # Try to get backend URL from env, else fallback to local/internal URLs
+    backend_url = os.environ.get('BACKEND_API_URL', 'http://127.0.0.1:8000').rstrip('/')
+    url = f"{backend_url}/api/auth/telegram-user/"
+    
+    headers = {
+        'X-Bot-Token': settings.TELEGRAM_BOT_TOKEN,
+        'Content-Type': 'application/json'
+    }
+    payload = {
+        'chat_id': chat_id,
+        'phone': phone,
+        'username': username or '',
+        'first_name': first_name or ''
+    }
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(url, json=payload, headers=headers, timeout=10.0)
+            if response.status_code == 200:
+                print("Successfully updated user on backend API.")
+                return True
+            else:
+                print(f"Backend API returned error {response.status_code}: {response.text}")
+                return False
+        except Exception as e:
+            print(f"Connection to backend API failed at {url}: {e}")
+            return False
 
 @dp.message(Command("start"))
 async def start_handler(message: types.Message):
@@ -62,19 +78,25 @@ async def contact_handler(message: types.Message):
     phone = format_phone(contact.phone_number)
     chat_id = message.chat.id
 
-    await save_or_update_telegram_user(
+    success = await save_or_update_telegram_user_api(
         chat_id=chat_id,
         phone=phone,
         username=message.from_user.username or '',
         first_name=message.from_user.first_name or ''
     )
 
-    await message.reply(
-        f"✅ Telefon raqam saqlandi: {phone}\n\n"
-        "Endi MUTP saytiga o'tib, shu raqam bilan ro'yxatdan o'ting. "
-        "OTP kod shu chatga yuboriladi!",
-        reply_markup=ReplyKeyboardRemove()
-    )
+    if success:
+        await message.reply(
+            f"✅ Telefon raqam saqlandi: {phone}\n\n"
+            "Endi MUTP saytiga o'tib, shu raqam bilan ro'yxatdan o'ting. "
+            "OTP kod shu chatga yuboriladi!",
+            reply_markup=ReplyKeyboardRemove()
+        )
+    else:
+        await message.reply(
+            "❌ Tizimda xatolik yuz berdi. Iltimos, keyinroq qayta urinib ko'ring.",
+            reply_markup=ReplyKeyboardRemove()
+        )
 
 def run_bot():
     bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)

@@ -246,3 +246,35 @@ class TeacherDetailView(APIView):
             "courses": courses_serializer.data
         }
         return success_response(data=data, message="O'qituvchi batafsil ma'lumotlari")
+
+
+class SaveTelegramUserView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        bot_token = request.headers.get('X-Bot-Token')
+        expected_token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
+        if not bot_token or bot_token != expected_token:
+            return error_response(message="Unauthorized", status_code=401)
+
+        chat_id = request.data.get('chat_id')
+        phone = request.data.get('phone')
+        username = request.data.get('username', '')
+        first_name = request.data.get('first_name', '')
+
+        if not chat_id or not phone:
+            return error_response(message="chat_id va phone kiritilishi shart", status_code=400)
+
+        phone = format_phone(phone)
+        tg_user, created = TelegramUser.objects.update_or_create(
+            chat_id=chat_id,
+            defaults={
+                'phone': phone,
+                'username': username or '',
+                'first_name': first_name or '',
+            }
+        )
+        return success_response(
+            data={'created': created, 'id': tg_user.id},
+            message="Telegram user saqlandi"
+        )

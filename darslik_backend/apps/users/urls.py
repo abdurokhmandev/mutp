@@ -10,7 +10,8 @@ from .views import (
     TeacherListView,
     TeacherDetailView,
     SendOTPView,
-    VerifyOTPView
+    VerifyOTPView,
+    SaveTelegramUserView
 )
 
 urlpatterns = [
@@ -25,5 +26,6 @@ urlpatterns = [
     path('teachers/<int:id>/', TeacherDetailView.as_view(), name='teacher_detail'),
     path('send-otp/',        SendOTPView.as_view(), name='send_otp'),
     path('verify-otp/',      VerifyOTPView.as_view(), name='verify_otp'),
+    path('telegram-user/',   SaveTelegramUserView.as_view(), name='save_telegram_user'),
 ]
 
