@@ -362,7 +362,6 @@ const CourseDetail = {
         };
       }
 
-      const currentUser = App.getUser();
       const isTeacher = currentUser && currentUser.id === (this.course.instructor?.id || this.course.teacher?.id);
       if (this.course.is_enrolled || isTeacher) {
         this.loadHomeworks();
