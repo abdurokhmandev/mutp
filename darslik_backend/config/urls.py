@@ -81,6 +81,11 @@ else:
             path(page, serve_frontend, {'filename': page}, name=f'frontend-{page.replace(".html", "")}'),
         ]
 
+    # Course detail route for frontend
+    urlpatterns += [
+        path('courses/<slug:slug>/', serve_frontend, {'filename': 'course-detail.html'}, name='frontend-course-detail-slug'),
+    ]
+
     # Invite detail route for frontend
     urlpatterns += [
         path('invite/<str:token>/', serve_frontend, {'filename': 'invite.html'}, name='frontend-invite-detail'),

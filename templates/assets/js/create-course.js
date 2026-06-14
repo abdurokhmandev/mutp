@@ -173,11 +173,16 @@ const CreateCourse = {
     this.handleApprovalToggle();
 
     if (this.course.status === 'published') {
+      const btnAction = document.getElementById('btnStep4Action');
+      if (btnAction) {
+        btnAction.style.display = 'none';
+      }
+
       if (this.course.is_private) {
         document.getElementById('privateInviteSection').style.display = 'block';
-        this.loadInviteLinks();
+        this.loadEditInviteLink();
       } else {
-        this.loadPublicInviteLink();
+        document.getElementById('publicPublishSuccess').style.display = 'block';
       }
     }
 
@@ -932,6 +937,82 @@ const CreateCourse = {
     nextStep(5);
   },
 
+  copyInviteLink(url) {
+    navigator.clipboard.writeText(url);
+    window.toast?.show('Havola nusxalandi!', 'success');
+    const copyBtn = document.getElementById('btnCopyInvite');
+    if (copyBtn) {
+      copyBtn.textContent = 'Nusxalandi! ✓';
+      copyBtn.style.background = '#F0FDF4';
+      copyBtn.style.color = '#16A34A';
+      copyBtn.style.borderColor = '#16A34A';
+    }
+  },
+
+  async loadEditInviteLink() {
+    try {
+      const res = await API.get(`/courses/teacher/courses/${this.course.slug}/invite/`);
+      if (res.success && res.data) {
+        const inviteUrl = res.data.invite_url || '';
+        document.getElementById('privateInviteUrlDisplay').textContent = inviteUrl;
+        
+        const limitText = res.data.max_students ? ` / ${res.data.max_students}` : ' (cheksiz)';
+        document.getElementById('privateInviteMetaDisplay').textContent = `👥 Yozilganlar: ${res.data.used_count || 0}${limitText}`;
+        
+        // Add copy button listener
+        document.getElementById('btnCopyInviteEdit').onclick = (e) => {
+          CreateCourse.copyInviteLinkEdit(e.target, inviteUrl);
+        };
+        
+        // Add regen button listener
+        document.getElementById('btnRegenInviteEdit').onclick = async (e) => {
+          if (!confirm("Eski taklif havolasi o'chiriladi. Davom etasizmi?")) return;
+          const btn = e.target;
+          btn.disabled = true;
+          btn.textContent = '⏳ Yaratilmoqda...';
+          try {
+            const regenRes = await API.post(`/courses/teacher/courses/${this.course.slug}/invite/`);
+            if (regenRes.success && regenRes.data?.invite_url) {
+              window.toast?.show('Yangi havola yaratildi!', 'success');
+              CreateCourse.loadEditInviteLink();
+            }
+          } catch(err) {
+            window.toast?.show(err.message, 'error');
+          } finally {
+            btn.disabled = false;
+            btn.textContent = '🔄 Yangi havola yaratish';
+          }
+        };
+      }
+    } catch(e) {
+      console.error(e);
+    }
+  },
+
+  async copyInviteLinkEdit(btn, url) {
+    try {
+      await navigator.clipboard.writeText(url);
+      const original = btn.textContent;
+      btn.textContent = '✅ Nusxalandi!';
+      btn.style.background = '#16A34A';
+      btn.style.color = '#fff';
+      btn.style.borderColor = '#16A34A';
+      setTimeout(() => {
+        btn.textContent = original;
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 2000);
+    } catch {
+      const input = document.createElement('input');
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      window.toast?.show('Havola nusxalandi!', 'success');
+    }
+  },
   copyInviteLink(url) {
     navigator.clipboard.writeText(url);
     window.toast?.show('Havola nusxalandi!', 'success');

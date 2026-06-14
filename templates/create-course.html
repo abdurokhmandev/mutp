@@ -308,19 +308,29 @@
         </div>
 
         <!-- Nashr etilgandan keyin private kurs uchun -->
-        <div id="privateInviteSection" style="display:none; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
-          <h4 style="font-family:'Plus Jakarta Sans'; margin-bottom:12px;">Maxsus taklif havolasi</h4>
-
-          <div style="display:flex; gap:8px; margin-bottom:16px;">
-            <input type="number" id="newLinkMaxUses" class="form-control" placeholder="Maks foydalanuvchi (bo'sh = cheksiz)" style="flex:1;">
-            <input type="number" id="newLinkExpireDays" class="form-control" placeholder="Muddat (kun, bo'sh = cheksiz)" style="flex:1;">
-            <button onclick="CreateCourse.createInviteLink()" class="btn-primary" style="padding: 10px 16px;">+ Havola yaratish</button>
+        <div id="privateInviteSection" style="display:none; margin-top: 24px; padding: 20px; border: 2px solid var(--green); background: var(--green-light); border-radius: 16px;">
+          <div style="font-weight:700; color:var(--green); margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+            <i class="ti ti-circle-check"></i> Kurs nashr etilgan
           </div>
-
-          <div id="inviteLinksList" style="display:flex; flex-direction:column; gap:8px;"></div>
+          <div style="font-size:14px; font-weight:600; margin-bottom:8px; color:var(--ink);">🔒 Private kurs — Taklif havolasi:</div>
+          <div style="background:var(--white); border:1px solid var(--border); border-radius:8px; padding:10px 14px; font-family:monospace; font-size:13px; color:var(--blue); word-break:break-all; margin-bottom:12px;" id="privateInviteUrlDisplay">
+            ...
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+            <button type="button" id="btnCopyInviteEdit" class="btn-secondary" style="padding:8px 16px; font-size:13px; cursor:pointer;">📋 Nusxa olish</button>
+            <button type="button" id="btnRegenInviteEdit" class="btn-secondary" style="padding:8px 16px; font-size:13px; cursor:pointer;">🔄 Yangi havola yaratish</button>
+          </div>
+          <div style="font-size:12px; color:var(--muted);" id="privateInviteMetaDisplay">
+            👥 Yozilganlar: 0 / 10
+          </div>
         </div>
 
-        <div id="publishSuccess" style="margin-top: 20px;"></div>
+        <div id="publicPublishSuccess" style="display:none; margin-top: 24px; padding: 20px; border: 2px solid var(--green); background: var(--green-light); border-radius: 16px;">
+          <div style="font-weight:700; color:var(--green); margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+            <i class="ti ti-circle-check"></i> Kurs nashr etilgan
+          </div>
+          <div style="font-size:13px; color:var(--ink-2);">🌐 Public kurs katalogda ko'rinadi va har kim yozila oladi.</div>
+        </div>
         
         <div style="display:flex; justify-content:space-between; margin-top:32px;">
           <button class="btn-secondary" onclick="nextStep(3)">Oldingi</button>

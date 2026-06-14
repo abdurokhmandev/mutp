@@ -3,7 +3,16 @@ const CourseDetail = {
   course: null,
 
   getSlug() {
-    return new URLSearchParams(window.location.search).get('slug');
+    const querySlug = new URLSearchParams(window.location.search).get('slug');
+    if (querySlug) return querySlug;
+    
+    // Extract slug from URL path, e.g. /courses/python-kursi/
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    const coursesIdx = pathParts.indexOf('courses');
+    if (coursesIdx !== -1 && pathParts[coursesIdx + 1]) {
+      return pathParts[coursesIdx + 1];
+    }
+    return null;
   },
 
   formatDuration(seconds) {
@@ -115,6 +124,13 @@ const CourseDetail = {
     try {
       this.course = await this.load(slug);
       document.title = `${this.course.title} | MUTP`;
+
+      // Check if user is the teacher of this course to show teacher workspace banner
+      const currentUser = App.getUser();
+      const isOwner = currentUser && this.course.instructor && (this.course.instructor.id === currentUser.id);
+      if (isOwner) {
+        this.initTeacherBanner();
+      }
 
       const titleEl = document.querySelector('.course-title-lg');
       const descEl = document.querySelector('.course-desc');
@@ -450,6 +466,92 @@ const CourseDetail = {
       }
     } catch (err) {
       block.style.display = 'none';
+    }
+  },
+
+  async initTeacherBanner() {
+    const banner = document.getElementById('teacherCourseBanner');
+    const inviteContainer = document.getElementById('bannerInviteContainer');
+    const btnEdit = document.getElementById('btnEditCourseBanner');
+    const btnAnalytics = document.getElementById('btnAnalyticsCourseBanner');
+
+    if (!banner) return;
+    banner.style.display = 'block';
+
+    if (btnEdit) btnEdit.href = `/create-course.html?slug=${this.course.slug}`;
+    if (btnAnalytics) btnAnalytics.href = `/dashboard-teacher.html`;
+
+    if (inviteContainer) {
+      inviteContainer.innerHTML = '⏳ Havola yuklanmoqda...';
+      try {
+        const res = await API.get(`/courses/teacher/courses/${this.course.slug}/invite/`);
+        if (res.success && res.data) {
+          const data = res.data;
+          if (data.is_private) {
+            inviteContainer.innerHTML = `
+              <span>🔒 Private kurs — Taklif havolasi:</span>
+              <strong style="color:#111827; font-family:monospace; background:white; padding:2px 6px; border-radius:4px; border:1px solid #D1D5DB;">${data.invite_url}</strong>
+              <button id="btnCopyBannerInvite" class="btn-xs" style="padding:4px 8px; font-size:11px; cursor:pointer; background:#16A34A; color:white; border:none; border-radius:4px;">📋 Nusxa olish</button>
+            `;
+            const btnCopy = document.getElementById('btnCopyBannerInvite');
+            if (btnCopy) {
+              btnCopy.onclick = async () => {
+                try {
+                  await navigator.clipboard.writeText(data.invite_url);
+                  const original = btnCopy.textContent;
+                  btnCopy.textContent = '✅ Nusxalandi!';
+                  btnCopy.style.background = '#15803d';
+                  setTimeout(() => {
+                    btnCopy.textContent = original;
+                    btnCopy.style.background = '#16A34A';
+                  }, 2000);
+                } catch {
+                  const input = document.createElement('input');
+                  input.value = data.invite_url;
+                  document.body.appendChild(input);
+                  input.select();
+                  document.execCommand('copy');
+                  document.body.removeChild(input);
+                  window.toast?.show('Havola nusxalandi!', 'success');
+                }
+              };
+            }
+          } else {
+            inviteContainer.innerHTML = `
+              <span>🌐 Public kurs — Kurs havolasi:</span>
+              <strong style="color:#111827; font-family:monospace; background:white; padding:2px 6px; border-radius:4px; border:1px solid #D1D5DB;">${data.course_url}</strong>
+              <button id="btnCopyBannerInvite" class="btn-xs" style="padding:4px 8px; font-size:11px; cursor:pointer; background:#16A34A; color:white; border:none; border-radius:4px;">📋 Nusxa olish</button>
+            `;
+            const btnCopy = document.getElementById('btnCopyBannerInvite');
+            if (btnCopy) {
+              btnCopy.onclick = async () => {
+                try {
+                  await navigator.clipboard.writeText(data.course_url);
+                  const original = btnCopy.textContent;
+                  btnCopy.textContent = '✅ Nusxalandi!';
+                  btnCopy.style.background = '#15803d';
+                  setTimeout(() => {
+                    btnCopy.textContent = original;
+                    btnCopy.style.background = '#16A34A';
+                  }, 2000);
+                } catch {
+                  const input = document.createElement('input');
+                  input.value = data.course_url;
+                  document.body.appendChild(input);
+                  input.select();
+                  document.execCommand('copy');
+                  document.body.removeChild(input);
+                  window.toast?.show('Havola nusxalandi!', 'success');
+                }
+              };
+            }
+          }
+        } else {
+          inviteContainer.innerHTML = '<span style="color:#DC2626;">Havolani yuklab bo\'lmadi</span>';
+        }
+      } catch (err) {
+        inviteContainer.innerHTML = '<span style="color:#DC2626;">Xatolik yuz berdi</span>';
+      }
     }
   },
 };

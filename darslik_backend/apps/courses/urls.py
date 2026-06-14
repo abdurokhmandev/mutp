@@ -18,6 +18,7 @@ from .views import (
     CourseCreateView,
     CourseUpdateView,
     CoursePublishView,
+    CourseInviteLinkView,
     ModuleCreateView,
     LessonCreateView,
     LessonUpdateView,
@@ -78,6 +79,7 @@ urlpatterns = [
     path('teacher/courses/<slug:slug>/', TeacherCourseDetailView.as_view(), name='teacher_course_detail'),
     path('teacher/courses/<slug:slug>/update/', CourseUpdateView.as_view(), name='course_update'),
     path('teacher/courses/<slug:slug>/publish/', CoursePublishView.as_view(), name='course_publish'),
+    path('teacher/courses/<slug:slug>/invite/', CourseInviteLinkView.as_view(), name='course-invite'),
     path('teacher/courses/<slug:slug>/modules/', ModuleCreateView.as_view(), name='module_create'),
     path('teacher/modules/<int:id>/lessons/',    LessonCreateView.as_view(), name='lesson_create'),
     

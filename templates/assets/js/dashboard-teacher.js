@@ -10,6 +10,14 @@ const TeacherDashboard = {
     App.updateNav();
     this.updateSidebar();
 
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.invite-dropdown') && !e.target.closest('.action-link')) {
+        document.querySelectorAll('.invite-dropdown').forEach(dd => {
+          dd.style.display = 'none';
+        });
+      }
+    });
+
     try {
       await this.loadDashboard();
       await this.initNotifications();
@@ -106,16 +114,44 @@ const TeacherDashboard = {
     }
 
     tbody.innerHTML = courses.map((c) => {
-      const isPublished = c.status_display === 'Chop etilgan' || c.status === 'published';
+      const isPrivate = c.is_private;
+      const isDraft   = c.status === 'draft';
+      const isPublished = c.status === 'published';
+
+      // Amallar tugmasi
+      let actionBtn = '';
+      if (!isDraft) {
+        if (isPrivate) {
+          actionBtn = `
+            <button class="btn-invite" onclick="showInviteDropdown('${c.slug}', this)" style="background:none; border:1px solid var(--border); padding:4px 8px; border-radius:6px; cursor:pointer; font-size:12px; color:var(--purple);">
+              🔗 Havola
+            </button>`;
+        } else {
+          actionBtn = `
+            <button class="btn-view" onclick="window.open('/courses/${c.slug}/', '_blank')" style="background:none; border:1px solid var(--border); padding:4px 8px; border-radius:6px; cursor:pointer; font-size:12px; color:var(--purple);">
+              👁 Ko'rish
+            </button>`;
+        }
+      }
+
+      // O'quvchilar soni
+      const students = isPrivate && c.max_students
+        ? `${c.student_count || 0}/${c.max_students}`
+        : (c.student_count || 0);
+
       return `
         <tr>
-          <td style="font-weight:500;">${c.title}</td>
-          <td>${c.students_count || c.student_count || 0}</td>
+          <td style="font-weight:500;">
+            <span class="course-type-icon">${isPrivate ? '🔒' : '🌐'}</span>
+            ${c.title}
+          </td>
+          <td>${isDraft ? '—' : students}</td>
           <td>★ ${(c.rating || c.average_rating || 0).toFixed(1)}</td>
           <td>${Math.round(c.earnings || 0).toLocaleString('uz-UZ')}</td>
           <td><span class="pill ${isPublished ? 'pill-green' : 'pill-amber'}">${c.status_display || 'Qoralama'}</span></td>
-          <td style="display:flex;gap:8px;align-items:center;">
-            <a href="/create-course.html?slug=${c.slug}" style="color:var(--purple);text-decoration:none;font-size:12px">Tahrirlash</a>
+          <td style="display:flex; gap:8px; align-items:center; position:relative;">
+            <button class="btn-edit" onclick="window.location.href='/create-course.html?slug=${c.slug}'" style="background:none; border:1px solid var(--border); padding:4px 8px; border-radius:6px; cursor:pointer; font-size:12px;">✏️ Tahrir</button>
+            ${actionBtn}
             <button onclick="TeacherDashboard.deleteCourse('${c.slug}', '${c.title.replace(/'/g, "\\'")}')"
               style="background:none;border:none;cursor:pointer;color:var(--rose);font-size:12px;padding:0;display:flex;align-items:center;gap:3px;"
               title="O'chirish">
@@ -528,6 +564,96 @@ const TeacherDashboard = {
     } catch (e) {
       window.toast?.show(e.message || "Xatolik yuz berdi", 'error');
     }
+  },
+
+  activeDropdownSlug: null,
+
+  async toggleInviteDropdown(event, slug) {
+    event.stopPropagation();
+    const dropdown = document.getElementById(`invite-dd-${slug}`);
+    if (!dropdown) return;
+
+    const show = dropdown.style.display === 'block';
+    
+    // Close other dropdowns
+    document.querySelectorAll('.invite-dropdown').forEach(dd => {
+      dd.style.display = 'none';
+    });
+
+    if (!show) {
+      dropdown.style.display = 'block';
+      this.activeDropdownSlug = slug;
+      
+      try {
+        const res = await API.get(`/courses/teacher/courses/${slug}/invite/`);
+        if (res.success && res.data) {
+          const inviteUrl = res.data.invite_url || '';
+          document.getElementById(`invite-url-val-${slug}`).textContent = inviteUrl;
+          
+          const limitText = res.data.max_students ? ` / ${res.data.max_students}` : ' (cheksiz)';
+          document.getElementById(`invite-users-val-${slug}`).textContent = `👥 ${res.data.used_count || 0}${limitText} o'quvchi yozilgan`;
+          
+          const approvalText = res.data.require_approval ? 'Kerak' : 'Kerak emas';
+          document.getElementById(`invite-approval-val-${slug}`).textContent = `✅ Tasdiqlash: ${approvalText}`;
+        }
+      } catch (e) {
+        document.getElementById(`invite-url-val-${slug}`).textContent = "Yuklashda xatolik";
+      }
+    } else {
+      this.activeDropdownSlug = null;
+    }
+  },
+
+  async copyInviteLinkFromTable(btn, slug) {
+    const url = document.getElementById(`invite-url-val-${slug}`)?.textContent;
+    if (!url || url === 'Yuklanmoqda...' || url === 'Yuklashda xatolik') return;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      const original = btn.innerHTML;
+      btn.innerHTML = '✅ Nusxalandi!';
+      btn.style.background = '#16A34A';
+      btn.style.color = '#fff';
+      setTimeout(() => {
+        btn.innerHTML = original;
+        btn.style.background = '';
+        btn.style.color = '';
+      }, 2000);
+    } catch {
+      const input = document.createElement('input');
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand('copy');
+      document.body.removeChild(input);
+      window.toast?.show('Havola nusxalandi!', 'success');
+    }
+  },
+
+  async regenInviteLinkFromTable(btn, slug) {
+    if (!confirm('Eski havola o\'chadi. Davom etasizmi?')) return;
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ ...';
+    try {
+      const res = await API.post(`/courses/teacher/courses/${slug}/invite/`);
+      if (res.success && res.data?.invite_url) {
+        window.toast?.show('Yangi havola yaratildi!', 'success');
+        const inviteUrl = res.data.invite_url;
+        document.getElementById(`invite-url-val-${slug}`).textContent = inviteUrl;
+        
+        const detailsRes = await API.get(`/courses/teacher/courses/${slug}/invite/`);
+        if (detailsRes.success && detailsRes.data) {
+          const limitText = detailsRes.data.max_students ? ` / ${detailsRes.data.max_students}` : ' (cheksiz)';
+          document.getElementById(`invite-users-val-${slug}`).textContent = `👥 ${detailsRes.data.used_count || 0}${limitText} o'quvchi yozilgan`;
+        }
+      }
+    } catch (err) {
+      window.toast?.show(err.message || 'Xatolik yuz berdi', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
   }
 };
 
@@ -564,5 +690,93 @@ async function submitReview() {
     window.toast?.show(err.message || "Tekshirishni saqlashda xatolik yuz berdi", "error");
   }
 }
+
+// Global helpers for invite dropdown
+window.showInviteDropdown = async function(slug, btn) {
+    const res = await API.get(`/courses/teacher/courses/${slug}/invite/`);
+    if (!res.success) {
+        window.toast?.show('Havola yuklanmadi', 'error');
+        return;
+    }
+
+    const url = res.data.invite_url;
+    const used = res.data.used_count || 0;
+    const max  = res.data.max_students || '∞';
+
+    // Dropdown HTML
+    const dropdown = document.createElement('div');
+    dropdown.className = 'invite-dropdown';
+    dropdown.innerHTML = `
+        <div class="invite-dropdown-title">🔗 Taklif havolasi</div>
+        <div class="invite-url-box">
+            <span class="invite-url-display" data-url="${url}">${url}</span>
+        </div>
+        <div class="invite-dropdown-actions">
+            <button onclick="copyInviteLink(this, '${url}')"
+                    class="btn-copy">📋 Nusxa olish</button>
+            <button onclick="regenerateInviteLink('${slug}', this)"
+                    class="btn-regen">🔄 Yangi havola</button>
+        </div>
+        <div class="invite-stats">👥 ${used}/${max} o'quvchi</div>
+    `;
+
+    // Mavjud dropdownni yopish
+    document.querySelectorAll('.invite-dropdown').forEach(d => d.remove());
+
+    // Tugma yoniga qo'shish
+    btn.parentElement.style.position = 'relative';
+    btn.parentElement.appendChild(dropdown);
+
+    // Tashqariga bosish → yopish
+    setTimeout(() => {
+        const closeDropdown = (e) => {
+            if (!dropdown.contains(e.target) && e.target !== btn) {
+                dropdown.remove();
+                document.removeEventListener('click', closeDropdown);
+            }
+        };
+        document.addEventListener('click', closeDropdown);
+    }, 100);
+};
+
+window.copyInviteLink = async function(btn, url) {
+    try {
+        await navigator.clipboard.writeText(url);
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ Nusxalandi!';
+        btn.style.background = '#16A34A';
+        btn.style.color = '#fff';
+        setTimeout(() => {
+            btn.innerHTML = orig;
+            btn.style.background = '';
+            btn.style.color = '';
+        }, 2000);
+    } catch {
+        // Fallback for browsers
+        const input = document.createElement('input');
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        window.toast?.show('Havola nusxalandi!', 'success');
+    }
+};
+
+window.regenerateInviteLink = async function(slug, btn) {
+    if (!confirm('Eski havola o\'chadi. Yangi havola yaratilsinmi?')) return;
+    btn.disabled = true;
+    btn.innerHTML = '⏳...';
+    const res = await API.post(`/courses/teacher/courses/${slug}/invite/`, {});
+    if (res.success) {
+        window.toast?.show('Yangi havola yaratildi!', 'success');
+        document.querySelectorAll('.invite-url-display').forEach(el => {
+            el.textContent = res.data.invite_url;
+            el.dataset.url = res.data.invite_url;
+        });
+    }
+    btn.disabled = false;
+    btn.innerHTML = '🔄 Yangi havola';
+};
 
 document.addEventListener('DOMContentLoaded', () => TeacherDashboard.init());

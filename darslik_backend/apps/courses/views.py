@@ -1716,3 +1716,76 @@ class EnrolledStudentsListView(APIView):
         return success_response(message="O'quvchi muvaffaqiyatli qo'shildi")
 
 
+class CourseInviteLinkView(APIView):
+    permission_classes = [IsVerifiedTeacher]
+
+    def get(self, request, slug):
+        course = get_object_or_404(
+            Course, slug=slug, teacher=request.user
+        )
+
+        if not getattr(course, 'is_private', False):
+            # Public kurs — oddiy URL qaytarsin
+            return Response({
+                'success': True,
+                'data': {
+                    'is_private': False,
+                    'course_url': request.build_absolute_uri(
+                        f'/courses/{course.slug}/'
+                    ),
+                    'invite_url': None,
+                }
+            })
+
+        # Private — invite topish yoki yaratish
+        from .models import CourseInvite
+        invite = CourseInvite.objects.filter(
+            course=course, is_active=True
+        ).first()
+
+        if not invite:
+            invite = CourseInvite.objects.create(course=course)
+
+        invite_url = request.build_absolute_uri(
+            f'/invite/{invite.token}/'
+        )
+
+        return Response({
+            'success': True,
+            'data': {
+                'is_private':       True,
+                'invite_url':       invite_url,
+                'require_approval': invite.require_approval,
+                'max_students':     invite.max_students,
+                'used_count':       invite.used_count,
+            }
+        })
+
+    def post(self, request, slug):
+        """Yangi havola yaratish (eski o'chiriladi)"""
+        course = get_object_or_404(
+            Course, slug=slug, teacher=request.user
+        )
+        # Eski havolani o'chirish
+        from .models import CourseInvite
+        CourseInvite.objects.filter(
+            course=course, is_active=True
+        ).update(is_active=False)
+
+        # Yangi havola
+        invite = CourseInvite.objects.create(
+            course=course,
+            require_approval=getattr(course, 'require_approval', False),
+            max_students=getattr(course, 'max_students', None),
+        )
+        invite_url = request.build_absolute_uri(
+            f'/invite/{invite.token}/'
+        )
+
+        return Response({
+            'success': True,
+            'message': 'Yangi taklif havolasi yaratildi',
+            'data': {'invite_url': invite_url}
+        })
+
+
