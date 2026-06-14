@@ -79,6 +79,10 @@ const LessonPage = {
         const paneId = targetTab === 'description' ? 'descriptionTab' : `tab-${targetTab}`;
         const pane = document.getElementById(paneId);
         if (pane) pane.style.display = 'block';
+
+        if (targetTab === 'discussion') {
+          LessonPage.loadDiscussions();
+        }
       });
     });
   },
@@ -322,7 +326,7 @@ const LessonPage = {
 
     const self = this;
     const triggerYTInit = () => {
-      new YT.Player('ytPlayer', {
+      self.ytPlayer = new YT.Player('ytPlayer', {
         events: {
           'onStateChange': function(event) {
             if (event.data === YT.PlayerState.ENDED) {
@@ -568,6 +572,264 @@ const LessonPage = {
       }
     } catch(e) { /* silent — student may not have access */ }
   },
+
+  capturedTimestampSeconds: null,
+
+  showQuestionForm() {
+    document.getElementById('newQuestionForm').style.display = 'block';
+    this.capturedTimestampSeconds = null;
+    document.getElementById('captureTimeText').textContent = '';
+  },
+
+  hideQuestionForm() {
+    document.getElementById('newQuestionForm').style.display = 'none';
+  },
+
+  captureTimestamp() {
+    let seconds = 0;
+    try {
+      if (this.player && this.player.video) {
+        seconds = Math.floor(this.player.video.currentTime);
+      } else if (this.ytPlayer && typeof this.ytPlayer.getCurrentTime === 'function') {
+        seconds = Math.floor(this.ytPlayer.getCurrentTime());
+      } else {
+        const videoEl = document.getElementById('videoPlayer');
+        if (videoEl) seconds = Math.floor(videoEl.currentTime);
+      }
+    } catch (e) {
+      console.error("Video vaqtini olishda xato:", e);
+    }
+
+    if (seconds > 0) {
+      this.capturedTimestampSeconds = seconds;
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      document.getElementById('captureTimeText').textContent = `[📍 ${mins}:${secs < 10 ? '0' : ''}${secs}]`;
+    } else {
+      window.toast?.show("Hozircha video o'ynatilmayapti", 'info');
+    }
+  },
+
+  async submitQuestion() {
+    const text = document.getElementById('qText').value.trim();
+    const title = document.getElementById('qTitle').value.trim();
+    if (!text) {
+      window.toast?.show("Savol matnini kiriting", 'error');
+      return;
+    }
+
+    try {
+      await API.post(`/courses/lessons/${this.lesson.id}/discussions/`, {
+        title: title || "Savol",
+        text,
+        video_timestamp: this.capturedTimestampSeconds
+      });
+      document.getElementById('qText').value = '';
+      document.getElementById('qTitle').value = '';
+      this.hideQuestionForm();
+      window.toast?.show("Savol yuborildi", 'success');
+      await this.loadDiscussions();
+    } catch (e) {
+      window.toast?.show(e.message || 'Xatolik', 'error');
+    }
+  },
+
+  formatTime(totalSeconds) {
+    if (!totalSeconds) return '';
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = totalSeconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  },
+
+  seekToTime(seconds) {
+    try {
+      if (this.player && this.player.video) {
+        this.player.video.currentTime = seconds;
+        this.player.video.play();
+      } else if (this.ytPlayer && typeof this.ytPlayer.seekTo === 'function') {
+        this.ytPlayer.seekTo(seconds, true);
+      } else {
+        const videoEl = document.getElementById('videoPlayer');
+        if (videoEl) {
+          videoEl.currentTime = seconds;
+          videoEl.play();
+        }
+      }
+    } catch (e) {
+      console.error("Videoni seek qilishda xato:", e);
+    }
+  },
+
+  async loadDiscussions() {
+    const listEl = document.getElementById('discussionsList');
+    try {
+      const res = await API.get(`/courses/lessons/${this.lesson.id}/discussions/`);
+      const discussions = res.data || [];
+      if (discussions.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">💬 Hali hech kim savol yozmagan. Birinchi bo\'lib savol bering!</div>';
+        return;
+      }
+
+      listEl.innerHTML = discussions.map(d => {
+        const isOwner = d.author === this.currentUser?.id;
+        const isTeacher = this.currentUser?.role === 'teacher';
+        const replies = d.replies || [];
+
+        // Build reactions HTML
+        let reactionsHtml = '';
+        const emojis = ['👍', '❤️', '😂'];
+        emojis.forEach(emoji => {
+          const reactors = d.reactions[emoji] || [];
+          const hasReacted = reactors.some(r => r.user_id === this.currentUser?.id);
+          reactionsHtml += `
+            <button onclick="LessonPage.toggleReact(${d.id}, '${emoji}', 'discussion')" style="padding:4px 8px; border-radius:6px; border:1px solid ${hasReacted ? 'var(--purple)' : 'var(--border)'}; background:${hasReacted ? 'var(--purple-light)' : 'white'}; cursor:pointer; font-size:12px; margin-right:6px;">
+              ${emoji} ${reactors.length || ''}
+            </button>`;
+        });
+
+        // Build replies list HTML
+        const repliesListHtml = replies.map(r => {
+          const isReplyAccepted = r.is_accepted;
+          let replyReacts = '';
+          emojis.forEach(emoji => {
+            const reactors = (r.reactions || {})[emoji] || [];
+            const hasReacted = reactors.some(reactor => reactor.user_id === this.currentUser?.id);
+            replyReacts += `
+              <button onclick="LessonPage.toggleReact(${r.id}, '${emoji}', 'reply')" style="padding:2px 6px; border-radius:6px; border:1px solid ${hasReacted ? 'var(--purple)' : 'var(--border)'}; background:${hasReacted ? 'var(--purple-light)' : 'white'}; cursor:pointer; font-size:11px; margin-right:4px;">
+                ${emoji} ${reactors.length || ''}
+              </button>`;
+          });
+
+          return `
+            <div style="padding:10px 0; border-top:1px solid var(--border); margin-top:8px; display:flex; gap:10px; align-items:flex-start;">
+              <div style="width:24px; height:24px; border-radius:50%; background:var(--purple-light); color:var(--purple); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">
+                ${r.author_name ? r.author_name[0] : '?'}
+              </div>
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                  <span style="font-size:12px; font-weight:700; color:var(--text);">${r.author_name} ${r.author_role === 'teacher' ? '<span style="color:var(--purple); font-size:10px;">(Ustoz)</span>' : ''}</span>
+                  <span style="font-size:10px; color:var(--text-3);">${new Date(r.created_at).toLocaleDateString()}</span>
+                </div>
+                <div style="font-size:12.5px; color:var(--text-2); margin-top:4px;">${marked.parse(r.text)}</div>
+                <div style="margin-top:6px; display:flex; align-items:center; justify-content:space-between;">
+                  <div>${replyReacts}</div>
+                  ${isTeacher ? `
+                    <button onclick="LessonPage.toggleAcceptReply(${r.id})" style="border:none; background:transparent; color:${isReplyAccepted ? 'var(--green)' : 'var(--text-3)'}; font-size:11px; cursor:pointer; font-weight:700;">
+                      ${isReplyAccepted ? '✅ To\'g\'ri javob' : '✔️ To\'g\'ri javob deb belgilash'}
+                    </button>` : (isReplyAccepted ? '<span style="color:var(--green); font-size:11px; font-weight:700;">✅ To\'g\'ri javob</span>' : '')}
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+
+        return `
+          <div class="discussion-item" style="background:white; border:2px solid ${d.is_pinned ? 'var(--purple)' : 'var(--border)'}; border-radius:16px; padding:16px; position:relative; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
+            ${d.is_pinned ? '<span style="position:absolute; top:-10px; left:16px; background:var(--purple); color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px;">📌 PINLANGAN</span>' : ''}
+            
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div style="display:flex; gap:10px; align-items:center;">
+                <div style="width:32px; height:32px; border-radius:50%; background:var(--purple-light); color:var(--purple); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">
+                  ${d.author_name ? d.author_name[0] : '?'}
+                </div>
+                <div>
+                  <div style="font-size:13px; font-weight:700; color:var(--text);">${d.author_name} ${d.author_role === 'teacher' ? '<span style="color:var(--purple); font-size:11px;">(Ustoz)</span>' : ''}</div>
+                  <div style="font-size:10px; color:var(--text-3);">${new Date(d.created_at).toLocaleDateString()}</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                ${isTeacher ? `
+                  <button onclick="LessonPage.togglePin(${d.id})" class="btn-xs" style="background:transparent; border:none; color:var(--purple); cursor:pointer; font-size:12px;"><i class="ti ti-pin"></i> Pin</button>` : ''}
+                ${(isTeacher || isOwner) ? `
+                  <button onclick="LessonPage.toggleResolve(${d.id})" class="btn-xs" style="background:transparent; border:none; color:var(--green); cursor:pointer; font-size:12px;"><i class="ti ti-check"></i> ${d.is_resolved ? 'Hal bo\'ldi' : 'Hal qilish'}</button>` : ''}
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div style="margin-top:12px;">
+              <h4 style="font-size:14px; font-weight:700; color:var(--text);">${d.title || ''}</h4>
+              <div style="font-size:13px; color:var(--text-2); margin-top:4px;">${marked.parse(d.text)}</div>
+            </div>
+
+            <div style="margin-top:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+              <div>
+                ${d.video_timestamp ? `
+                  <button onclick="LessonPage.seekToTime(${d.video_timestamp})" style="padding:4px 8px; border-radius:6px; border:none; background:var(--purple-light); color:var(--purple); font-weight:700; cursor:pointer; font-size:12px; margin-right:8px;">
+                    ▶ ${this.formatTime(d.video_timestamp)} ga o't
+                  </button>` : ''}
+                ${reactionsHtml}
+              </div>
+              <span style="font-size:12px; color:var(--text-3); font-weight:600;">💬 ${replies.length} ta javob ${d.is_resolved ? '• ✅ Hal bo\'ldi' : ''}</span>
+            </div>
+
+            <!-- Replies Box -->
+            <div style="margin-top:16px; background:#f9fafb; border-radius:12px; padding:12px;">
+              <div id="replies-list-${d.id}">${repliesListHtml}</div>
+              
+              <!-- Reply input -->
+              <div style="margin-top:10px; display:flex; gap:8px;">
+                <input id="reply-input-${d.id}" type="text" placeholder="Javob yozish..." style="flex:1; padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:12px; outline:none; background:white;">
+                <button onclick="LessonPage.submitReply(${d.id})" style="padding:6px 12px; border-radius:8px; background:var(--purple); color:white; border:none; font-size:12px; font-weight:600; cursor:pointer;">Yuborish</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+
+    } catch (e) {
+      listEl.innerHTML = `<div class="empty-state">Yuklashda xato: ${e.message}</div>`;
+    }
+  },
+
+  async submitReply(discId) {
+    const input = document.getElementById(`reply-input-${discId}`);
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+      await API.post(`/courses/discussions/${discId}/replies/`, { text });
+      input.value = '';
+      window.toast?.show("Javob qo'shildi", 'success');
+      await this.loadDiscussions();
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  async toggleReact(id, emoji, targetType) {
+    try {
+      await API.post(`/courses/discussions/${id}/react/`, { emoji, target_type: targetType });
+      await this.loadDiscussions();
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  async togglePin(discId) {
+    try {
+      await API.post(`/courses/discussions/${discId}/pin/`);
+      await this.loadDiscussions();
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  async toggleResolve(discId) {
+    try {
+      await API.post(`/courses/discussions/${discId}/resolve/`);
+      await this.loadDiscussions();
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  async toggleAcceptReply(replyId) {
+    try {
+      await API.post(`/courses/discussions/replies/${replyId}/accept/`);
+      await this.loadDiscussions();
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
 };
 
 document.addEventListener('DOMContentLoaded', () => LessonPage.init());

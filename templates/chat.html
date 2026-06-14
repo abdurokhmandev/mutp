@@ -108,7 +108,10 @@
   <aside class="chat-sidebar" id="chatSidebar">
     <div class="chat-sidebar-head">
       <span class="chat-sidebar-title">💬 Xabarlar</span>
-      <a href="javascript:history.back()" class="btn-back"><i class="ti ti-arrow-left"></i> Orqaga</a>
+      <div style="display:flex; gap:6px;">
+        <button onclick="ChatApp.openCreateGroupModal()" class="btn-back" style="cursor:pointer; border-color:var(--purple); color:var(--purple);"><i class="ti ti-plus"></i> Guruh</button>
+        <a href="javascript:history.back()" class="btn-back"><i class="ti ti-arrow-left"></i></a>
+      </div>
     </div>
     <div class="conv-search">
       <input id="convSearch" type="text" placeholder="Qidirish..." oninput="ChatApp.filterConvs(this.value)">
@@ -131,13 +134,26 @@
     <div id="chatActive" style="display:none; flex-direction:column; height:100%;">
       <div class="chat-header" id="chatHeader">
         <div class="chat-header-av" id="headerAv">?</div>
-        <div>
+        <div style="flex:1;">
           <div class="chat-header-name" id="headerName">—</div>
           <div class="chat-header-role" id="headerRole"></div>
         </div>
       </div>
       <div class="chat-messages" id="chatMessages"></div>
+      
+      <!-- Upload preview area -->
+      <div id="uploadPreview" style="display:none; background:#E2E8F0; padding:8px 16px; font-size:12px; align-items:center; justify-content:space-between; border-top:1px solid var(--border);">
+        <span id="previewFileName"></span>
+        <button onclick="ChatApp.clearSelectedFile()" style="background:transparent; border:none; color:#DC2626; cursor:pointer;"><i class="ti ti-x"></i></button>
+      </div>
+
       <div class="chat-input-bar">
+        <!-- Attachment button -->
+        <button onclick="document.getElementById('fileInput').click()" class="btn-send" style="background:#E2E8F0; color:#4A5568; box-shadow:none; margin-right:4px;" title="Fayl yuklash">
+          <i class="ti ti-paperclip"></i>
+        </button>
+        <input type="file" id="fileInput" style="display:none;" onchange="ChatApp.handleFileUpload(event)">
+
         <textarea id="msgInput" rows="1" placeholder="Xabar yozing..." oninput="ChatApp.autoResize(this)" onkeydown="ChatApp.handleKey(event)"></textarea>
         <button class="btn-send" id="sendBtn" onclick="ChatApp.sendMessage()" title="Yuborish">
           <i class="ti ti-send"></i>
@@ -145,6 +161,41 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- Thread Panel -->
+  <aside class="chat-thread" id="threadPanel" style="width:350px; border-left:2px solid var(--border); background:white; display:none; flex-direction:column; z-index:5;">
+    <div class="chat-sidebar-head" style="height:56px; border-bottom:2px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 16px; flex-shrink:0;">
+      <span style="font-weight:700; font-size:14px;">Muhokama (Thread)</span>
+      <button onclick="ChatApp.closeThread()" class="btn-back" style="cursor:pointer; padding:2px 6px;"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px;" id="threadContent">
+      <!-- Parent message & replies list -->
+    </div>
+    <div class="chat-input-bar" style="padding:10px 16px; border-top:1px solid var(--border); flex-shrink:0;">
+      <textarea id="threadMsgInput" rows="1" placeholder="Javob yozish..." oninput="ChatApp.autoResize(this)" onkeydown="ChatApp.handleThreadKey(event)" style="font-size:12px;"></textarea>
+      <button class="btn-send" id="threadSendBtn" onclick="ChatApp.sendThreadMessage()" style="width:36px; height:36px; font-size:14px; box-shadow:none; flex-shrink:0;"><i class="ti ti-send"></i></button>
+    </div>
+  </aside>
+
+</div>
+
+<!-- Group Creation Modal -->
+<div id="groupModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:100; align-items:center; justify-content:center; font-family:'Plus Jakarta Sans', sans-serif;">
+  <div style="background:white; border-radius:16px; padding:24px; width:100%; max-width:400px; box-shadow:0 10px 25px rgba(0,0,0,0.1);">
+    <h3 style="font-size:16px; font-weight:700; margin-bottom:16px;">Yangi guruh kanali</h3>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Guruh nomi</label>
+      <input id="gName" type="text" placeholder="Masalan: Python Guruh" style="width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:12px; font-size:13px; outline:none; background:var(--bg);">
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Tavsif (ixtiyoriy)</label>
+      <textarea id="gDesc" placeholder="Guruh haqida qisqacha..." rows="3" style="width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:12px; font-size:13px; resize:none; outline:none; font-family:inherit; background:var(--bg);"></textarea>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+      <button onclick="document.getElementById('groupModal').style.display='none'" class="btn-secondary" style="padding:8px 14px; border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; background:#f3f4f6; border:none; color:#374151;">Bekor qilish</button>
+      <button onclick="ChatApp.createGroup()" class="btn-primary" style="padding:8px 16px; border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; background:var(--duo-green); border:none; color:white; box-shadow:0 3px 0 var(--duo-green-dark);">Yaratish</button>
+    </div>
   </div>
 </div>
 
@@ -278,49 +329,149 @@ const ChatApp = {
     } catch {}
   },
 
+  selectedFile: null,
+  activeThreadParentId: null,
+
+  openCreateGroupModal() {
+    document.getElementById('groupModal').style.display = 'flex';
+  },
+
+  async createGroup() {
+    const name = document.getElementById('gName').value.trim();
+    const description = document.getElementById('gDesc').value.trim();
+    if (!name) {
+      window.toast?.show("Guruh nomini yozing", 'error');
+      return;
+    }
+
+    try {
+      const res = await API.post('/chat/channels/', { name, description });
+      document.getElementById('gName').value = '';
+      document.getElementById('gDesc').value = '';
+      document.getElementById('groupModal').style.display = 'none';
+      window.toast?.show("Guruh yaratildi", 'success');
+      await this.loadConversations();
+      if (res.data?.id) {
+        this.openConv(res.data.id);
+      }
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedFile = file;
+      document.getElementById('previewFileName').textContent = `📁 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      document.getElementById('uploadPreview').style.display = 'flex';
+    }
+  },
+
+  clearSelectedFile() {
+    this.selectedFile = null;
+    document.getElementById('fileInput').value = '';
+    document.getElementById('uploadPreview').style.display = 'none';
+  },
+
   renderMessages(messages) {
     this.lastMsgCount = messages.length;
     const el = document.getElementById('chatMessages');
     const me = this.currentUser;
+    const emojis = ['👍', '❤️', '😂', '🔥'];
+
     el.innerHTML = messages.map(m => {
       const isMine = m.sender_id === me?.id;
       const time = new Date(m.created_at).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+      
+      // File/Image attachment logic
+      let fileHtml = '';
+      if (m.file) {
+        const isImage = m.file.match(/\.(jpeg|jpg|gif|png|webp)/i);
+        if (isImage) {
+          fileHtml = `<div style="margin-top:6px; max-width:200px;"><img src="${m.file}" style="width:100%; border-radius:8px; display:block; cursor:pointer;" onclick="window.open('${m.file}', '_blank')"></div>`;
+        } else {
+          fileHtml = `<div style="margin-top:6px;"><a href="${m.file}" target="_blank" style="color:${isMine ? '#fff' : 'var(--purple)'}; text-decoration:underline; font-size:12px; display:flex; align-items:center; gap:4px;"><i class="ti ti-download"></i> ${m.file_name || 'Faylni yuklash'}</a></div>`;
+        }
+      }
+
+      // Build reactions
+      let reactsHtml = '';
+      const reactions = m.reactions || {};
+      Object.keys(reactions).forEach(emoji => {
+        const users = reactions[emoji] || [];
+        const hasReacted = users.some(u => u.user_id === me?.id);
+        reactsHtml += `
+          <span onclick="ChatApp.toggleReact(${m.id}, '${emoji}')" style="cursor:pointer; font-size:11px; padding:2px 6px; border-radius:8px; background:${hasReacted ? 'var(--purple-light)' : 'rgba(0,0,0,0.04)'}; border: 1px solid ${hasReacted ? 'var(--purple)' : 'transparent'}; margin-right:4px;">
+            ${emoji} ${users.length}
+          </span>`;
+      });
+
+      // Reaction drawer hover options
+      const reactionDrawer = `
+        <div class="react-drawer" style="display:none; position:absolute; top:-28px; ${isMine ? 'left:0;' : 'right:0;'} background:white; border:1px solid var(--border); border-radius:12px; padding:2px 6px; box-shadow:0 2px 8px rgba(0,0,0,0.1); gap:6px; z-index:2;">
+          ${emojis.map(e => `<span onclick="ChatApp.toggleReact(${m.id}, '${e}')" style="cursor:pointer; font-size:13px; padding:2px;">${e}</span>`).join('')}
+        </div>`;
+
       return `
-        <div class="msg ${isMine ? 'mine' : 'theirs'}">
+        <div class="msg ${isMine ? 'mine' : 'theirs'}" style="position:relative;" onmouseenter="this.querySelector('.react-drawer').style.display='flex'" onmouseleave="this.querySelector('.react-drawer').style.display='none'">
+          ${reactionDrawer}
           ${!isMine ? `<div class="msg-av">${this.initials(m.sender_name)}</div>` : ''}
-          <div>
-            <div class="msg-bubble">${this.escHtml(m.text)}</div>
-            <div class="msg-time">${time}</div>
+          <div style="max-width: 65%;">
+            <div class="msg-bubble" style="max-width:100%;">
+              <div>${this.escHtml(m.text)}</div>
+              ${fileHtml}
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; gap:8px;">
+                <div class="msg-time" style="margin:0;">${time}</div>
+                <div style="display:flex; gap:6px;">
+                  <button onclick="ChatApp.openThread(${m.id})" style="background:transparent; border:none; color:${isMine ? '#fff' : 'var(--purple)'}; font-size:10px; cursor:pointer; font-weight:700;">
+                    💬 ${m.replies_count ? `${m.replies_count} javob` : 'Javob'}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="reactions-container" style="margin-top:4px; display:flex; flex-wrap:wrap; gap:4px;">
+              ${reactsHtml}
+            </div>
           </div>
         </div>`;
     }).join('');
     el.scrollTop = el.scrollHeight;
   },
 
+  async toggleReact(msgId, emoji) {
+    try {
+      await API.post(`/chat/messages/${msgId}/react/`, { emoji });
+      await this.loadMessages();
+      if (this.activeThreadParentId === msgId) {
+        await this.loadThreadReplies();
+      }
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
   async sendMessage() {
     const input = document.getElementById('msgInput');
     const content = input.value.trim();
-    if (!content || !this.activeConvId) return;
+    if (!content && !this.selectedFile) return;
 
     const btn = document.getElementById('sendBtn');
     btn.disabled = true;
     input.value = '';
     input.style.height = 'auto';
 
-    // Optimistic render
-    const el = document.getElementById('chatMessages');
-    const time = new Date().toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-    el.insertAdjacentHTML('beforeend', `
-      <div class="msg mine" style="opacity:.6">
-        <div>
-          <div class="msg-bubble">${this.escHtml(content)}</div>
-          <div class="msg-time">${time}</div>
-        </div>
-      </div>`);
-    el.scrollTop = el.scrollHeight;
+    const formData = new FormData();
+    if (content) formData.append('text', content);
+    if (this.selectedFile) {
+      formData.append('file', this.selectedFile);
+      formData.append('message_type', this.selectedFile.type.startsWith('image/') ? 'image' : 'file');
+    }
+
+    this.clearSelectedFile();
 
     try {
-      await API.post(`/chat/channels/${this.activeConvId}/messages/`, { text: content });
+      await API.post(`/chat/channels/${this.activeConvId}/messages/`, formData);
       await this.loadMessages();
       await this.loadConversations();
     } catch (e) {
@@ -328,6 +479,97 @@ const ChatApp = {
     } finally {
       btn.disabled = false;
       input.focus();
+    }
+  },
+
+  // --- THREAD / JAVOB ZANJIRI ---
+  async openThread(msgId) {
+    this.activeThreadParentId = msgId;
+    document.getElementById('threadPanel').style.display = 'flex';
+    await this.loadThreadReplies();
+  },
+
+  closeThread() {
+    this.activeThreadParentId = null;
+    document.getElementById('threadPanel').style.display = 'none';
+  },
+
+  async loadThreadReplies() {
+    if (!this.activeThreadParentId) return;
+    const contentEl = document.getElementById('threadContent');
+    contentEl.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+
+    try {
+      // 1. Get parent message detail from active list or direct API
+      const res = await API.get(`/chat/channels/${this.activeConvId}/messages/?parent=${this.activeThreadParentId}`);
+      const replies = res.data || [];
+      
+      // Let's find parent in current active conversation list or fetch it
+      const channelMsgsRes = await API.get(`/chat/channels/${this.activeConvId}/messages/`);
+      const parentMsg = (channelMsgsRes.data || []).find(m => m.id === this.activeThreadParentId);
+
+      let parentHtml = '';
+      if (parentMsg) {
+        parentHtml = `
+          <div style="padding:12px; background:var(--purple-light); border-radius:12px; margin-bottom:16px;">
+            <div style="font-weight:700; font-size:12px; color:var(--purple);">${parentMsg.sender_name}</div>
+            <div style="font-size:13px; color:var(--text); margin-top:4px;">${parentMsg.text}</div>
+          </div>
+          <div style="font-weight:700; font-size:11px; color:var(--text-2); border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:8px;">Javoblar</div>`;
+      }
+
+      contentEl.innerHTML = parentHtml + replies.map(r => {
+        const isMine = r.sender_id === this.currentUser?.id;
+        const time = new Date(r.created_at).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+        return `
+          <div style="display:flex; gap:10px; align-items:flex-start;">
+            <div style="width:24px; height:24px; border-radius:50%; background:var(--purple-light); color:var(--purple); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">
+              ${this.initials(r.sender_name)}
+            </div>
+            <div style="flex:1;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:700; font-size:12px;">${r.sender_name}</span>
+                <span style="font-size:10px; color:var(--text-3);">${time}</span>
+              </div>
+              <div style="font-size:12.5px; color:var(--text-2); margin-top:2px;">${this.escHtml(r.text)}</div>
+            </div>
+          </div>`;
+      }).join('');
+      contentEl.scrollTop = contentEl.scrollHeight;
+
+    } catch (e) {
+      contentEl.innerHTML = `<div style="font-size:12px; color:red; padding:12px;">Xato: ${e.message}</div>`;
+    }
+  },
+
+  async sendThreadMessage() {
+    const input = document.getElementById('threadMsgInput');
+    const text = input.value.trim();
+    if (!text || !this.activeThreadParentId) return;
+
+    const btn = document.getElementById('threadSendBtn');
+    btn.disabled = true;
+    input.value = '';
+
+    try {
+      await API.post(`/chat/channels/${this.activeConvId}/messages/`, {
+        text,
+        parent: this.activeThreadParentId
+      });
+      await this.loadThreadReplies();
+      await this.loadMessages(); // Update main replies count
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      input.focus();
+    }
+  },
+
+  handleThreadKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      this.sendThreadMessage();
     }
   },
 

@@ -362,8 +362,11 @@ const CourseDetail = {
         };
       }
 
-      if (this.course.is_enrolled) {
+      const currentUser = App.getUser();
+      const isTeacher = currentUser && currentUser.id === this.course.teacher?.id;
+      if (this.course.is_enrolled || isTeacher) {
         this.loadHomeworks();
+        this.loadForumDiscussions();
       }
 
     } catch (error) {
@@ -557,6 +560,203 @@ const CourseDetail = {
       } catch (err) {
         inviteContainer.innerHTML = '<span style="color:#DC2626;">Xatolik yuz berdi</span>';
       }
+    }
+  },
+
+  showForumForm() {
+    document.getElementById('newForumForm').style.display = 'block';
+  },
+
+  hideForumForm() {
+    document.getElementById('newForumForm').style.display = 'none';
+  },
+
+  async submitForumTopic() {
+    const title = document.getElementById('fTitle').value.trim();
+    const text = document.getElementById('fText').value.trim();
+    if (!title || !text) {
+      window.toast?.show("Sarlavha va matnni kiriting", 'error');
+      return;
+    }
+
+    try {
+      await API.post(`/courses/${this.course.slug}/discussions/`, { title, text });
+      document.getElementById('fTitle').value = '';
+      document.getElementById('fText').value = '';
+      this.hideForumForm();
+      window.toast?.show("Mavzu ochildi", 'success');
+      await this.loadForumDiscussions();
+    } catch (e) {
+      window.toast?.show(e.message || 'Xatolik', 'error');
+    }
+  },
+
+  async loadForumDiscussions() {
+    const block = document.getElementById('courseForumBlock');
+    const container = document.getElementById('courseDiscussionsList');
+    if (!block || !container) return;
+
+    block.style.display = 'block';
+
+    try {
+      const res = await API.get(`/courses/${this.course.slug}/discussions/`);
+      const discussions = res.data || [];
+      if (discussions.length === 0) {
+        container.innerHTML = '<div class="empty-state">💬 Hali muhokama mavzulari yo\'q. Yangi mavzu ochib forum boshlang!</div>';
+        return;
+      }
+
+      const currentUser = App.getUser();
+
+      container.innerHTML = discussions.map(d => {
+        const isOwner = d.author === currentUser?.id;
+        const isCourseTeacher = currentUser && currentUser.id === this.course.teacher?.id;
+        const replies = d.replies || [];
+
+        let reactionsHtml = '';
+        const emojis = ['👍', '❤️', '😂'];
+        emojis.forEach(emoji => {
+          const reactors = d.reactions[emoji] || [];
+          const hasReacted = reactors.some(r => r.user_id === currentUser?.id);
+          reactionsHtml += `
+            <button onclick="CourseDetail.toggleForumReact(${d.id}, '${emoji}', 'discussion')" style="padding:4px 8px; border-radius:6px; border:1px solid ${hasReacted ? 'var(--purple)' : 'var(--border)'}; background:${hasReacted ? 'var(--purple-light)' : 'white'}; cursor:pointer; font-size:12px; margin-right:6px;">
+              ${emoji} ${reactors.length || ''}
+            </button>`;
+        });
+
+        const repliesListHtml = replies.map(r => {
+          const isReplyAccepted = r.is_accepted;
+          let replyReacts = '';
+          emojis.forEach(emoji => {
+            const reactors = (r.reactions || {})[emoji] || [];
+            const hasReacted = reactors.some(reactor => reactor.user_id === currentUser?.id);
+            replyReacts += `
+              <button onclick="CourseDetail.toggleForumReact(${r.id}, '${emoji}', 'reply')" style="padding:2px 6px; border-radius:6px; border:1px solid ${hasReacted ? 'var(--purple)' : 'var(--border)'}; background:${hasReacted ? 'var(--purple-light)' : 'white'}; cursor:pointer; font-size:11px; margin-right:4px;">
+                ${emoji} ${reactors.length || ''}
+              </button>`;
+          });
+
+          return `
+            <div style="padding:10px 0; border-top:1px solid var(--border); margin-top:8px; display:flex; gap:10px; align-items:flex-start;">
+              <div style="width:24px; height:24px; border-radius:50%; background:var(--purple-light); color:var(--purple); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">
+                ${r.author_name ? r.author_name[0] : '?'}
+              </div>
+              <div style="flex:1;">
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                  <span style="font-size:12px; font-weight:700; color:var(--text);">${r.author_name} ${r.author_role === 'teacher' ? '<span style="color:var(--purple); font-size:10px;">(Ustoz)</span>' : ''}</span>
+                  <span style="font-size:10px; color:var(--text-3);">${new Date(r.created_at).toLocaleDateString()}</span>
+                </div>
+                <div style="font-size:12.5px; color:var(--text-2); margin-top:4px;">${marked.parse(r.text)}</div>
+                <div style="margin-top:6px; display:flex; align-items:center; justify-content:space-between;">
+                  <div>${replyReacts}</div>
+                  ${isCourseTeacher ? `
+                    <button onclick="CourseDetail.toggleForumAcceptReply(${r.id})" style="border:none; background:transparent; color:${isReplyAccepted ? 'var(--green)' : 'var(--text-3)'}; font-size:11px; cursor:pointer; font-weight:700;">
+                      ${isReplyAccepted ? '✅ To\'g\'ri javob' : '✔️ To\'g\'ri javob deb belgilash'}
+                    </button>` : (isReplyAccepted ? '<span style="color:var(--green); font-size:11px; font-weight:700;">✅ To\'g\'ri javob</span>' : '')}
+                </div>
+              </div>
+            </div>`;
+        }).join('');
+
+        return `
+          <div class="forum-item" style="background:white; border:2px solid ${d.is_pinned ? 'var(--purple)' : 'var(--border)'}; border-radius:16px; padding:16px; position:relative; box-shadow:0 2px 8px rgba(0,0,0,0.02);">
+            ${d.is_pinned ? '<span style="position:absolute; top:-10px; left:16px; background:var(--purple); color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px;">📌 PINLANGAN</span>' : ''}
+            
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div style="display:flex; gap:10px; align-items:center;">
+                <div style="width:32px; height:32px; border-radius:50%; background:var(--purple-light); color:var(--purple); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">
+                  ${d.author_name ? d.author_name[0] : '?'}
+                </div>
+                <div>
+                  <div style="font-size:13px; font-weight:700; color:var(--text);">${d.author_name} ${d.author_role === 'teacher' ? '<span style="color:var(--purple); font-size:11px;">(Ustoz)</span>' : ''}</div>
+                  <div style="font-size:10px; color:var(--text-3);">${new Date(d.created_at).toLocaleDateString()}</div>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                ${isCourseTeacher ? `
+                  <button onclick="CourseDetail.toggleForumPin(${d.id})" class="btn-xs" style="background:transparent; border:none; color:var(--purple); cursor:pointer; font-size:12px;"><i class="ti ti-pin"></i> Pin</button>` : ''}
+                ${(isCourseTeacher || isOwner) ? `
+                  <button onclick="CourseDetail.toggleForumResolve(${d.id})" class="btn-xs" style="background:transparent; border:none; color:var(--green); cursor:pointer; font-size:12px;"><i class="ti ti-check"></i> ${d.is_resolved ? 'Hal bo\'ldi' : 'Hal qilish'}</button>` : ''}
+              </div>
+            </div>
+
+            <!-- Content -->
+            <div style="margin-top:12px;">
+              <h4 style="font-size:14px; font-weight:700; color:var(--text);">${d.title || ''}</h4>
+              <div style="font-size:13px; color:var(--text-2); margin-top:4px;">${marked.parse(d.text)}</div>
+            </div>
+
+            <div style="margin-top:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+              <div>${reactionsHtml}</div>
+              <span style="font-size:12px; color:var(--text-3); font-weight:600;">💬 ${replies.length} ta javob ${d.is_resolved ? '• ✅ Hal bo\'ldi' : ''}</span>
+            </div>
+
+            <!-- Replies Box -->
+            <div style="margin-top:16px; background:#f9fafb; border-radius:12px; padding:12px;">
+              <div id="forum-replies-list-${d.id}">${repliesListHtml}</div>
+              
+              <!-- Reply input -->
+              <div style="margin-top:10px; display:flex; gap:8px;">
+                <input id="forum-reply-input-${d.id}" type="text" placeholder="Javob yozish..." style="flex:1; padding:8px 12px; border:1px solid var(--border); border-radius:8px; font-size:12px; outline:none; background:white;">
+                <button onclick="CourseDetail.submitForumReply(${d.id})" style="padding:6px 12px; border-radius:8px; background:var(--purple); color:white; border:none; font-size:12px; font-weight:600; cursor:pointer;">Yuborish</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+
+    } catch (e) {
+      container.innerHTML = `<div class="empty-state">Yuklashda xato: ${e.message}</div>`;
+    }
+  },
+
+  async submitForumReply(discId) {
+    const input = document.getElementById(`forum-reply-input-${discId}`);
+    const text = input.value.trim();
+    if (!text) return;
+
+    try {
+      await API.post(`/courses/discussions/${discId}/replies/`, { text });
+      input.value = '';
+      window.toast?.show("Javob qo'shildi", 'success');
+      await this.loadForumDiscussions();
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  async toggleForumReact(id, emoji, targetType) {
+    try {
+      await API.post(`/courses/discussions/${id}/react/`, { emoji, target_type: targetType });
+      await this.loadForumDiscussions();
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  async toggleForumPin(discId) {
+    try {
+      await API.post(`/courses/discussions/${discId}/pin/`);
+      await this.loadForumDiscussions();
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  async toggleForumResolve(discId) {
+    try {
+      await API.post(`/courses/discussions/${discId}/resolve/`);
+      await this.loadForumDiscussions();
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  async toggleForumAcceptReply(replyId) {
+    try {
+      await API.post(`/courses/discussions/replies/${replyId}/accept/`);
+      await this.loadForumDiscussions();
+    } catch (e) {
+      window.toast?.show(e.message, 'error');
     }
   },
 };

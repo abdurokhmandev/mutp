@@ -357,4 +357,104 @@ class EnrollmentRequestSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'course', 'course_title', 'course_slug', 'student', 'student_name', 'invite_link', 'status', 'created_at', 'reviewed_at']
 
 
+from .models import (
+    Category, Course, Module, Lesson, Enrollment, LessonProgress, Review,
+    Certificate, Question, AnswerOption, QuizAttempt, SavedCourse, LessonResource,
+    Homework, HomeworkResource, HomeworkSubmission, CourseInviteLink, EnrollmentRequest,
+    Discussion, DiscussionReply, DiscussionReaction
+)
+
+User = get_user_model()
+
+
+class DiscussionReactionSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.full_name', read_only=True)
+
+    class Meta:
+        model = DiscussionReaction
+        fields = ['id', 'target_type', 'user', 'user_name', 'emoji']
+
+
+class DiscussionReplySerializer(serializers.ModelSerializer):
+    author_name = serializers.CharField(source='author.full_name', read_only=True)
+    author_avatar = serializers.SerializerMethodField()
+    author_role = serializers.CharField(source='author.role', read_only=True)
+    reactions = serializers.SerializerMethodField()
+    replies = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DiscussionReply
+        fields = ['id', 'discussion', 'author', 'author_name', 'author_avatar', 'author_role', 'text', 'parent', 'is_accepted', 'created_at', 'reactions', 'replies']
+
+    def get_author_avatar(self, obj):
+        if not obj.author.avatar:
+            return None
+        request = self.context.get('request')
+        if request is not None:
+            return request.build_absolute_uri(obj.author.avatar.url)
+        return obj.author.avatar.url
+
+    def get_reactions(self, obj):
+        reactions = obj.reactions.all()
+        # Group reactions by emoji
+        emoji_map = {}
+        for r in reactions:
+            emoji_map.setdefault(r.emoji, []).append({
+                'user_id': r.user_id,
+                'user_name': r.user.full_name
+            })
+        return emoji_map
+
+    def get_replies(self, obj):
+        # Return nested replies if parent is null
+        if obj.parent_id is None:
+            children = obj.children.all()
+            return DiscussionReplySerializer(children, many=True, context=self.context).data
+        return []
+
+
+class DiscussionSerializer(serializers.ModelSerializer):
+    author_name = serializers.CharField(source='author.full_name', read_only=True)
+    author_avatar = serializers.SerializerMethodField()
+    author_role = serializers.CharField(source='author.role', read_only=True)
+    replies_count = serializers.SerializerMethodField()
+    reactions = serializers.SerializerMethodField()
+    replies = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Discussion
+        fields = [
+            'id', 'discussion_type', 'course', 'lesson', 'author', 'author_name',
+            'author_avatar', 'author_role', 'title', 'text', 'video_timestamp',
+            'is_pinned', 'is_resolved', 'views_count', 'created_at', 'updated_at',
+            'replies_count', 'reactions', 'replies'
+        ]
+
+    def get_author_avatar(self, obj):
+        if not obj.author.avatar:
+            return None
+        request = self.context.get('request')
+        if request is not None:
+            return request.build_absolute_uri(obj.author.avatar.url)
+        return obj.author.avatar.url
+
+    def get_replies_count(self, obj):
+        return obj.replies.count()
+
+    def get_reactions(self, obj):
+        reactions = obj.reactions.all()
+        emoji_map = {}
+        for r in reactions:
+            emoji_map.setdefault(r.emoji, []).append({
+                'user_id': r.user_id,
+                'user_name': r.user.full_name
+            })
+        return emoji_map
+
+    def get_replies(self, obj):
+        # Only top-level replies (no parent)
+        top_replies = obj.replies.filter(parent=None)
+        return DiscussionReplySerializer(top_replies, many=True, context=self.context).data
+
+
 

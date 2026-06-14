@@ -1790,3 +1790,204 @@ class CourseInviteLinkView(APIView):
         })
 
 
+# --- DISCUSSION / MUHOKAMA TIZIMI VIEWS ---
+from rest_framework.permissions import IsAuthenticated
+from .models import Discussion, DiscussionReply, DiscussionReaction
+from .serializers import DiscussionSerializer, DiscussionReplySerializer
+
+class LessonDiscussionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        lesson = get_object_or_404(Lesson, id=id)
+        # Check permission: enrolled or teacher
+        course = lesson.module.course
+        is_teacher = (course.teacher == request.user)
+        is_enrolled = Enrollment.objects.filter(student=request.user, course=course).exists()
+        if not (is_teacher or is_enrolled or lesson.is_free_preview):
+            return error_response(message="Ushbu dars muhokamasini ko'rish uchun kursga a'zo bo'lishingiz kerak", status_code=403)
+
+        discussions = Discussion.objects.filter(lesson=lesson, discussion_type=Discussion.DiscussionType.LESSON)
+        serializer = DiscussionSerializer(discussions, many=True, context={'request': request})
+        return success_response(data=serializer.data, message="Dars muhokamalari")
+
+    def post(self, request, id):
+        lesson = get_object_or_404(Lesson, id=id)
+        course = lesson.module.course
+        is_teacher = (course.teacher == request.user)
+        is_enrolled = Enrollment.objects.filter(student=request.user, course=course).exists()
+        if not (is_teacher or is_enrolled):
+            return error_response(message="Savol berish uchun kursga yozilgan bo'lishingiz kerak", status_code=403)
+
+        title = request.data.get('title', '').strip()
+        text = request.data.get('text', '').strip()
+        video_timestamp = request.data.get('video_timestamp')
+
+        if not text:
+            return error_response(message="Savol matni bo'sh bo'lishi mumkin emas", status_code=400)
+
+        discussion = Discussion.objects.create(
+            discussion_type=Discussion.DiscussionType.LESSON,
+            course=course,
+            lesson=lesson,
+            author=request.user,
+            title=title,
+            text=text,
+            video_timestamp=video_timestamp if video_timestamp else None
+        )
+        serializer = DiscussionSerializer(discussion, context={'request': request})
+        return success_response(data=serializer.data, message="Savol muvaffaqiyatli qo'shildi", status_code=201)
+
+
+class CourseDiscussionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, slug):
+        course = get_object_or_404(Course, slug=slug)
+        is_teacher = (course.teacher == request.user)
+        is_enrolled = Enrollment.objects.filter(student=request.user, course=course).exists()
+        if not (is_teacher or is_enrolled):
+            return error_response(message="Muhokamalarni ko'rish uchun kursga yozilgan bo'lishingiz kerak", status_code=403)
+
+        discussions = Discussion.objects.filter(course=course, discussion_type=Discussion.DiscussionType.COURSE)
+        serializer = DiscussionSerializer(discussions, many=True, context={'request': request})
+        return success_response(data=serializer.data, message="Kurs muhokamalari")
+
+    def post(self, request, slug):
+        course = get_object_or_404(Course, slug=slug)
+        is_teacher = (course.teacher == request.user)
+        is_enrolled = Enrollment.objects.filter(student=request.user, course=course).exists()
+        if not (is_teacher or is_enrolled):
+            return error_response(message="Mavzu ochish uchun kursga yozilgan bo'lishingiz kerak", status_code=403)
+
+        title = request.data.get('title', '').strip()
+        text = request.data.get('text', '').strip()
+
+        if not title or not text:
+            return error_response(message="Sarlavha va matn kiritilishi shart", status_code=400)
+
+        discussion = Discussion.objects.create(
+            discussion_type=Discussion.DiscussionType.COURSE,
+            course=course,
+            author=request.user,
+            title=title,
+            text=text
+        )
+        serializer = DiscussionSerializer(discussion, context={'request': request})
+        return success_response(data=serializer.data, message="Mavzu muvaffaqiyatli ochildi", status_code=201)
+
+
+class DiscussionReplyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        discussion = get_object_or_404(Discussion, id=id)
+        # Check enrollment or teacher status
+        course = discussion.course
+        is_teacher = (course.teacher == request.user)
+        is_enrolled = Enrollment.objects.filter(student=request.user, course=course).exists()
+        if not (is_teacher or is_enrolled):
+            return error_response(message="Javob yozish uchun kursga yozilgan bo'lishingiz kerak", status_code=403)
+
+        text = request.data.get('text', '').strip()
+        parent_id = request.data.get('parent')
+
+        if not text:
+            return error_response(message="Javob matni bo'sh bo'lishi mumkin emas", status_code=400)
+
+        parent = None
+        if parent_id:
+            parent = get_object_or_404(DiscussionReply, id=parent_id, discussion=discussion)
+
+        reply = DiscussionReply.objects.create(
+            discussion=discussion,
+            author=request.user,
+            text=text,
+            parent=parent
+        )
+        serializer = DiscussionReplySerializer(reply, context={'request': request})
+        return success_response(data=serializer.data, message="Javob qo'shildi", status_code=201)
+
+
+class DiscussionPinView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        discussion = get_object_or_404(Discussion, id=id)
+        if discussion.course.teacher != request.user:
+            return error_response(message="Faqat ustoz muhokamalarni pinlay oladi", status_code=403)
+
+        discussion.is_pinned = not discussion.is_pinned
+        discussion.save()
+        return success_response(data={'is_pinned': discussion.is_pinned}, message="Pin holati o'zgartirildi")
+
+
+class DiscussionResolveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        discussion = get_object_or_404(Discussion, id=id)
+        if discussion.course.teacher != request.user and discussion.author != request.user:
+            return error_response(message="Ruxsat berilmagan", status_code=403)
+
+        discussion.is_resolved = not discussion.is_resolved
+        discussion.save()
+        return success_response(data={'is_resolved': discussion.is_resolved}, message="Hal bo'ldi holati o'zgartirildi")
+
+
+class DiscussionReplyAcceptView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        reply = get_object_or_404(DiscussionReply, id=id)
+        if reply.discussion.course.teacher != request.user:
+            return error_response(message="Faqat ustoz to'g'ri javobni belgilay oladi", status_code=403)
+
+        reply.is_accepted = not reply.is_accepted
+        reply.save()
+
+        # If accepted, mark discussion as resolved too
+        if reply.is_accepted:
+            reply.discussion.is_resolved = True
+            reply.discussion.save()
+
+        return success_response(data={'is_accepted': reply.is_accepted}, message="Javob holati o'zgartirildi")
+
+
+class DiscussionReactView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        target_type = request.data.get('target_type', 'discussion')  # discussion or reply
+        emoji = request.data.get('emoji', '').strip()
+
+        if not emoji:
+            return error_response(message="Emoji tanlanishi shart", status_code=400)
+
+        if target_type == 'discussion':
+            discussion = get_object_or_404(Discussion, id=id)
+            react, created = DiscussionReaction.objects.get_or_create(
+                target_type=DiscussionReaction.TargetType.DISCUSSION,
+                discussion=discussion,
+                reply=None,
+                user=request.user,
+                emoji=emoji
+            )
+        else:
+            reply = get_object_or_404(DiscussionReply, id=id)
+            react, created = DiscussionReaction.objects.get_or_create(
+                target_type=DiscussionReaction.TargetType.REPLY,
+                discussion=None,
+                reply=reply,
+                user=request.user,
+                emoji=emoji
+            )
+
+        if not created:
+            react.delete()
+            return success_response(message="Reaksiya olib tashlandi")
+
+        return success_response(message="Reaksiya qo'shildi")
+
+
+

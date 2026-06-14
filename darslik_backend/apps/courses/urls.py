@@ -45,6 +45,11 @@ from .views import (
     EnrolledStudentsListView
 )
 
+def from_views_import(class_name):
+    from . import views
+    return getattr(views, class_name).as_view()
+
+
 urlpatterns = [
     # Ommaviy
     path('categories/',                  CategoryListView.as_view(), name='category_list'),
@@ -98,5 +103,13 @@ urlpatterns = [
     path('<slug:slug>/invite/<str:token>/toggle/', InviteLinkToggleView.as_view(), name='invite_toggle'),
     path('<slug:slug>/invite/<str:token>/', InviteLinkDetailView.as_view(), name='invite_detail_teacher'),
     path('<slug:slug>/enrolled-students/', EnrolledStudentsListView.as_view(), name='enrolled_students'),
-]
 
+    # Discussion / Muhokama
+    path('lessons/<int:id>/discussions/', from_views_import('LessonDiscussionView'), name='lesson_discussions'),
+    path('<slug:slug>/discussions/', from_views_import('CourseDiscussionView'), name='course_discussions'),
+    path('discussions/<int:id>/replies/', from_views_import('DiscussionReplyView'), name='discussion_replies'),
+    path('discussions/<int:id>/pin/', from_views_import('DiscussionPinView'), name='discussion_pin'),
+    path('discussions/<int:id>/resolve/', from_views_import('DiscussionResolveView'), name='discussion_resolve'),
+    path('discussions/replies/<int:id>/accept/', from_views_import('DiscussionReplyAcceptView'), name='reply_accept'),
+    path('discussions/<int:id>/react/', from_views_import('DiscussionReactView'), name='discussion_react'),
+]

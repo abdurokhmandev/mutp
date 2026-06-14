@@ -86,7 +86,14 @@ class MessageListCreateView(APIView):
         after_id = request.query_params.get('after')
         before_id = request.query_params.get('before')
 
+        parent_id = request.query_params.get('parent')
+
         qs = channel.messages.filter(is_deleted=False)
+        if parent_id:
+            qs = qs.filter(parent_id=parent_id)
+        else:
+            qs = qs.filter(parent__isnull=True)
+
         if after_id:
             qs = qs.filter(id__gt=after_id)
         if before_id:

@@ -213,6 +213,34 @@
         </div>
       </div>
 
+      <!-- Kurs Muhokamalari (Forum) -->
+      <div class="content-block" id="courseForumBlock" style="margin-top: 48px; display: none; font-family:'Plus Jakarta Sans', sans-serif;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <h2 class="block-title" style="margin:0;">💬 Kurs Muhokamalari (Forum)</h2>
+          <button onclick="CourseDetail.showForumForm()" class="btn-primary" style="padding:8px 16px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; background:var(--purple); border:none; color:white;">+ Yangi mavzu</button>
+        </div>
+
+        <!-- New Topic Form -->
+        <div id="newForumForm" style="display:none; background:white; border:2px solid var(--border); border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 4px 12px rgba(0,0,0,0.03);">
+          <h4 style="font-size:15px; font-weight:700; margin-bottom:12px;">Yangi mavzu ochish</h4>
+          <div style="margin-bottom:12px;">
+            <input id="fTitle" type="text" placeholder="Mavzu sarlavhasi..." style="width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:12px; font-size:13px; outline:none; background:var(--bg);">
+          </div>
+          <div style="margin-bottom:12px;">
+            <textarea id="fText" placeholder="Mavzu mazmunini batafsil yozing..." rows="4" style="width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:12px; font-size:13px; font-family:inherit; resize:vertical; outline:none; background:var(--bg);"></textarea>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button onclick="CourseDetail.hideForumForm()" class="btn-secondary" style="padding:8px 14px; border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; background:#f3f4f6; color:#374151; border:none;">Bekor qilish</button>
+            <button onclick="CourseDetail.submitForumTopic()" class="btn-primary" style="padding:8px 16px; border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; background:var(--duo-green); color:white; border:none; box-shadow:0 3px 0 var(--duo-green-dark);">Mavzu yaratish</button>
+          </div>
+        </div>
+
+        <!-- Topics List -->
+        <div id="courseDiscussionsList" style="display:flex; flex-direction:column; gap:16px;">
+          <div class="empty-state">Yuklanmoqda...</div>
+        </div>
+      </div>
+
       <!-- Instructor -->
       <div class="content-block">
         <h2 class="block-title">Ustoz haqida</h2>
@@ -273,6 +301,7 @@
   <script src="assets/js/api.js"></script>
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="assets/js/course-detail.js"></script>
   <script>CourseDetail.init();</script>
 </body>
