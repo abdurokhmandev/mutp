@@ -896,7 +896,9 @@ const CreateCourse = {
         }
         modal.style.display = 'flex';
       } catch (e) {
-        window.toast?.show(e.message || "Nashr etishda xatolik yuz berdi", 'error');
+        console.error("Publish error:", e);
+        const detail = e.data?.detail || e.data?.message || e.message || "Nashr etishda xatolik yuz berdi";
+        window.toast?.show(detail, 'error');
       }
     }
   },
@@ -915,7 +917,9 @@ const CreateCourse = {
         window.location.href = 'dashboard-teacher.html';
       }, 1200);
     } catch (e) {
-      window.toast?.show(e.message || "Nashr etishda xatolik yuz berdi", 'error');
+      console.error("Execute publish error:", e);
+      const detail = e.data?.detail || e.data?.message || e.message || "Nashr etishda xatolik yuz berdi";
+      window.toast?.show(detail, 'error');
     }
   },
 
