@@ -5,6 +5,16 @@ from django.conf import settings
 from django.db import migrations, models
 
 
+from django.db.models import Q
+
+def clean_empty_phones(apps, schema_editor):
+    User = apps.get_model('users', 'User')
+    qs = User.objects.filter(Q(phone='') | Q(phone__isnull=True))
+    for idx, user in enumerate(qs):
+        user.phone = f"+998000000{idx:03d}"
+        user.save(update_fields=['phone'])
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -22,7 +32,9 @@ class Migration(migrations.Migration):
             name='email',
             field=models.EmailField(blank=True, max_length=254, null=True, unique=True),
         ),
+        migrations.RunPython(clean_empty_phones),
         migrations.AlterField(
+
             model_name='user',
             name='phone',
             field=models.CharField(blank=True, max_length=20, null=True, unique=True),
