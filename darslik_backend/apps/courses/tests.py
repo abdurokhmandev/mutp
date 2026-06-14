@@ -48,3 +48,18 @@ class CourseEnrollTestCase(TestCase):
         self.client.post(f'/api/v1/courses/bepul-kurs/enroll/')
         res = self.client.post(f'/api/v1/courses/bepul-kurs/enroll/')
         self.assertEqual(res.status_code, 400)
+
+    def test_publish_course(self):
+        """Kursni nashr etish"""
+        from .models import Module, Lesson
+        module = Module.objects.create(course=self.free_course, title="1-modul")
+        Lesson.objects.create(module=module, title="1-dars", lesson_type="video")
+        
+        self.client.force_authenticate(user=self.teacher)
+        res = self.client.post(f'/api/v1/courses/teacher/courses/bepul-kurs/publish/', {
+            'is_private': False,
+            'require_approval': False,
+            'max_students': None
+        }, format='json')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['success'], True)
