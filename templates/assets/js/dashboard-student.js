@@ -1,5 +1,7 @@
 // dashboard-student.js — o'quvchi boshqaruv paneli va saqlangan kurslar
 const StudentDashboard = {
+  allHomeworks: [],
+
   async init() {
     if (!App.requireAuth(['student'])) return;
     App.updateNav();
@@ -24,6 +26,9 @@ const StudentDashboard = {
     try {
       const result = await API.get('/student/dashboard/');
       this.render(result.data);
+      await this.initNotifications();
+      await this.loadHomeworksBadge();
+      this.initHomeworkListeners();
     } catch (e) {
       if (e.status === 403) {
         const role = localStorage.getItem('user_role');
@@ -37,20 +42,30 @@ const StudentDashboard = {
   switchTab(tab) {
     const mainContent = document.getElementById('dashboardMainContent');
     const savedContent = document.getElementById('savedCoursesContent');
+    const homeworksContent = document.getElementById('homeworksContent');
     const dashboardBtn = document.getElementById('dashboardTabBtn');
     const savedBtn = document.getElementById('savedTabBtn');
+    const homeworksBtn = document.getElementById('nav-homeworks');
+
+    if (mainContent) mainContent.style.display = 'none';
+    if (savedContent) savedContent.style.display = 'none';
+    if (homeworksContent) homeworksContent.style.display = 'none';
+
+    if (dashboardBtn) dashboardBtn.classList.remove('active');
+    if (savedBtn) savedBtn.classList.remove('active');
+    if (homeworksBtn) homeworksBtn.classList.remove('active');
 
     if (tab === 'saved') {
-      if (mainContent) mainContent.style.display = 'none';
       if (savedContent) savedContent.style.display = 'block';
-      if (dashboardBtn) dashboardBtn.classList.remove('active');
       if (savedBtn) savedBtn.classList.add('active');
       this.loadSavedCourses();
+    } else if (tab === 'homeworks') {
+      if (homeworksContent) homeworksContent.style.display = 'block';
+      if (homeworksBtn) homeworksBtn.classList.add('active');
+      this.loadStudentHomeworks();
     } else {
       if (mainContent) mainContent.style.display = 'block';
-      if (savedContent) savedContent.style.display = 'none';
       if (dashboardBtn) dashboardBtn.classList.add('active');
-      if (savedBtn) savedBtn.classList.remove('active');
     }
   },
 
@@ -76,144 +91,105 @@ const StudentDashboard = {
       }
 
       grid.innerHTML = courses.map((c) => {
-        const isFree = c.is_free || Number(c.effective_price) === 0;
-        const priceText = isFree ? 'Bepul' : `${Number(c.effective_price || c.price).toLocaleString('uz-UZ')} so'm`;
-        const rating = c.average_rating ? c.average_rating.toFixed(1) : '—';
-        const students = c.student_count || 0;
-
-        let thumbHtml = '';
-        if (c.thumbnail) {
-          thumbHtml = `<img src="${c.thumbnail}" alt="" style="width:100%;height:100%;object-fit:cover;">`;
-        } else {
-          thumbHtml = `<div style="width:100%;height:100%;background:linear-gradient(135deg, var(--duo-green-bg), var(--duo-green));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;">EduUz</div>`;
-        }
-
         return `
-          <div class="c-card" style="position:relative; min-width:unset; width:100%;">
-            <!-- Remove from saved button (✕) -->
-            <button onclick="StudentDashboard.removeSavedCourse('${c.slug}')" style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.5); border:none; color:white; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:10; font-size:12px;" title="Saqlanganlardan o'chirish">
-              <i class="ti ti-x"></i>
-            </button>
-
-            <a href="/course-detail.html?slug=${c.slug}" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:12px;">
-              <div class="c-top">
-                <div class="c-thumb" style="width:64px; height:64px; border-radius:12px; overflow:hidden;">${thumbHtml}</div>
-                <div class="c-info" style="flex:1;">
-                  <h4 style="font-size:14px; font-weight:700; color:var(--text);">${c.title}</h4>
-                  <p style="font-size:12px; color:var(--text-2); margin-top:2px;">Ustoz: ${c.teacher_name}</p>
-                </div>
+          <div style="border: 2px solid var(--border); border-radius:16px; overflow:hidden; display:flex; flex-direction:column; background:var(--surface);">
+            <div style="aspect-ratio: 16/9; background:#e0e0e0; position:relative;">
+              ${c.thumbnail ? `<img src="${c.thumbnail}" style="width:100%;height:100%;object-fit:cover">` : ''}
+              <div style="position:absolute; bottom:12px; left:12px; background:rgba(0,0,0,0.6); color:white; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:700;">
+                ${c.category_name}
               </div>
-              
-              <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; border-top: 1px solid var(--border); padding-top:10px; margin-top:4px;">
-                <span style="color:var(--amber); font-weight:600;"><i class="ti ti-star-filled"></i> ${rating} (${students})</span>
-                <span style="font-weight:700; color:${isFree ? 'var(--green)' : 'var(--purple)'}">${priceText}</span>
+            </div>
+            <div style="padding:16px; flex:1; display:flex; flex-direction:column; gap:8px;">
+              <h4 style="font-size:14px; font-weight:700; color:var(--text); line-height:1.4;">${c.title}</h4>
+              <p style="font-size:12px; color:var(--text-2);">Ustoz: ${c.teacher_name}</p>
+              <div style="margin-top:auto; display:flex; align-items:center; justify-content:space-between; padding-top:8px;">
+                <span style="font-weight:700; font-size:14px; color:var(--purple);">${c.is_free ? 'Bepul' : `${Math.round(c.effective_price).toLocaleString('uz-UZ')} so'm`}</span>
+                <a href="/course-detail.html?slug=${c.slug}" class="btn-primary" style="font-size:11px; padding:6px 12px; text-decoration:none;">Kurs &rarr;</a>
               </div>
-            </a>
+            </div>
           </div>
         `;
       }).join('');
-
     } catch (e) {
-      grid.innerHTML = `<p style="color:var(--red);padding:20px">${e.message}</p>`;
-    }
-  },
-
-  async removeSavedCourse(slug) {
-    if (!confirm("Ushbu kursni saqlanganlardan olib tashlamoqchimisiz?")) return;
-    try {
-      await API.post(`/courses/${slug}/save/`);
-      window.toast?.show("Kurs saqlanganlardan olib tashlandi", 'info');
-      this.loadSavedCourses();
-    } catch (e) {
-      window.toast?.show(e.message, 'error');
+      grid.innerHTML = `<p style="color:var(--red); font-size:13px;">${e.message}</p>`;
     }
   },
 
   render(data) {
-    const { user, stats, weekly_activity, in_progress_courses, recent_certificates } = data;
-
-    const welcome = document.querySelector('.welcome-text');
-    if (welcome) welcome.textContent = `Kabinetga xush kelibsiz, ${user.full_name?.split(' ')[0] || ''}!`;
-
     const statCards = document.querySelectorAll('.stats-row .stat-info h3');
     if (statCards.length >= 4) {
-      statCards[0].textContent = stats.total_enrolled;
-      statCards[1].textContent = stats.completed_courses;
-      statCards[2].textContent = `${stats.total_hours_studied}s`;
-      statCards[3].textContent = stats.certificates_count;
+      statCards[0].textContent = data.total_courses || 0;
+      statCards[1].textContent = data.completed_courses || 0;
+      
+      const hours = Math.round((data.total_duration_seconds || 0) / 3600);
+      statCards[2].textContent = `${hours} s`;
+      statCards[3].textContent = data.certificates_count || 0;
     }
 
-    const continueEl = document.querySelector('.continue-cards');
-    if (continueEl) {
-      if (!in_progress_courses.length) {
-        continueEl.innerHTML = '<p style="color:var(--text-2);font-size:13px;">Davom etayotgan kurslar yo\'q. <a href="/courses.html" style="color:var(--duo-green);font-weight:600;text-decoration:none">Kurs tanlang</a></p>';
-      } else {
-        continueEl.innerHTML = in_progress_courses.map((c) => `
-          <div class="c-card">
-            <div class="c-top">
-              <div class="c-thumb">${c.thumbnail ? `<img src="${c.thumbnail}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">` : '📚'}</div>
-              <div class="c-info">
-                <h4>${c.course_title}</h4>
-                <p>${c.last_lesson_title || 'Birinchi dars'}</p>
+    const continueList = document.querySelector('.continue-cards');
+    if (continueList) {
+      const activeEnrollments = (data.enrollments || []).filter(e => !e.is_completed);
+      if (activeEnrollments.length > 0) {
+        continueList.innerHTML = activeEnrollments.map(e => {
+          const c = e.course;
+          const pct = Math.round(e.progress_percent || 0);
+          return `
+            <div class="c-card">
+              <div class="c-top">
+                <div class="c-thumb">📚</div>
+                <div class="c-info">
+                  <h4><a href="/course-detail.html?slug=${c.slug}" style="color:inherit;text-decoration:none">${c.title}</a></h4>
+                  <p>Davom etamizmi?</p>
+                </div>
               </div>
+              <div>
+                <div class="c-progress-text">
+                  <span>Kurs progressi</span>
+                  <span>${pct}%</span>
+                </div>
+                <div class="c-progress-bar">
+                  <div class="c-progress-fill" style="width: ${pct}%"></div>
+                </div>
+              </div>
+              <a href="/course-detail.html?slug=${c.slug}" class="btn-primary" style="text-decoration:none; padding:8px; font-size:12px; text-align:center;">Darsga kirish &rarr;</a>
             </div>
-            <div>
-              <div class="c-progress-text"><span>${Math.round(c.progress_percent)}% yakunlandi</span></div>
-              <div class="c-progress-bar"><div class="c-progress-fill" style="width:${c.progress_percent}%"></div></div>
-            </div>
-            <a href="/lesson.html?id=${c.last_lesson_id}" class="btn-primary" style="width:100%;text-align:center;text-decoration:none">Davom etish</a>
-          </div>
-        `).join('');
-      }
-    }
-
-    this.loadEnrollments();
-
-    const activityGrid = document.querySelector('.activity-grid');
-    const actLabels = document.querySelector('.act-labels');
-    if (activityGrid && weekly_activity?.length) {
-      const maxSec = Math.max(...weekly_activity.map((d) => d.seconds), 1);
-      activityGrid.innerHTML = weekly_activity.map((d) => {
-        const lvl = d.seconds === 0 ? '' : d.seconds < maxSec * 0.25 ? 'l1' : d.seconds < maxSec * 0.5 ? 'l2' : d.seconds < maxSec * 0.75 ? 'l3' : 'l4';
-        return `<div class="act-day ${lvl}" title="${d.seconds}s"></div>`;
-      }).join('');
-      if (actLabels) {
-        actLabels.innerHTML = weekly_activity.map((d) => `<span>${d.day}</span>`).join('');
+          `;
+        }).join('');
+      } else {
+        continueList.innerHTML = '<p style="color:var(--text-2);font-size:13px;padding:12px;">Faol kurslar yo\'q. Kurs sotib olib o\'qishni boshlashingiz mumkin.</p>';
       }
     }
 
     const certList = document.querySelector('.cert-list');
     if (certList) {
-      if (!recent_certificates?.length) {
-        certList.innerHTML = '<p style="font-size:13px;color:var(--text-2)">Hali sertifikatlar yo\'q</p>';
-      } else {
-        certList.innerHTML = recent_certificates.map((c) => `
+      if (data.certificates && data.certificates.length > 0) {
+        certList.innerHTML = data.certificates.map(c => `
           <div class="cert-item">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <i class="ti ti-certificate"></i>
-              <div>
-                <div style="font-size:13px;font-weight:600;color:var(--text)">${c.course_title}</div>
-                <div style="font-size:11px;color:var(--text-2)">${App.formatDate(c.issued_at)}</div>
-              </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <i class="ti ti-award"></i>
+              <div style="font-size:12px; font-weight:700; color:var(--amber);">${c.course_title}</div>
             </div>
-            <a href="/courses/certificates/${c.unique_code}/" style="color:var(--text-2)"><i class="ti ti-download"></i></a>
+            <a href="/certificates/${c.unique_code}/" class="btn-secondary" style="font-size:11px; padding:4px 8px; text-decoration:none;">Ko'rish</a>
           </div>
         `).join('');
+      } else {
+        certList.innerHTML = '<p style="color:var(--text-2);font-size:13px;padding:12px;">Hali sertifikatlar yo\'q.</p>';
       }
     }
+
+    this.loadEnrollments();
   },
 
-  async loadEnrollments(status = '') {
+  async loadEnrollments() {
     const listEl = document.querySelector('[data-enrollments-list]');
     if (!listEl) return;
 
     try {
-      const url = '/courses/student/enrollments/' + (status ? `?status=${status}` : '');
-      const result = await API.get(url);
-      const enrollments = result.data || [];
+      const res = await API.get('/courses/student/enrollments/');
+      const enrollments = res.data.results || res.data || [];
 
       if (!enrollments.length) {
-        listEl.innerHTML = '<p style="color:var(--text-2);font-size:13px">Kurslar topilmadi</p>';
+        listEl.innerHTML = '<p style="color:var(--text-2);font-size:13px">Hozircha hech qanday kursga yozilmagansiz.</p>';
         return;
       }
 
@@ -223,7 +199,7 @@ const StudentDashboard = {
         return `
           <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border:1px solid var(--border);border-radius:12px;">
             <div style="display:flex;align-items:center;gap:16px;">
-              <div class="c-thumb" style="width:48px;height:48px;font-size:20px;background:var(--blue-light)">📚</div>
+              <div class="c-thumb" style="width:48px;height:48px;font-size:20px;background:var(--purple-light)">📚</div>
               <div>
                 <h4 style="font-size:14px;margin-bottom:4px;"><a href="/course-detail.html?slug=${c.slug}" style="color:inherit;text-decoration:none">${c.title}</a></h4>
                 <div style="font-size:12px;color:${done ? 'var(--green)' : 'var(--purple)'};font-weight:500;">
@@ -231,7 +207,7 @@ const StudentDashboard = {
                 </div>
               </div>
             </div>
-            ${done ? '<span style="font-size:12px;color:var(--muted)">Sertifikat</span>' : `<a href="/course-detail.html?slug=${c.slug}" class="btn-secondary" style="font-size:12px;padding:6px 12px;text-decoration:none">Davom etish</a>`}
+            ${done ? `<a href="/certificates/${c.slug}/" class="btn-secondary" style="font-size:12px;padding:6px 12px;text-decoration:none">Sertifikat</a>` : `<a href="/course-detail.html?slug=${c.slug}" class="btn-secondary" style="font-size:12px;padding:6px 12px;text-decoration:none">Davom etish</a>`}
           </div>
         `;
       }).join('');
@@ -239,6 +215,281 @@ const StudentDashboard = {
       listEl.innerHTML = `<p style="color:var(--red)">${e.message}</p>`;
     }
   },
+
+  // ── STUDENT HOMEWORKS TABS ──
+  async loadHomeworksBadge() {
+    try {
+      const res = await API.get('/courses/student/homeworks/');
+      const homeworks = res.data;
+      const pending = homeworks.filter(h => !h.my_submission || h.my_submission.status === 'pending').length;
+      
+      const badge = document.getElementById('pendingHwBadge');
+      if (badge) {
+        if (pending > 0) {
+          badge.textContent = pending;
+          badge.style.display = 'inline-flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    } catch (e) {
+      // silent
+    }
+  },
+
+  async loadStudentHomeworks() {
+    const listContainer = document.getElementById('studentHomeworkList');
+    if (listContainer) {
+      listContainer.innerHTML = '<p style="color:var(--text-2);font-size:13px;padding:20px;">Yuklanmoqda...</p>';
+    }
+
+    try {
+      const res = await API.get('/courses/student/homeworks/');
+      const homeworks = res.data;
+      this.allHomeworks = homeworks;
+
+      // Mini stats
+      const total = homeworks.length;
+      const done = homeworks.filter(h => h.my_submission?.status === 'reviewed').length;
+      const waiting = homeworks.filter(h => h.my_submission?.status === 'submitted').length;
+      const pending = homeworks.filter(h => !h.my_submission || h.my_submission.status === 'pending').length;
+
+      const statsRow = document.getElementById('hwStatsRow');
+      if (statsRow) {
+        statsRow.innerHTML = `
+          <div class="hw-stat-card"><span>${total}</span><small>Jami</small></div>
+          <div class="hw-stat-card green"><span>${done}</span><small>Tekshirilgan</small></div>
+          <div class="hw-stat-card amber"><span>${waiting}</span><small>Kutilmoqda</small></div>
+          <div class="hw-stat-card red"><span>${pending}</span><small>Topshirilgan</small></div>`;
+      }
+
+      // Populate courses filter dropdown
+      const courseFilter = document.getElementById('hwCourseFilter');
+      if (courseFilter) {
+        const uniqueCourses = [...new Map(homeworks.map(h => [h.course_id, h.course_title])).entries()];
+        courseFilter.innerHTML = `<option value="">Barcha kurslar</option>` + uniqueCourses.map(([id, title]) => `
+          <option value="${id}">${title}</option>
+        `).join('');
+      }
+
+      // Sidebar badge refresh
+      const badge = document.getElementById('pendingHwBadge');
+      if (badge) {
+        if (pending > 0) {
+          badge.textContent = pending;
+          badge.style.display = 'inline-flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+
+      const activeTab = document.querySelector('.filter-chip.active');
+      const statusFilter = activeTab ? activeTab.dataset.hwStatus : 'all';
+      this.renderHomeworkList(homeworks, statusFilter);
+    } catch (e) {
+      if (listContainer) {
+        listContainer.innerHTML = `<p style="color:var(--red); font-size:13px;">${e.message}</p>`;
+      }
+    }
+  },
+
+  renderHomeworkList(homeworks, statusFilter) {
+    const container = document.getElementById('studentHomeworkList');
+    if (!container) return;
+
+    const selectedCourseId = document.getElementById('hwCourseFilter')?.value || '';
+
+    let list = homeworks;
+    if (selectedCourseId) {
+      list = list.filter(h => h.course_id === parseInt(selectedCourseId));
+    }
+
+    const filtered = statusFilter === 'all'
+      ? list
+      : list.filter(h => (h.my_submission?.status || 'pending') === statusFilter);
+
+    if (!filtered.length) {
+      container.innerHTML = `<div class="empty-state">📋 Bu toifada vazifalar yo'q.</div>`;
+      return;
+    }
+
+    container.innerHTML = filtered.map(hw => {
+      const status = hw.my_submission?.status || 'pending';
+      const score = hw.my_submission?.teacher_score;
+      const feedback = hw.my_submission?.feedback;
+
+      const statusInfo = {
+        pending:   { icon:'❌', label:'Topshirilgan', cls:'pending' },
+        submitted: { icon:'⏳', label:'Tekshirilmoqda', cls:'waiting' },
+        reviewed:  { icon:'✅', label:`Tekshirildi — ${score}/100`, cls:'reviewed' }
+      }[status];
+
+      return `
+        <div class="hw-list-card">
+          <div class="hw-list-left">
+            <div class="hw-list-course">${hw.course_title}</div>
+            <div class="hw-list-title">${hw.title}</div>
+            ${hw.deadline_days ? `<div class="hw-list-deadline">⏰ ${hw.deadline_days} kun muddat</div>` : ''}
+            ${status === 'reviewed' && feedback ? `
+              <div class="hw-teacher-feedback">
+                <span class="feedback-label">💬 Ustoz izohi:</span>
+                <span class="feedback-text">"${feedback}"</span>
+              </div>` : ''}
+          </div>
+          <div class="hw-list-right">
+            <span class="hw-badge ${statusInfo.cls}">${statusInfo.icon} ${statusInfo.label}</span>
+            ${status === 'reviewed' && score !== null ? `
+              <div class="hw-score-display">
+                <svg viewBox="0 0 60 60" width="60" height="60">
+                  <circle cx="30" cy="30" r="24" fill="none" stroke="var(--border)" stroke-width="5"/>
+                  <circle cx="30" cy="30" r="24" fill="none" stroke="${score >= 70 ? 'var(--green)' : 'var(--red-mid)'}"
+                          stroke-width="5"
+                          stroke-dasharray="${2*Math.PI*24}"
+                          stroke-dashoffset="${2*Math.PI*24 * (1 - score/100)}"
+                          stroke-linecap="round"
+                          transform="rotate(-90 30 30)"/>
+                  <text x="30" y="35" text-anchor="middle" font-size="13" font-weight="700"
+                        fill="${score >= 70 ? 'var(--green)' : 'var(--red-mid)'}">${score}</text>
+                </svg>
+              </div>` : ''}
+            <a href="homework.html?id=${hw.id}" class="btn-${status === 'reviewed' ? 'primary' : status === 'submitted' ? 'secondary' : 'primary'}" style="text-decoration:none;">
+              ${status === 'reviewed' ? 'Batafsil &rarr;' : status === 'submitted' ? 'Ko\'rish' : 'Boshlash &rarr;'}
+            </a>
+          </div>
+        </div>`;
+    }).join('');
+  },
+
+  initHomeworkListeners() {
+    document.querySelectorAll('[data-hw-status]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('[data-hw-status]').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        this.renderHomeworkList(this.allHomeworks, chip.dataset.hwStatus);
+      });
+    });
+
+    const filterDropdown = document.getElementById('hwCourseFilter');
+    if (filterDropdown) {
+      filterDropdown.addEventListener('change', () => {
+        const activeTab = document.querySelector('.filter-chip.active');
+        const statusFilter = activeTab ? activeTab.dataset.hwStatus : 'all';
+        this.renderHomeworkList(this.allHomeworks, statusFilter);
+      });
+    }
+  },
+
+  // ── O'QUVCHI NOTIFICATION SYSTEM ──
+  async initNotifications() {
+    const bell = document.getElementById('studentNotifBell');
+    const dropdown = document.getElementById('studentNotifDropdown');
+    const readAllBtn = document.getElementById('studentReadAllBtn');
+
+    if (bell && dropdown) {
+      bell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const show = dropdown.style.display === 'block';
+        dropdown.style.display = show ? 'none' : 'block';
+        if (!show) {
+          this.loadStudentNotifications();
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.notif-wrapper')) {
+          dropdown.style.display = 'none';
+        }
+      });
+    }
+
+    if (readAllBtn) {
+      readAllBtn.addEventListener('click', async () => {
+        await API.post('/notifications/read-all/');
+        this.loadStudentNotifCount();
+        this.loadStudentNotifications();
+      });
+    }
+
+    await this.loadStudentNotifCount();
+    setInterval(() => this.loadStudentNotifCount(), 30000);
+  },
+
+  async loadStudentNotifCount() {
+    try {
+      const res = await API.get('/notifications/unread-count/');
+      const count = res.data.count;
+      const badge = document.getElementById('studentNotifBadge');
+      if (badge) {
+        if (count > 0) {
+          badge.textContent = count > 9 ? '9+' : count;
+          badge.style.display = 'flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+    } catch(e) {
+      // silent
+    }
+  },
+
+  async loadStudentNotifications() {
+    const list = document.getElementById('studentNotifList');
+    if (!list) return;
+
+    try {
+      const res = await API.get('/notifications/');
+      const notifications = res.data.results || res.data;
+
+      if (!notifications || !notifications.length) {
+        list.innerHTML = `<div class="notif-empty">Hozircha bildirishnoma yo'q</div>`;
+        return;
+      }
+
+      list.innerHTML = notifications.map(n => `
+        <div class="notif-item ${n.is_read ? '' : 'unread'}"
+             onclick="DashboardStudent.handleStudentNotifClick(${n.id}, '${n.link || ''}')">
+          <span class="notif-type-icon">${this.studentNotifIcon(n.type)}</span>
+          <div class="notif-text">
+            <div class="notif-title" style="font-weight:700;">${n.title || 'Bildirishnoma'}</div>
+            <div class="notif-msg">${n.message}</div>
+            <div class="notif-time">${this.timeAgo(n.created_at)}</div>
+          </div>
+          ${!n.is_read ? '<span class="notif-dot"></span>' : ''}
+        </div>`).join('');
+    } catch (e) {
+      list.innerHTML = `<div class="notif-empty" style="color:var(--rose)">Xatolik yuz berdi.</div>`;
+    }
+  },
+
+  studentNotifIcon(type) {
+    const icons = {
+      homework_reviewed: '✅',
+      new_message:       '💬',
+      new_enrollment:    '🎓',
+      quiz_completed:    '📝',
+    };
+    return icons[type] || '🔔';
+  },
+
+  async handleStudentNotifClick(id, link) {
+    try {
+      await API.post(`/notifications/${id}/read/`);
+      this.loadStudentNotifCount();
+      if (link) {
+        window.location.href = link;
+      }
+    } catch (e) {
+      // silent
+    }
+  },
+
+  timeAgo(dateStr) {
+    const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+    if (diff < 60) return `${diff} soniya oldin`;
+    if (diff < 3600) return `${Math.floor(diff/60)} daqiqa oldin`;
+    if (diff < 86400) return `${Math.floor(diff/3600)} soat oldin`;
+    return `${Math.floor(diff/86400)} kun oldin`;
+  }
 };
 
 // Bind to window to allow inline onclick handlers in HTML

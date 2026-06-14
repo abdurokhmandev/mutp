@@ -412,20 +412,41 @@ const LessonPage = {
         return;
       }
       container.innerHTML = homeworks.map(hw => {
-        const statusIcon = hw.my_submission?.status === 'submitted' || hw.my_submission?.status === 'reviewed' ? '✅' : '📝';
-        const statusLabel = hw.my_submission?.status === 'submitted' ? 'Topshirilgan' : (hw.my_submission?.status === 'reviewed' ? 'Tekshirilgan' : 'Bajarilmagan');
-        const statusClass = hw.my_submission?.status === 'submitted' || hw.my_submission?.status === 'reviewed' ? 'submitted' : 'pending';
+        // Holat aniqlash
+        const status = hw.my_submission?.status;
+        const score = hw.my_submission?.teacher_score;
+        let statusBadge = '';
+        let actionBtn = '';
+
+        if (!status || status === 'pending') {
+          // Topshirilmagan
+          statusBadge = `<span class="hw-badge pending">❌ Topshirilmagan</span>`;
+          actionBtn = `<a href="homework.html?id=${hw.id}" class="btn-hero">Boshlash →</a>`;
+        } else if (status === 'submitted') {
+          // Topshirilgan, ustoz tekshirmagan
+          statusBadge = `<span class="hw-badge waiting">⏳ Tekshirilmoqda</span>`;
+          actionBtn = `<a href="homework.html?id=${hw.id}" class="btn-secondary" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">Ko'rish</a>`;
+        } else if (status === 'reviewed') {
+          // Ustoz tekshirgan
+          statusBadge = `<span class="hw-badge reviewed">✅ Tekshirildi — ${score}/100</span>`;
+          actionBtn = `<a href="homework.html?id=${hw.id}" class="btn-primary" style="text-decoration:none; display:inline-flex; align-items:center; justify-content:center;">Natijani ko'rish →</a>`;
+        }
+
         return `
           <div class="hw-preview-card">
-            <div class="hw-preview-icon">${statusIcon}</div>
+            <div class="hw-preview-icon">📝</div>
             <div class="hw-preview-info">
               <div class="hw-preview-title">${hw.title}</div>
               <div class="hw-preview-meta">
-                ${hw.deadline_days ? `⏰ ${hw.deadline_days} kun muddat` : 'Muddat belgilanmagan'}
-                <span class="hw-status-badge ${statusClass}">${statusLabel}</span>
+                ${hw.deadline_days ? `⏰ ${hw.deadline_days} kun muddat` : ''}
+                ${statusBadge}
               </div>
+              ${status === 'reviewed' && hw.my_submission?.feedback ? `
+                <div class="hw-feedback-preview">
+                  💬 Ustoz: "${hw.my_submission.feedback.substring(0, 80)}${hw.my_submission.feedback.length > 80 ? '...' : ''}"
+                </div>` : ''}
             </div>
-            <a href="homework.html?id=${hw.id}" class="btn-hero">Boshlash →</a>
+            ${actionBtn}
           </div>`;
       }).join('');
     });

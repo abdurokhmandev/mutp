@@ -1292,3 +1292,36 @@ class HomeworkReviewView(APIView):
         )
         return success_response(message="Vazifa tekshirildi")
 
+
+class StudentHomeworkListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        enrolled_courses = Enrollment.objects.filter(
+            student=request.user
+        ).values_list('course_id', flat=True)
+
+        homeworks = Homework.objects.filter(
+            course_id__in=enrolled_courses
+        ).select_related('course').prefetch_related('submissions')
+
+        data = []
+        for hw in homeworks:
+            submission = hw.submissions.filter(student=request.user).first()
+            data.append({
+                'id': hw.id,
+                'title': hw.title,
+                'type': hw.type,
+                'deadline_days': hw.deadline_days,
+                'course_id': hw.course.id,
+                'course_title': hw.course.title,
+                'my_submission': {
+                    'status': submission.status if submission else 'pending',
+                    'teacher_score': submission.teacher_score if submission else None,
+                    'feedback': submission.feedback if submission else None,
+                    'submitted_at': submission.submitted_at if submission else None,
+                    'reviewed_at': submission.reviewed_at if submission else None,
+                } if submission else None
+            })
+        return success_response(data=data, message="O'quvchi vazifalari ro'yxati")
+

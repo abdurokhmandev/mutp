@@ -30,7 +30,8 @@ from .views import (
     HomeworkResourceCreateView,
     HomeworkResourceDeleteView,
     StudentCourseHomeworksView,
-    LessonHomeworksView
+    LessonHomeworksView,
+    StudentHomeworkListView
 )
 
 urlpatterns = [
@@ -58,6 +59,7 @@ urlpatterns = [
     # O'quvchi
     path('student/enrollments/',         MyEnrollmentsView.as_view(), name='my_enrollments'),
     path('student/saved/',               SavedCoursesListView.as_view(), name='saved_courses'),
+    path('student/homeworks/',           StudentHomeworkListView.as_view(), name='student_homeworks'),
 
     # O'qituvchi
     path('teacher/dashboard/',           TeacherDashboardView.as_view(), name='teacher_dashboard'),
