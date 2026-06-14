@@ -626,6 +626,7 @@ class CoursePublishView(APIView):
     permission_classes = [IsVerifiedTeacher, IsCourseOwner]
 
     def post(self, request, slug):
+        import traceback
         try:
             try:
                 course = Course.objects.get(slug=slug, teacher=request.user)
@@ -639,47 +640,67 @@ class CoursePublishView(APIView):
             if lesson_count == 0:
                 return error_response(message="Nashr etish uchun kamida 1 ta dars qo'shing", status_code=400)
 
-            is_private       = request.data.get('is_private', False)
-            require_approval = request.data.get('require_approval', False)
-            max_students     = request.data.get('max_students') or None
-            if max_students is not None:
-                max_students = int(max_students)
+            # Request data
+            is_private       = bool(request.data.get('is_private', False))
+            require_approval = bool(request.data.get('require_approval', False))
+            raw_max          = request.data.get('max_students')
+            max_students     = int(raw_max) if raw_max else None
 
-            course.is_private       = is_private
-            course.require_approval = require_approval
-            course.max_students     = max_students
-            course.enrollment_limit = max_students
-            course.status           = Course.Status.PUBLISHED
+            # Course status update
+            course.status = Course.Status.PUBLISHED
+
+            # is_private fields checking
+            if hasattr(course, 'is_private'):
+                course.is_private = is_private
+            if hasattr(course, 'require_approval'):
+                course.require_approval = require_approval
+            if hasattr(course, 'max_students'):
+                course.max_students = max_students
+            if hasattr(course, 'enrollment_limit'):
+                course.enrollment_limit = max_students
+
             course.save()
 
+            # Invite creation
             invite_url = ""
             token = ""
             if is_private:
-                from .models import CourseInvite
-                invite = CourseInvite.objects.create(
-                    course=course,
-                    require_approval=require_approval,
-                    max_students=max_students,
-                )
-                invite_url = request.build_absolute_uri(f"/invite/{invite.token}/")
-                token = invite.token
-            else:
-                invite_url = request.build_absolute_uri(f"/course-detail.html?slug={course.slug}")
+                try:
+                    from apps.courses.models import CourseInvite
+                    invite, created = CourseInvite.objects.get_or_create(
+                        course=course,
+                        is_active=True,
+                        defaults={
+                            'require_approval': require_approval,
+                            'max_students': max_students,
+                        }
+                    )
+                    if not created:
+                        invite.require_approval = require_approval
+                        invite.max_students = max_students
+                        invite.save()
+
+                    invite_url = request.build_absolute_uri(
+                        f'/invite/{invite.token}/'
+                    )
+                    token = invite.token
+                except Exception as invite_err:
+                    invite_url = ""
 
             return Response({
-                "success": True,
-                "message": "Kurs muvaffaqiyatli nashr etildi",
-                "invite_url": invite_url,
-                "invite_token": token,
-                "is_private": is_private,
-                "require_approval": require_approval
-            })
+                'success': True,
+                'message': 'Kurs muvaffaqiyatli nashr etildi',
+                'invite_url': invite_url,
+                'invite_token': token,
+                'is_private': is_private,
+                'require_approval': require_approval
+            }, status=200)
+
         except Exception as e:
-            import traceback
             return Response({
-                "success": False,
-                "message": str(e),
-                "traceback": traceback.format_exc()
+                'success': False,
+                'message': f'Server xatosi: {str(e)}',
+                'detail': traceback.format_exc()
             }, status=500)
 
 

@@ -904,7 +904,11 @@ const CreateCourse = {
   async executePublish() {
     try {
       window.toast?.show("Nashr etilmoqda...", "info");
-      await API.post(`/courses/teacher/courses/${this.course.slug}/publish/`);
+      await API.post(`/courses/teacher/courses/${this.course.slug}/publish/`, {
+        is_private: false,
+        require_approval: false,
+        max_students: null
+      });
       window.toast?.show('Kurs muvaffaqiyatli nashr etildi! 🎉', 'success');
       this.closePublishModal();
       setTimeout(() => {
