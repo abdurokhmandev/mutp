@@ -128,7 +128,7 @@ const LessonPage = {
     if (descriptionContent) {
       if (l.lesson_type === 'text') {
         descriptionContent.innerHTML = l.text_content
-          ? `<div>${marked.parse(l.text_content)}</div>`
+          ? `<div>${App.markdown(l.text_content)}</div>`
           : (l.content ? `<div>${l.content.replace(/\n/g, '<br>')}</div>` : '<p>Matn dars mazmuni mavjud emas.</p>');
       } else {
         descriptionContent.innerHTML = l.content
@@ -710,7 +710,7 @@ const LessonPage = {
                   <span style="font-size:12px; font-weight:700; color:var(--text);">${r.author_name} ${r.author_role === 'teacher' ? '<span style="color:var(--purple); font-size:10px;">(Ustoz)</span>' : ''}</span>
                   <span style="font-size:10px; color:var(--text-3);">${new Date(r.created_at).toLocaleDateString()}</span>
                 </div>
-                <div style="font-size:12.5px; color:var(--text-2); margin-top:4px;">${marked.parse(r.text)}</div>
+                <div style="font-size:12.5px; color:var(--text-2); margin-top:4px;">${App.markdown(r.text)}</div>
                 <div style="margin-top:6px; display:flex; align-items:center; justify-content:space-between;">
                   <div>${replyReacts}</div>
                   ${isTeacher ? `
@@ -747,7 +747,7 @@ const LessonPage = {
             <!-- Content -->
             <div style="margin-top:12px;">
               <h4 style="font-size:14px; font-weight:700; color:var(--text);">${d.title || ''}</h4>
-              <div style="font-size:13px; color:var(--text-2); margin-top:4px;">${marked.parse(d.text)}</div>
+              <div style="font-size:13px; color:var(--text-2); margin-top:4px;">${App.markdown(d.text)}</div>
             </div>
 
             <div style="margin-top:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">

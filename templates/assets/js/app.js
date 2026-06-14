@@ -81,6 +81,24 @@ const App = {
     return map[lang] || lang;
   },
 
+  markdown(text) {
+    if (typeof marked !== 'undefined' && marked.parse) {
+      try {
+        return marked.parse(text);
+      } catch (e) {
+        console.error("Marked parsing error:", e);
+      }
+    }
+    if (!text) return '';
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+      .replace(/\n/g, '<br>');
+  },
+
   updateNav() {
     const user = this.getUser();
     const nameEl = document.querySelector('[data-user-name]');
