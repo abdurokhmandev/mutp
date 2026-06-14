@@ -35,3 +35,40 @@ class UserRegisterTestCase(TestCase):
         self.client.post(self.url, self.valid_data)
         res = self.client.post(self.url, self.valid_data)
         self.assertEqual(res.status_code, 400)
+
+
+class UserOTPTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        from apps.users.models import TelegramUser
+        self.tg_user = TelegramUser.objects.create(
+            chat_id=12345678,
+            phone="+998901234567",
+            username="test_tg",
+            first_name="Test"
+        )
+
+    def test_send_otp_success_if_started(self):
+        from unittest.mock import patch
+        with patch('apps.users.views.send_otp', return_value=True):
+            res = self.client.post('/api/v1/auth/send-otp/', {'phone': '998901234567'})
+            self.assertEqual(res.status_code, 200)
+            self.assertIn('phone', res.data['data'])
+
+    def test_send_otp_fail_if_bot_not_started(self):
+        res = self.client.post('/api/v1/auth/send-otp/', {'phone': '998909999999'})
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data['errors']['error'], 'bot_not_started')
+
+    def test_verify_otp_success(self):
+        from django.core.cache import cache
+        cache.set('otp:+998901234567', '123456', timeout=300)
+        res = self.client.post('/api/v1/auth/verify-otp/', {
+            'phone': '998901234567',
+            'otp': '123456',
+            'role': 'student'
+        })
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('access', res.data['data'])
+        self.assertIn('refresh', res.data['data'])
+

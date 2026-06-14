@@ -13,7 +13,7 @@ class User(AbstractUser):
         TEACHER = 'teacher', "O'qituvchi"
         ADMIN   = 'admin',   "Admin"
 
-    email       = models.EmailField(unique=True)
+    email       = models.EmailField(unique=True, blank=True, null=True)
     role        = models.CharField(
                     max_length=10,
                     choices=Role,
@@ -23,13 +23,14 @@ class User(AbstractUser):
                     upload_to='avatars/%Y/%m/',
                     blank=True, null=True
                   )
-    phone       = models.CharField(max_length=15, blank=True)
+    phone       = models.CharField(max_length=20, unique=True, blank=True, null=True)
     bio         = models.TextField(blank=True)
     telegram_id = models.CharField(max_length=50, blank=True)
     is_verified = models.BooleanField(default=False)  # o'qituvchi uchun tasdiqlash
+    profile_complete = models.BooleanField(default=False)
     created_at  = models.DateTimeField(auto_now_add=True)
 
-    # Use email for login instead of username
+    # Use email for login instead of username (can be overridden/fallback in OTP flow)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
@@ -52,6 +53,23 @@ class User(AbstractUser):
     @property
     def is_student(self):
         return self.role == self.Role.STUDENT
+
+
+class TelegramUser(models.Model):
+    """Telegram bot orqali ro'yxatdan o'tgan foydalanuvchilar"""
+    chat_id = models.BigIntegerField(unique=True)
+    phone = models.CharField(max_length=20, blank=True)  # /start bosib telefon ulashganda
+    username = models.CharField(max_length=100, blank=True)  # Telegram username
+    first_name = models.CharField(max_length=100, blank=True)
+    linked_user = models.OneToOneField(
+        'User', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='telegram'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"@{self.username} ({self.phone})"
+
 
 
 class TeacherProfile(models.Model):

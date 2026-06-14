@@ -183,3 +183,17 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
+
+# Cache settings for OTP storage
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
+# Telegram Bot & OTP settings
+TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN', default='5839402094:AAF9o_notreal_token_for_dev')
+OTP_EXPIRE_SECONDS = 300
+OTP_LENGTH = 6
+

@@ -8,7 +8,9 @@ from .views import (
     UserProfileDetailView,
     ChangePasswordView,
     TeacherListView,
-    TeacherDetailView
+    TeacherDetailView,
+    SendOTPView,
+    VerifyOTPView
 )
 
 urlpatterns = [
@@ -21,4 +23,7 @@ urlpatterns = [
     path('change-password/', ChangePasswordView.as_view(), name='change_password'),
     path('teachers/',        TeacherListView.as_view(), name='teacher_list'),
     path('teachers/<int:id>/', TeacherDetailView.as_view(), name='teacher_detail'),
+    path('send-otp/',        SendOTPView.as_view(), name='send_otp'),
+    path('verify-otp/',      VerifyOTPView.as_view(), name='verify_otp'),
 ]
+

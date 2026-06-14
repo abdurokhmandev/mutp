@@ -5,7 +5,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView as SimpleJWTTokenRefreshView
 
 from apps.core.utils import success_response, error_response
-from .models import User, TeacherProfile
+from django.core.cache import cache
+from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
+from .models import User, TeacherProfile, TelegramUser
 from .serializers import (
     UserRegisterSerializer,
     UserLoginSerializer,
@@ -13,6 +16,97 @@ from .serializers import (
     TeacherProfileSerializer,
     ChangePasswordSerializer
 )
+from .otp import format_phone, generate_otp, save_otp, send_otp, verify_otp
+
+
+class SendOTPView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        phone = format_phone(request.data.get('phone', ''))
+        if not phone or len(phone) < 12:
+            return error_response(message="Telefon raqam noto'g'ri", status_code=400)
+
+        # Telegram bot orqali yuborishdan avval TelegramUser borligini tekshirish
+        if not TelegramUser.objects.filter(phone=phone).exists():
+            return error_response(
+                message="Avval Telegram botga kiring va raqamingizni ulashing",
+                errors={
+                    "error": "bot_not_started",
+                    "bot_url": "https://t.me/MUTP_bot"
+                },
+                status_code=400
+            )
+
+        # Rate limiting: 1 daqiqada 1 ta so'rov
+        rate_key = f"otp_rate:{phone}"
+        if cache.get(rate_key):
+            return error_response(message="Iltimos, 1 daqiqa kuting", status_code=429)
+
+        otp = generate_otp()
+        save_otp(phone, otp)
+        success = send_otp(phone, otp)
+
+        if success:
+            cache.set(rate_key, True, timeout=60)
+            return success_response(data={'phone': phone}, message="Kod Telegram ga yuborildi")
+        else:
+            return error_response(message="Xato yuz berdi, qayta urinib ko'ring", status_code=500)
+
+
+class VerifyOTPView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        phone = format_phone(request.data.get('phone', ''))
+        otp = request.data.get('otp', '').strip()
+        role = request.data.get('role', 'student')  # student | teacher
+
+        if not verify_otp(phone, otp):
+            return error_response(message="Kod noto'g'ri yoki muddati o'tgan", status_code=400)
+
+        User = get_user_model()
+        
+        # Foydalanuvchi bormi?
+        user = User.objects.filter(phone=phone).first()
+        created = False
+        if not user:
+            # Create a user with phone as username and a unique fallback email to bypass unique constraints
+            import uuid
+            fallback_email = f"user_{uuid.uuid4().hex[:10]}@mutp.local"
+            user = User.objects.create_user(
+                username=phone,
+                email=fallback_email,
+                phone=phone,
+                role=role,
+                is_active=True
+            )
+            created = True
+
+        # Telegram akkauntni ulash
+        try:
+            tg = TelegramUser.objects.get(phone=phone)
+            tg.linked_user = user
+            tg.save()
+        except TelegramUser.DoesNotExist:
+            pass
+
+        # Token yaratish
+        refresh = RefreshToken.for_user(user)
+        user_data = UserProfileSerializer(user, context={'request': request}).data
+
+        data = {
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': {
+                'id': user.id,
+                'phone': user.phone,
+                'role': user.role,
+                'is_new': created,
+                'profile_complete': hasattr(user, 'profile_complete') and user.profile_complete,
+            }
+        }
+        return success_response(data=data, message="Muvaffaqiyatli tasdiqlandi")
 
 
 class LoginRateThrottle(UserRateThrottle):

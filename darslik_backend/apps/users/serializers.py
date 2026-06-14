@@ -83,10 +83,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'full_name', 'first_name', 'last_name', 'email', 'role', 
-            'avatar', 'phone', 'bio', 'is_verified',
+            'avatar', 'phone', 'bio', 'is_verified', 'profile_complete',
             'specialization', 'experience_years', 'bank_card'
         ]
         read_only_fields = ['id', 'email', 'role', 'is_verified']
+
 
     def get_avatar(self, obj):
         if not obj.avatar:

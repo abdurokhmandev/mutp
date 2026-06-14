@@ -56,6 +56,7 @@ else:
         'chat.html',
         'homework.html',
         'invite.html',
+        'onboarding.html',
         '404.html',
     ]
 

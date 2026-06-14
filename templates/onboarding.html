@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profilni to'ldirish — MUTP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <style>
+    body { background: var(--surface); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
+    
+    .onboard-card { background: var(--white); border-radius: 24px; padding: 40px; max-width: 640px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.06); border: 1px solid var(--border); position: relative; }
+    
+    .logo-header { display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 700; color: var(--ink); margin-bottom: 32px; text-decoration: none; }
+    .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--duo-green); }
+    
+    .progress-bar-wrap { height: 6px; background: var(--border-2); border-radius: 3px; margin-bottom: 32px; overflow: hidden; display: flex; }
+    .progress-fill { height: 100%; background: var(--duo-green); width: 33.33%; transition: width 0.3s ease; }
+    
+    .onboard-step { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .onboard-header h2 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 700; color: var(--ink); margin: 0 0 8px 0; }
+    .onboard-header p { font-size: 14px; color: var(--muted); margin: 0 0 28px 0; line-height: 1.5; }
+    
+    /* Avatar Upload */
+    .avatar-upload-zone { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .avatar-preview { width: 96px; height: 96px; border-radius: 50%; background: var(--surface-2); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 3px solid var(--border); font-size: 32px; font-weight: 700; color: var(--muted-2); position: relative; cursor: pointer; }
+    .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .form-row { display: flex; gap: 16px; margin-bottom: 16px; }
+    .form-field { flex: 1; display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .form-field label { font-size: 13px; font-weight: 600; color: var(--ink); }
+    
+    .btn-hero { width: 100%; padding: 12px; font-size: 15px; font-weight: 700; border-radius: 16px; cursor: pointer; background: var(--duo-green); color: white; border: none; box-shadow: 0 4px 0 var(--duo-green-dark); transition: all 0.1s; }
+    .btn-hero:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--duo-green-dark); }
+    .btn-secondary { background: var(--surface-2); border: 2px solid var(--border-2); color: var(--ink); font-size: 14px; font-weight: 700; padding: 10px 20px; border-radius: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: all 0.15s; }
+    .btn-secondary:hover { background: var(--border-2); }
+    
+    .skip-btn { display: block; width: 100%; text-align: center; background: none; border: none; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: underline; margin-top: 16px; }
+    
+    /* Step 2 specific styles */
+    .experience-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .exp-btn { padding: 12px; background: var(--white); border: 2px solid var(--border-2); border-radius: 12px; font-weight: 600; font-size: 13px; color: var(--ink); cursor: pointer; text-align: center; transition: all 0.15s; }
+    .exp-btn.active { border-color: var(--duo-green); background: var(--duo-green-bg); color: var(--duo-green-dark); }
+    
+    .char-counter { font-size: 11px; color: var(--muted-2); text-align: right; margin-top: 4px; }
+    
+    /* Card types toggle */
+    .card-type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .card-type-btn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 14px; border: 2px solid var(--border-2); border-radius: 14px; background: var(--surface); font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.15s; }
+    .card-type-btn.active { border-color: var(--duo-green); background: var(--duo-green-bg); }
+    
+    .card-input-wrap { display: flex; align-items: center; border: 2px solid var(--border-2); border-radius: 12px; background: var(--white); overflow: hidden; padding-left: 14px; }
+    .card-icon { font-size: 18px; color: var(--muted); }
+    .card-input-wrap input { border: none; outline: none; padding: 12px; width: 100%; font-size: 16px; font-family: monospace; letter-spacing: 0.1em; background: transparent; }
+    
+    .card-security-note { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; background: var(--surface-2); padding: 12px; border-radius: 12px; margin-top: 16px; }
+    
+    .onboard-nav { display: flex; gap: 12px; margin-top: 24px; }
+    .onboard-nav .btn-secondary { flex: 1; justify-content: center; }
+    .onboard-nav .btn-hero { flex: 2; }
+  </style>
+</head>
+<body>
+<div id="toast-container"></div>
+
+  <div class="onboard-card">
+    <a href="index.html" class="logo-header">
+      <span class="logo-dot"></span> MUTP
+    </a>
+    
+    <div class="progress-bar-wrap" id="progressWrap" style="display: none;">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    
+    <!-- QADAM 1: Ism-familiya va Rasm -->
+    <div class="onboard-step" id="onboard-1">
+      <div class="onboard-header">
+        <h2>Ismingiz va rasmingiz 👋</h2>
+        <p>Boshqa foydalanuvchilar sizni shu ma'lumotlar orqali tanib olishadi.</p>
+      </div>
+
+      <div class="avatar-upload-zone" id="avatarZone">
+        <div class="avatar-preview" id="avatarPreview" onclick="document.getElementById('avatarFile').click()">
+          <span id="avatarInitials">?</span>
+          <img id="avatarImg" style="display: none;">
+        </div>
+        <input type="file" id="avatarFile" accept="image/*" hidden>
+        <button type="button" onclick="document.getElementById('avatarFile').click()" class="btn-secondary">
+          <i class="ti ti-camera"></i> Rasm yuklash
+        </button>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label>Ismingiz *</label>
+          <input type="text" id="firstName" class="form-control" placeholder="Ism" required>
+        </div>
+        <div class="form-field">
+          <label>Familiyangiz *</label>
+          <input type="text" id="lastName" class="form-control" placeholder="Familiya" required>
+        </div>
+      </div>
+
+      <div class="form-field">
+        <label>Email manzilingiz (ixtiyoriy)</label>
+        <input type="email" id="emailField" class="form-control" placeholder="example@domain.com">
+      </div>
+
+      <button class="btn-hero" onclick="goToStep(2)">Davom etish →</button>
+      <button class="skip-btn" onclick="skipOnboarding()">Keyinroq to'ldiraman</button>
+    </div>
+
+    <!-- QADAM 2: Kasb ma'lumotlari (Faqat ustozlar) -->
+    <div class="onboard-step" id="onboard-2" style="display: none;">
+      <div class="onboard-header">
+        <h2>Kasbiy ma'lumotlaringiz 💼</h2>
+        <p>Mutaxassisligingiz va tajribangiz haqida yozing.</p>
+      </div>
+
+      <div class="form-field">
+        <label>Mutaxassislik *</label>
+        <select id="specialization" class="form-control" onchange="toggleCustomSpecialization(this)">
+          <option value="">Tanlang...</option>
+          <option value="Dasturlash va IT">Dasturlash va IT</option>
+          <option value="Matematika va Fizika">Matematika va Fizika</option>
+          <option value="Ingliz tili">Ingliz tili</option>
+          <option value="Rus tili">Rus tili</option>
+          <option value="Dizayn va grafika">Dizayn va grafika</option>
+          <option value="Biznes va Marketing">Biznes va Marketing</option>
+          <option value="Boshqa">Boshqa...</option>
+        </select>
+        <input type="text" id="specializationCustom" class="form-control" placeholder="Mutaxassisligingizni kiriting..." style="display: none; margin-top: 8px;">
+      </div>
+
+      <div class="form-field">
+        <label>Tajribangiz (yillarda) *</label>
+        <div class="experience-buttons" id="expButtons">
+          <button type="button" class="exp-btn" data-val="1">1 yil</button>
+          <button type="button" class="exp-btn" data-val="3">3 yil</button>
+          <button type="button" class="exp-btn" data-val="5">5 yil</button>
+          <button type="button" class="exp-btn" data-val="7">7 yil</button>
+          <button type="button" class="exp-btn" data-val="10">10 yil</button>
+          <button type="button" class="exp-btn" data-val="custom">Boshqa</button>
+        </div>
+        <input type="number" id="experienceYears" class="form-control" placeholder="Tajriba yillari..." min="0" max="50" style="display: none; margin-top: 8px;">
+      </div>
+
+      <div class="form-field">
+        <label>Ish joyi / Tashkilot (ixtiyoriy)</label>
+        <input type="text" id="workplace" class="form-control" placeholder="Masalan: IT Park, PDP Academy">
+      </div>
+
+      <div class="form-field">
+        <label>O'zingiz haqingizda (Bio) *</label>
+        <textarea id="bio" class="form-control" rows="4" maxlength="300" placeholder="O'quvchilarga o'zingiz, yutuqlaringiz va o'qitish uslubingiz haqida gapirib bering..." style="height: 100px; resize: none;"></textarea>
+        <div class="char-counter"><span id="bioCount">0</span>/300</div>
+      </div>
+
+      <div class="onboard-nav">
+        <button class="btn-secondary" onclick="goToStep(1)">← Orqaga</button>
+        <button class="btn-hero" onclick="goToStep(3)">Davom etish →</button>
+      </div>
+    </div>
+
+    <!-- QADAM 3: To'lov ma'lumotlari (Faqat ustozlar) -->
+    <div class="onboard-step" id="onboard-3" style="display: none;">
+      <div class="onboard-header">
+        <h2>To'lov ma'lumotlari 💳</h2>
+        <p>Daromadingizni yechib olish uchun bank kartangizni ulashing.</p>
+      </div>
+
+      <div class="card-type-toggle">
+        <button type="button" class="card-type-btn active" data-type="humo">
+          <span style="font-weight: bold; color: #2b5c8f;">HUMO</span>
+        </button>
+        <button type="button" class="card-type-btn" data-type="uzcard">
+          <span style="font-weight: bold; color: #0082c6;">Uzcard</span>
+        </button>
+      </div>
+
+      <div class="form-field">
+        <label>Karta raqami</label>
+        <div class="card-input-wrap">
+          <span class="card-icon">💳</span>
+          <input type="text" id="cardNumber" placeholder="8600 0000 0000 0000" maxlength="19" oninput="formatCardNumber(this)">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field" style="flex: 1;">
+          <label>Amal qilish muddati</label>
+          <input type="text" id="cardExpiry" class="form-control" placeholder="MM/YY" maxlength="5" oninput="formatExpiry(this)">
+        </div>
+        <div class="form-field" style="flex: 2;">
+          <label>Karta egasi</label>
+          <input type="text" id="cardHolder" class="form-control" placeholder="ISM SHARIF" style="text-transform: uppercase;">
+        </div>
+      </div>
+
+      <div class="card-security-note">
+        <i class="ti ti-lock"></i>
+        <span>Karta ma'lumotlaringiz shifrlangan shaklda xavfsiz saqlanadi.</span>
+      </div>
+
+      <div class="onboard-nav">
+        <button class="btn-secondary" onclick="goToStep(2)">← Orqaga</button>
+        <button class="btn-hero" onclick="saveAndFinish()">Saqlash va boshlash 🚀</button>
+      </div>
+      
+      <button class="skip-btn" onclick="skipOnboarding()">Keyinroq qo'shaman</button>
+    </div>
+  </div>
+
+  <script src="assets/js/toast.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/onboarding.js"></script>
+</body>
+</html>

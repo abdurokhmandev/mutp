@@ -84,227 +84,116 @@
     </div>
     
     <div class="auth-right">
-      <div class="tabs">
-        <div class="tab active" onclick="switchTab('login')">Kirish</div>
-        <div class="tab" onclick="switchTab('register')">Ro'yxatdan o'tish</div>
-      </div>
-      
-      <!-- Login Form -->
-      <div id="loginForm" class="form-container active">
+      <!-- QADAM 1: Telefon raqam + Rol tanlash -->
+      <div class="auth-step" id="step-phone">
+        <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px; font-family: 'Plus Jakarta Sans', sans-serif;">Kirish / Ro'yxatdan o'tish</h2>
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 24px;">Telefon raqamingizni kiriting — tasdiqlash kodi Telegram bot orqali yuboriladi.</p>
+
+        <!-- Rol tanlash -->
+        <label class="form-label" style="font-weight: 600; margin-bottom: 8px; display: block;">Tizimdagi rolingiz</label>
+        <div class="role-cards" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+          <label class="role-card active" id="roleStudent" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 12px; border: 2px solid var(--border-2); border-radius: 12px; cursor: pointer; transition: all 0.15s; text-align: center; background: var(--surface);">
+            <input type="radio" name="role" value="student" checked hidden>
+            <span class="role-icon" style="font-size: 28px;">👨‍🎓</span>
+            <span class="role-title" style="font-size: 14px; font-weight: 700; color: var(--ink);">O'quvchi</span>
+            <span class="role-desc" style="font-size: 11px; color: var(--muted);">Kurs sotib olish va o'qish</span>
+          </label>
+          <label class="role-card" id="roleTeacher" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 12px; border: 2px solid var(--border-2); border-radius: 12px; cursor: pointer; transition: all 0.15s; text-align: center; background: var(--surface);">
+            <input type="radio" name="role" value="teacher" hidden>
+            <span class="role-icon" style="font-size: 28px;">👨‍🏫</span>
+            <span class="role-title" style="font-size: 14px; font-weight: 700; color: var(--ink);">Ustoz</span>
+            <span class="role-desc" style="font-size: 11px; color: var(--muted);">Kurs yaratish va o'qitish</span>
+          </label>
+        </div>
+
+        <!-- Telefon input -->
         <div class="form-group">
-          <label class="form-label">Email manzilingiz</label>
-          <input type="email" class="form-control" id="loginEmail" placeholder="Misol uchun: email@domain.com">
-        </div>
-        <div class="form-group" style="position:relative;">
-          <div style="display:flex; justify-content:space-between;">
-            <label class="form-label">Parol</label>
-            <a href="#" style="font-size:12px; color:var(--duo-green); text-decoration:none; font-weight:500;">Parolni unutdim?</a>
+          <label class="form-label" style="font-weight: 600; margin-bottom: 8px; display: block;">Telefon raqamingiz</label>
+          <div class="phone-input-wrap" style="display: flex; align-items: center; border: 2px solid var(--border-2); border-radius: 12px; overflow: hidden; margin-bottom: 16px; transition: border-color 0.15s; background: var(--white);">
+            <span class="phone-prefix" style="padding: 12px 14px; background: var(--surface); font-size: 15px; font-weight: 600; color: var(--ink); border-right: 2px solid var(--border-2); white-space: nowrap;">🇺🇿 +998</span>
+            <input type="tel" id="phoneInput" placeholder="90 123 45 67" maxlength="12" style="flex: 1; padding: 12px 14px; border: none; outline: none; font-size: 16px; letter-spacing: 0.05em; background: transparent; color: var(--ink);">
           </div>
-          <input type="password" class="form-control" id="loginPassword" placeholder="Parolingizni kiriting">
-          <i class="ti ti-eye" style="position:absolute; right:12px; top:36px; cursor:pointer; color:var(--muted-2);"></i>
         </div>
-        <button class="btn-primary btn-full" onclick="handleLogin()">Tizimga kirish</button>
-        
-        <div class="divider-text"><span>yoki</span></div>
-        <button class="btn-google">
-          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          Google bilan kirish
+
+        <!-- Telegram bot haqida eslatma -->
+        <div class="telegram-notice" id="telegramNotice" style="display: none; gap: 10px; align-items: flex-start; padding: 12px 14px; background: #FFF9DB; border: 1px solid #FFE066; border-radius: 12px; margin-bottom: 16px; font-size: 13px;">
+          <span>⚠️</span>
+          <div>
+            <p style="margin: 0; font-weight: 500; color: #856404;">Avval Telegram botga kiring va raqamingizni ulashing:</p>
+            <a href="https://t.me/MUTP_bot" target="_blank" class="btn-telegram" style="display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; background: #2BA5E0; color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 4px rgba(43,165,224,0.2);">
+              <i class="ti ti-brand-telegram"></i> @MUTP_bot ga o'tish
+            </a>
+          </div>
+        </div>
+
+        <button id="sendOtpBtn" class="btn-primary btn-full" style="width: 100%; padding: 12px; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 var(--duo-green-dark);">
+          Kod olish →
+        </button>
+
+        <p class="auth-footer-text" style="text-align: center; margin-top: 16px; font-size: 12px; color: var(--muted);">
+          Kirish orqali <a href="#" style="color: var(--duo-green); text-decoration: none;">Foydalanish shartlari</a> ga roziman
+        </p>
+      </div>
+
+      <!-- QADAM 2: OTP kod kiritish -->
+      <div class="auth-step" id="step-otp" style="display: none;">
+        <button class="back-btn" id="backToPhone" style="background: none; border: none; color: var(--duo-green); font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 0; margin-bottom: 24px;">
+          <i class="ti ti-arrow-left"></i> Orqaga
+        </button>
+        <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px; font-family: 'Plus Jakarta Sans', sans-serif;">Kodni kiriting</h2>
+        <p style="color: var(--muted); font-size: 14px; margin-bottom: 24px;">
+          <span id="otpPhoneDisplay" style="font-weight: 600; color: var(--ink);"></span> raqamiga Telegram orqali
+          <strong>6 xonali tasdiqlash kodi</strong> yuborildi.
+        </p>
+
+        <!-- OTP 6 ta alohida input -->
+        <div class="otp-inputs" id="otpInputs" style="display: flex; align-items: center; gap: 8px; justify-content: center; margin: 24px 0;">
+          <input type="text" maxlength="1" class="otp-box" data-index="0" style="width: 44px; height: 52px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 22px; font-weight: 700; text-align: center; color: var(--ink); background: var(--surface); transition: all 0.15s; outline: none;">
+          <input type="text" maxlength="1" class="otp-box" data-index="1" style="width: 44px; height: 52px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 22px; font-weight: 700; text-align: center; color: var(--ink); background: var(--surface); transition: all 0.15s; outline: none;">
+          <input type="text" maxlength="1" class="otp-box" data-index="2" style="width: 44px; height: 52px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 22px; font-weight: 700; text-align: center; color: var(--ink); background: var(--surface); transition: all 0.15s; outline: none;">
+          <span class="otp-dash" style="font-size: 20px; color: var(--muted-2); margin: 0 4px;">—</span>
+          <input type="text" maxlength="1" class="otp-box" data-index="3" style="width: 44px; height: 52px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 22px; font-weight: 700; text-align: center; color: var(--ink); background: var(--surface); transition: all 0.15s; outline: none;">
+          <input type="text" maxlength="1" class="otp-box" data-index="4" style="width: 44px; height: 52px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 22px; font-weight: 700; text-align: center; color: var(--ink); background: var(--surface); transition: all 0.15s; outline: none;">
+          <input type="text" maxlength="1" class="otp-box" data-index="5" style="width: 44px; height: 52px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 22px; font-weight: 700; text-align: center; color: var(--ink); background: var(--surface); transition: all 0.15s; outline: none;">
+        </div>
+
+        <div id="otpError" class="otp-error" style="display: none; color: var(--rose); font-size: 13px; text-align: center; margin-bottom: 16px; font-weight: 500;">
+          ❌ Kod noto'g'ri yoki muddati o'tgan
+        </div>
+
+        <!-- Qayta yuborish -->
+        <div class="resend-wrap" style="text-align: center; margin: 16px 0; font-size: 13px; color: var(--muted);">
+          <span id="resendTimer">Qayta yuborish: <b id="timerCount">60</b>s</span>
+          <button id="resendBtn" style="display: none; background: none; border: none; color: var(--duo-green); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0;">Qayta yuborish</button>
+        </div>
+
+        <button id="verifyOtpBtn" class="btn-primary btn-full" style="width: 100%; padding: 12px; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 var(--duo-green-dark);" disabled>
+          Tasdiqlash ✓
         </button>
       </div>
-
-      <!-- Register Form -->
-      <div id="registerForm" class="form-container">
-        <div class="role-select">
-          <div class="role-card active" onclick="setRole('student', this)">
-            <div class="role-icon">👨‍🎓</div>
-            <div class="role-name">O'quvchi</div>
-          </div>
-          <div class="role-card" onclick="setRole('teacher', this)">
-            <div class="role-icon">👨‍🏫</div>
-            <div class="role-name">Ustoz</div>
-          </div>
-        </div>
-        
-        <div style="display:flex; gap:16px;">
-          <div class="form-group" style="flex:1;">
-            <label class="form-label">Ism</label>
-            <input type="text" class="form-control" id="regName" placeholder="Ismingiz">
-          </div>
-          <div class="form-group" style="flex:1;">
-            <label class="form-label">Familiya</label>
-            <input type="text" class="form-control" id="regSurname" placeholder="Familiyangiz">
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">Email</label>
-          <input type="email" class="form-control" id="regEmail" placeholder="Emailingiz">
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">Parol</label>
-          <input type="password" class="form-control" id="regPassword" placeholder="Kamida 8 ta belgi" oninput="checkPassword(this.value)">
-          <div class="pwd-strength"><div class="pwd-bar" id="pwdBar"></div></div>
-          <div class="pwd-text" id="pwdText"></div>
-        </div>
-
-        <!-- Ustoz uchun qo'shimcha maydonlar -->
-        <div id="teacherExtraFields" style="display:none; margin-top: 16px;">
-          <div class="form-group">
-            <label class="form-label">Mutaxassislik</label>
-            <input type="text" class="form-control" id="regSpecialization" placeholder="Masalan: Python Dasturchi, IELTS O'qituvchisi">
-          </div>
-          <div style="display:flex; gap:16px;">
-            <div class="form-group" style="flex:1;">
-              <label class="form-label">Tajriba (yillarda)</label>
-              <input type="number" class="form-control" id="regExperience" placeholder="Masalan: 5" min="0">
-            </div>
-            <div class="form-group" style="flex:1;">
-              <label class="form-label">Bank kartasi (Humo/Uzcard)</label>
-              <input type="text" class="form-control" id="regBankCard" placeholder="8600..." maxlength="16">
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">O'zingiz haqingizda (Bio)</label>
-            <textarea class="form-control" id="regBio" placeholder="O'quvchilarga o'zingiz haqingizda qisqacha ma'lumot bering" style="height: 80px; resize: none; font-family: inherit; padding: 10px; border-radius: 12px; border: 2px solid var(--border-2); width:100%;"></textarea>
-          </div>
-        </div>
-        
-        <button class="btn-primary btn-full" onclick="handleRegister()">Ro'yxatdan o'tish</button>
-        <div style="text-align: center; margin-top: 16px;">
-          <a href="#" id="teacherRegLink" onclick="event.preventDefault(); selectTeacherRole();" style="font-size: 13px; color: var(--duo-green); text-decoration: none; font-weight: 600;">Ustozmisiz? Bu yerdan ro'yxatdan o'ting</a>
-        </div>
-      </div>
-      
     </div>
   </div>
+
+  <style>
+    /* Shake Keyframes for invalid OTP error */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+    .role-card:has(input:checked), .role-card.active {
+      border-color: var(--duo-green) !important;
+      background: var(--duo-green-bg) !important;
+      box-shadow: 0 4px 12px rgba(88,204,2,0.1);
+    }
+  </style>
 
   <script src="assets/js/toast.js"></script>
   <script src="assets/js/config.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/auth.js"></script>
   <script>
-    let currentRole = 'student';
-
-    function selectTeacherRole() {
-      const teacherCard = document.querySelector('.role-card[onclick*="teacher"]');
-      if (teacherCard) setRole('teacher', teacherCard);
-    }
-
-    function switchTab(tab) {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.form-container').forEach(f => f.classList.remove('active'));
-      
-      if(tab === 'login') {
-        document.querySelectorAll('.tab')[0].classList.add('active');
-        document.getElementById('loginForm').classList.add('active');
-      } else {
-        document.querySelectorAll('.tab')[1].classList.add('active');
-        document.getElementById('registerForm').classList.add('active');
-      }
-    }
-
-    function setRole(role, el) {
-      currentRole = role;
-      document.querySelectorAll('.role-card').forEach(r => r.classList.remove('active'));
-      if (el) el.classList.add('active');
-
-      const extraFields = document.getElementById('teacherExtraFields');
-      const teacherLink = document.getElementById('teacherRegLink');
-      if (role === 'teacher') {
-        if (extraFields) extraFields.style.display = 'block';
-        if (teacherLink) teacherLink.style.display = 'none';
-      } else {
-        if (extraFields) extraFields.style.display = 'none';
-        if (teacherLink) teacherLink.style.display = 'block';
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const role = urlParams.get('role');
-      const tab = urlParams.get('tab');
-
-      if (tab === 'login') {
-        switchTab('login');
-      } else if (tab === 'register' || role) {
-        switchTab('register');
-      }
-      
-      if (role === 'teacher') {
-        const teacherCard = document.querySelector('.role-card[onclick*="teacher"]');
-        if (teacherCard) {
-          setRole('teacher', teacherCard);
-        }
-      }
-    });
-
-    function checkPassword(val) {
-      const bar = document.getElementById('pwdBar');
-      const text = document.getElementById('pwdText');
-      if (val.length === 0) { bar.style.width = '0'; text.innerText = ''; return; }
-      
-      let strength = 0;
-      if (val.length > 5) strength += 33;
-      if (val.length > 8 && /[A-Z]/.test(val)) strength += 33;
-      if (/[0-9]/.test(val) && /[^A-Za-z0-9]/.test(val)) strength += 34;
-      
-      bar.style.width = strength + '%';
-      if (strength <= 33) { bar.style.background = 'var(--rose)'; text.innerText = 'Zaif'; }
-      else if (strength <= 66) { bar.style.background = 'var(--amber)'; text.innerText = 'O\'rtacha'; }
-      else { bar.style.background = 'var(--green)'; text.innerText = 'Kuchli'; }
-    }
-
-    async function handleLogin() {
-      const email = document.getElementById('loginEmail').value.trim();
-      const pass = document.getElementById('loginPassword').value;
-      const user = await Auth.login(email, pass);
-      if (user) {
-        setTimeout(() => {
-          const redir = localStorage.getItem('redirect_after_login');
-          if (redir) {
-            localStorage.removeItem('redirect_after_login');
-            window.location.href = redir;
-          } else {
-            window.location.href = user.role === 'teacher'
-              ? '/dashboard-teacher.html'
-              : '/dashboard-student.html';
-          }
-        }, 800);
-      }
-    }
-
-    async function handleRegister() {
-      const firstName = document.getElementById('regName').value.trim();
-      const lastName = document.getElementById('regSurname').value.trim();
-      const email = document.getElementById('regEmail').value.trim();
-      const pass = document.getElementById('regPassword').value;
-
-      let extra = {};
-      if (currentRole === 'teacher') {
-        extra = {
-          specialization: document.getElementById('regSpecialization').value.trim(),
-          experience_years: parseInt(document.getElementById('regExperience').value) || 0,
-          bank_card: document.getElementById('regBankCard').value.trim(),
-          bio: document.getElementById('regBio').value.trim(),
-        };
-      }
-
-      const user = await Auth.register(firstName, lastName, email, pass, currentRole, extra);
-      if (user) {
-        setTimeout(() => {
-          const redir = localStorage.getItem('redirect_after_login');
-          if (redir) {
-            localStorage.removeItem('redirect_after_login');
-            window.location.href = redir;
-          } else {
-            window.location.href = user.role === 'teacher'
-              ? '/dashboard-teacher.html'
-              : '/dashboard-student.html';
-          }
-        }, 800);
-      }
-    }
+    // Empty scripts since logic is in auth.js
   </script>
 </body>
 </html>
