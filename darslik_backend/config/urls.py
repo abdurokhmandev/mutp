@@ -56,6 +56,7 @@ else:
         'chat.html',
         'homework.html',
         'invite.html',
+        '404.html',
     ]
 
     def serve_frontend(request, filename='index.html'):
@@ -97,3 +98,5 @@ else:
     urlpatterns += [
         re_path(r'^assets/(?P<path>.*)$', serve_frontend_assets, name='frontend-assets'),
     ]
+
+handler404 = 'config.views.custom_404'

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sahifa topilmadi — MUTP</title>
+  <meta name="description" content="Kechirasiz, siz qidirgan sahifa topilmadi.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg, #F8F8F7);
+    }
+    .main-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+    }
+    .error-wrapper {
+      max-width: 580px;
+      width: 100%;
+      text-align: center;
+    }
+    .error-code {
+      font-size: 110px;
+      font-weight: 800;
+      line-height: 1;
+      color: #16A34A;
+      margin-bottom: 24px;
+      animation: fadeInDown 0.6s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .error-code span {
+      display: inline-block;
+    }
+    .error-code span.emoji-span {
+      font-size: 80px;
+      animation: swing 2s ease-in-out infinite;
+    }
+    .error-title {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text, #1A1A18);
+      margin-bottom: 12px;
+    }
+    .error-text {
+      font-size: 15px;
+      color: var(--text-2, #6B6B67);
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+    .search-container {
+      max-width: 440px;
+      margin: 0 auto 30px auto;
+    }
+    .search-box {
+      display: flex;
+      gap: 8px;
+      background: white;
+      border: 2px solid rgba(0,0,0,0.08);
+      border-radius: 16px;
+      padding: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    }
+    .search-box input {
+      flex: 1;
+      border: none;
+      outline: none;
+      padding: 10px 14px;
+      font-size: 14px;
+      background: transparent;
+      font-family: inherit;
+    }
+    .search-box button {
+      background: #16A34A;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .search-box button:hover {
+      background: #15803d;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+    .actions .btn-primary {
+      background: #16A34A;
+      border-color: #16A34A;
+    }
+    .actions .btn-primary:hover {
+      background: #15803d;
+      border-color: #15803d;
+    }
+    .popular-tags {
+      font-size: 13.5px;
+      color: var(--text-2, #6B6B67);
+    }
+    .popular-tags a {
+      color: #16A34A;
+      text-decoration: none;
+      font-weight: 600;
+      margin: 0 4px;
+    }
+    .popular-tags a:hover {
+      text-decoration: underline;
+    }
+
+    @keyframes swing {
+      0%, 100% { transform: rotate(-8deg); }
+      50%       { transform: rotate(8deg);  }
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0);     }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="nav" id="mainNav">
+    <a class="nav-logo" href="/index.html">
+      <span class="logo-dot"></span>
+      MUTP
+    </a>
+    <div class="nav-links">
+      <a href="/courses.html">Kurslar</a>
+      <a href="/#teachers">O'qituvchilar</a>
+      <a href="/#features">Imkoniyatlar</a>
+      <a href="/#faq">FAQ</a>
+    </div>
+    <div id="nav-auth" style="display:flex;gap:8px">
+      <a href="/auth.html?tab=login" class="btn-secondary">Kirish</a>
+      <a href="/auth.html?role=student&tab=register" class="btn-primary" style="background:#16A34A; border-color:#16A34A;">Bepul boshlash</a>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main-container">
+    <div class="error-wrapper">
+      <div class="error-code">
+        <span>4</span>
+        <span class="emoji-span">😕</span>
+        <span>4</span>
+      </div>
+      <h2 class="error-title">Voy! Bu sahifa topilmadi</h2>
+      <p class="error-text">Siz qidirayotgan sahifa o'chirilgan, ko'chirilgan yoki hech qachon mavjud bo'lmagan bo'lishi mumkin.</p>
+      
+      <!-- Search -->
+      <div class="search-container">
+        <form action="/courses.html" method="GET" class="search-box">
+          <input type="text" name="search" placeholder="Kurs qidirish..." required>
+          <button type="submit">Qidirish</button>
+        </form>
+      </div>
+
+      <!-- Actions -->
+      <div class="actions">
+        <a href="/index.html" class="btn-primary" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; background:#16A34A; color:white; border:none; padding:10px 20px; border-radius:12px; font-weight:600; font-size:14px;"><i class="ti ti-home"></i> Bosh sahifaga</a>
+        <a href="/courses.html" class="btn-secondary" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; border:2px solid var(--border); padding:10px 20px; border-radius:12px; font-weight:600; font-size:14px; color:var(--text);"><i class="ti ti-books"></i> Kurslarga</a>
+      </div>
+
+      <!-- Quick links -->
+      <div class="popular-tags">
+        Yoki bu kurslarga qarang:
+        <a href="/courses.html?search=Python">Python</a>,
+        <a href="/courses.html?search=IELTS">IELTS</a>,
+        <a href="/courses.html?search=Matematika">Matematika</a>,
+        <a href="/courses.html?search=Dizayn">Dizayn</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div style="max-width:320px; display:flex; flex-direction:column; gap:12px; text-align:left;">
+      <div class="footer-logo">
+        <span class="logo-dot"></span> MUTP
+      </div>
+      <p style="color:#a4db89; font-size:13px; line-height:1.6; margin:0 0 16px 0;">O'zbekistonning №1 premium ta'lim platformasi. Eng yaxshi ustozlardan zamonaviy kasblar va bilimlar.</p>
+      <div style="display:flex; gap:12px;">
+        <a href="#" class="footer-social-btn"><i class="ti ti-brand-instagram"></i></a>
+        <a href="#" class="footer-social-btn"><i class="ti ti-brand-telegram"></i></a>
+        <a href="#" class="footer-social-btn"><i class="ti ti-brand-youtube"></i></a>
+      </div>
+    </div>
+    
+    <div class="footer-col" style="text-align:left;">
+      <div class="footer-col-title">Platforma</div>
+      <div class="footer-links">
+        <a href="/courses.html">Barcha kurslar</a>
+        <a href="/#courses">Mashhur darslar</a>
+        <a href="/#how-it-works">Qanday ishlaydi</a>
+      </div>
+    </div>
+    
+    <div class="footer-col" style="text-align:left;">
+      <div class="footer-col-title">Ustozlar uchun</div>
+      <div class="footer-links">
+        <a href="/auth.html?role=teacher">O'qituvchi bo'lish</a>
+        <a href="/auth.html?role=teacher&tab=register">Kurs yaratish</a>
+        <a href="/#teachers">Top ustozlarimiz</a>
+      </div>
+    </div>
+    
+    <div class="footer-col" style="text-align:left;">
+      <div class="footer-col-title">Kompaniya</div>
+      <div class="footer-links">
+        <a href="#">Biz haqimizda</a>
+        <a href="#">Aloqa va qo'llab-quvvatlash</a>
+        <a href="#">Foydalanish shartlari</a>
+        <a href="#">Maxfiylik siyosati</a>
+      </div>
+    </div>
+    
+    <div class="footer-bottom">
+      <span>© 2026 MUTP. Barcha huquqlar himoyalangan.</span>
+      <span>Powered by Antigravity AI</span>
+    </div>
+  </footer>
+
+  <script src="assets/js/toast.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      App.updateNav();
+    });
+  </script>
+</body>
+</html>

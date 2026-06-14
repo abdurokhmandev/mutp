@@ -129,3 +129,15 @@ class DiscussionTestCase(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertTrue(res.data['data']['is_accepted'])
 
+
+class Custom404TestCase(TestCase):
+    def test_custom_404_page(self):
+        client = APIClient()
+        response = client.get('/some-nonexistent-url-path/')
+        # Django custom error handlers are invoked only when DEBUG=False, so let's override settings in this test
+        with self.settings(DEBUG=False, ALLOWED_HOSTS=['*']):
+            response = self.client.get('/some-nonexistent-url-path/')
+            self.assertEqual(response.status_code, 404)
+            self.assertContains(response, "Voy! Bu sahifa topilmadi", status_code=404)
+
+

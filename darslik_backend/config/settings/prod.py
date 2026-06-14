@@ -36,3 +36,5 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # Allow all CORS origins in production for demo simplicity
 CORS_ALLOW_ALL_ORIGINS = True
 
+handler404 = 'config.views.custom_404'
+
