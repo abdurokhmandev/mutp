@@ -15,6 +15,6 @@
 
   // Production (Railway API)
   window.APP_CONFIG = {
-    API_BASE_URL: 'https://mutp-production.up.railway.app/api/v1',
+    API_BASE_URL: window.location.origin + '/api/v1',
   };
 })();
