@@ -18,6 +18,8 @@ from .serializers import (
     TeacherProfileSerializer,
     ChangePasswordSerializer
 )
+from .otp import format_phone, send_otp, verify_otp
+
 
 def normalize_phone(phone: str) -> str:
     phone = str(phone).replace('+', '').replace(' ', '').replace('-', '')
@@ -35,6 +37,20 @@ class SendOTPView(APIView):
         if len(phone) != 12 or not phone.startswith('998'):
             return error_response("Telefon raqam noto'g'ri. Misol: 901234567")
 
+        from django.db.models import Q
+
+        formatted_phone = format_phone(phone)
+        tg_user_exists = TelegramUser.objects.filter(
+            Q(phone=phone) | Q(phone=formatted_phone)
+        ).exists()
+
+        if not tg_user_exists:
+            return error_response(
+                "Botni boshlang",
+                status_code=400,
+                errors={"error": "bot_not_started"}
+            )
+
         # Spam himoya: 1 daqiqada 1 marta
         from datetime import timedelta
         recent = PhoneOTP.objects.filter(
@@ -48,7 +64,12 @@ class SendOTPView(APIView):
                 status_code=429
             )
 
-        PhoneOTP.generate(phone)
+        otp = PhoneOTP.generate(phone)
+
+        # Telegram bot orqali kodni yuboramiz
+        sent = send_otp(phone, otp.code)
+        if not sent:
+            return error_response("Kod yuborishda xatolik yuz berdi. Botni qayta tekshiring.")
 
         bot_url = (
             f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}"
@@ -67,28 +88,46 @@ class VerifyOTPView(APIView):
 
     def post(self, request):
         phone = normalize_phone(request.data.get('phone', ''))
-        code  = str(request.data.get('code', '')).strip()
+        code  = str(request.data.get('code', '') or request.data.get('otp', '')).strip()
         role  = request.data.get('role', 'student')
 
-        otp = PhoneOTP.objects.filter(
-            phone=phone, is_used=False
-        ).order_by('-created_at').first()
+        from django.db.models import Q
+        formatted_phone = format_phone(phone)
 
-        if not otp:
-            return error_response("Kod topilmadi. Yangi kod so'rang.")
+        verified = False
 
-        otp.attempts += 1
-        otp.save(update_fields=['attempts'])
+        # Avval keshdan tekshiramiz
+        if verify_otp(phone, code) or verify_otp(formatted_phone, code):
+            verified = True
+        else:
+            # Keyin bazadan tekshiramiz
+            otp = PhoneOTP.objects.filter(
+                Q(phone=phone) | Q(phone=formatted_phone),
+                is_used=False
+            ).order_by('-created_at').first()
 
-        if not otp.is_valid:
-            return error_response("Kod muddati o'tgan. Yangi kod so'rang.")
+            if otp:
+                otp.attempts += 1
+                otp.save(update_fields=['attempts'])
 
-        if otp.code != code:
-            remaining = 3 - otp.attempts
-            return error_response(f"Kod noto'g'ri. {remaining} urinish qoldi.")
+                if otp.is_valid and otp.code == code:
+                    otp.is_used = True
+                    otp.save(update_fields=['is_used'])
+                    verified = True
 
-        otp.is_used = True
-        otp.save(update_fields=['is_used'])
+        if not verified:
+            otp = PhoneOTP.objects.filter(
+                Q(phone=phone) | Q(phone=formatted_phone),
+                is_used=False
+            ).order_by('-created_at').first()
+
+            if otp:
+                if not otp.is_valid:
+                    return error_response("Kod muddati o'tgan. Yangi kod so'rang.")
+                remaining = 3 - otp.attempts
+                return error_response(f"Kod noto'g'ri. {remaining} urinish qoldi.")
+
+            return error_response("Kod topilmadi yoki noto'g'ri. Yangi kod so'rang.")
 
         # Check user
         User = get_user_model()
@@ -108,10 +147,11 @@ class VerifyOTPView(APIView):
 
         # Link telegram account if exists
         try:
-            tg = TelegramUser.objects.get(phone=phone)
-            tg.linked_user = user
-            tg.save()
-        except TelegramUser.DoesNotExist:
+            tg = TelegramUser.objects.filter(Q(phone=phone) | Q(phone=formatted_phone)).first()
+            if tg:
+                tg.linked_user = user
+                tg.save()
+        except Exception:
             pass
 
         refresh = RefreshToken.for_user(user)
@@ -303,6 +343,7 @@ class SaveTelegramUserView(APIView):
         if not chat_id or not phone:
             return error_response(message="chat_id va phone kiritilishi shart", status_code=400)
 
+        from .otp import format_phone
         phone = format_phone(phone)
         tg_user, created = TelegramUser.objects.update_or_create(
             chat_id=chat_id,

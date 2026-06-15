@@ -27,15 +27,9 @@ def format_phone(phone: str) -> str:
         phone = '+' + phone
     return phone
 
-async def send_otp_telegram_async(phone: str, otp: str):
+async def send_otp_telegram_async(chat_id: int, otp: str):
     bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
-    from apps.users.models import TelegramUser
     try:
-        tg_user = TelegramUser.objects.filter(phone=phone).first()
-        if not tg_user:
-            await bot.session.close()
-            return False
-        
         message = (
             f"🔐 MUTP tasdiqlash kodi\n\n"
             f"Sizning kodingiz: <b>{otp}</b>\n\n"
@@ -43,7 +37,7 @@ async def send_otp_telegram_async(phone: str, otp: str):
             f"Kodni hech kimga bermang!"
         )
         await bot.send_message(
-            chat_id=tg_user.chat_id,
+            chat_id=chat_id,
             text=message,
             parse_mode='HTML'
         )
@@ -55,8 +49,14 @@ async def send_otp_telegram_async(phone: str, otp: str):
         return False
 
 def send_otp(phone: str, otp: str) -> bool:
+    from apps.users.models import TelegramUser
+    from django.db.models import Q
+    formatted = format_phone(phone)
+    tg_user = TelegramUser.objects.filter(Q(phone=phone) | Q(phone=formatted)).first()
+    if not tg_user:
+        return False
     try:
-        return asyncio.run(send_otp_telegram_async(phone, otp))
+        return asyncio.run(send_otp_telegram_async(tg_user.chat_id, otp))
     except Exception as e:
         print("Failed to run send_otp_telegram_async:", e)
         return False

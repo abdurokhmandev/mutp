@@ -8,7 +8,7 @@ django.setup()
 from telegram import Update
 from telegram.ext import Application, CommandHandler
 from django.conf import settings
-from apps.users.models import PhoneOTP, User
+from apps.users.models import PhoneOTP, User, TelegramUser
 from asgiref.sync import sync_to_async
 
 @sync_to_async
@@ -20,6 +20,19 @@ def get_valid_otp(phone):
 @sync_to_async
 def update_user_telegram_id(phone, telegram_id):
     User.objects.filter(phone=phone).update(telegram_id=telegram_id)
+
+@sync_to_async
+def create_or_update_telegram_user(phone, chat_id, username, first_name):
+    from apps.users.otp import format_phone
+    formatted_phone = format_phone(phone)
+    TelegramUser.objects.update_or_create(
+        chat_id=chat_id,
+        defaults={
+            'phone': formatted_phone,
+            'username': username or '',
+            'first_name': first_name or '',
+        }
+    )
 
 
 async def start(update: Update, context):
@@ -34,6 +47,15 @@ async def start(update: Update, context):
     phone = normalize_phone(args[0])
     from django.utils import timezone
     print(f"DEBUG Bot received: raw={args[0]}, normalized={phone}", flush=True)
+
+    # Save TelegramUser record so backend knows the bot has been started
+    chat_id = update.effective_user.id
+    username = update.effective_user.username
+    first_name = update.effective_user.first_name
+    try:
+        await create_or_update_telegram_user(phone, chat_id, username, first_name)
+    except Exception as e:
+        print("Error saving telegram user:", e, flush=True)
 
     try:
         otp = await get_valid_otp(phone)
