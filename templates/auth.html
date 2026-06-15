@@ -58,6 +58,77 @@
     
     .btn-google { background: white; border: 2px solid var(--border-2); color: var(--ink); width: 100%; padding: 12px; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background 0.15s; }
     .btn-google:hover { background: var(--surface-2); }
+
+    /* OTP inputs and structures */
+    .otp-wrap {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin: 24px 0;
+    }
+    .otp-input {
+        width: 48px;
+        height: 56px;
+        text-align: center;
+        font-size: 22px;
+        font-weight: 550;
+        border: 2px solid var(--border-2, #e2e8f0);
+        border-radius: 12px;
+        background: var(--white);
+        color: var(--ink);
+        outline: none;
+        transition: border-color .15s, box-shadow .15s;
+        caret-color: transparent;
+    }
+    .otp-input:focus {
+        border-color: var(--duo-green);
+        box-shadow: 0 0 0 3px rgba(88,204,2,.1);
+    }
+    .otp-input:not(:placeholder-shown) {
+        border-color: var(--duo-green);
+        background: #f4fbf0;
+    }
+    .error-msg {
+        color: #ef4444;
+        font-size: 13px;
+        text-align: center;
+        margin-top: -12px;
+        margin-bottom: 12px;
+        padding: 8px 12px;
+        background: #fee2e2;
+        border-radius: 8px;
+        display: none;
+    }
+    .bot-instruction {
+        background: var(--surface);
+        border-radius: 12px;
+        padding: 16px;
+        margin: 16px 0;
+        text-align: left;
+    }
+    .instruction-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 8px 0;
+        font-size: 14px;
+        color: var(--muted);
+        border-bottom: 1px solid var(--border-2, #e2e8f0);
+    }
+    .instruction-step:last-child { border-bottom: none; }
+    .instruction-step .num {
+        width: 22px;
+        height: 22px;
+        background: var(--duo-green);
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
     
     @media(max-width: 900px) {
       .auth-card { flex-direction: column; }
@@ -109,23 +180,40 @@
 
       <!-- QADAM 2: Botga o'tish -->
       <div class="auth-step" id="step2" style="display: none;">
-        <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px; font-family: 'Plus Jakarta Sans', sans-serif;">Bot orqali tasdiqlash</h2>
-        <p style="color: var(--muted); font-size: 14px; margin-bottom: 24px;">
-          EduUz botiga o'ting va <strong>/start</strong> buyrug'ini bosing. Bot sizga 6 xonali kod yuboradi.
-        </p>
+        <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px; font-family: 'Plus Jakarta Sans', sans-serif;">Telegram botga o'ting</h2>
+        
+        <div class="bot-instruction">
+          <div class="instruction-step">
+            <span class="num">1</span>
+            <span>Quyidagi tugmani bosib botga o'ting</span>
+          </div>
+          <div class="instruction-step">
+            <span class="num">2</span>
+            <span>Botda <b>/start</b> bosing</span>
+          </div>
+          <div class="instruction-step">
+            <span class="num">3</span>
+            <span><b>"📱 Raqamimni yuborish"</b> tugmasini bosing</span>
+          </div>
+          <div class="instruction-step">
+            <span class="num">4</span>
+            <span>Bot sizga 6 xonali kod beradi</span>
+          </div>
+        </div>
 
-        <button onclick="auth.openBot()" class="btn-primary btn-full" style="width: 100%; padding: 12px; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; background: #2BA5E0; box-shadow: 0 4px 0 #1B82B5; display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px;">
+        <button id="botBtn" onclick="auth.openBot()" class="btn-primary btn-full" style="width: 100%; padding: 12px; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; background: #2BA5E0; box-shadow: 0 4px 0 #1B82B5; display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 16px;">
           <i class="ti ti-brand-telegram"></i> 🤖 @EduUzBot ga o'tish
         </button>
 
         <button id="gotCodeBtn" onclick="auth.goToStep(3)" class="btn-primary btn-full" style="width: 100%; padding: 12px; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; display: none; box-shadow: 0 4px 0 var(--duo-green-dark); margin-bottom: 16px;">
-          Kod oldimmi? Davom etish →
+          Kodni oldim →
         </button>
 
         <!-- Qayta yuborish -->
         <div class="resend-wrap" style="text-align: center; margin-top: 12px; font-size: 13px; color: var(--muted);">
-          <button id="resendBtn" onclick="auth.sendOTP()" style="background: none; border: none; color: var(--duo-green); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0;" disabled>Qayta yuborish</button>
-          <span id="timerDisplay"></span>
+          <button id="resendBtn" onclick="auth.resendOTP()" style="background: none; border: none; color: var(--duo-green); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0;" disabled>
+            🔄 Qayta yuborish <span id="timerDisplay"></span>
+          </button>
         </div>
       </div>
 
@@ -136,29 +224,30 @@
         </button>
         <h2 style="font-size: 24px; font-weight: 700; margin-bottom: 8px; font-family: 'Plus Jakarta Sans', sans-serif;">Kodni kiriting</h2>
         <p style="color: var(--muted); font-size: 14px; margin-bottom: 24px;">
-          Botdan olingan 6 xonali tasdiqlash kodini kiriting.
+          Telegram botdan kelgan 6 xonali kod
         </p>
 
         <!-- OTP 6 ta alohida input -->
-        <div class="otp-wrap" style="display: flex; flex-direction: column; align-items: center;">
-          <div class="otp-inputs" style="display: flex; align-items: center; gap: 8px; justify-content: center; margin: 12px 0 24px 0;">
-            <input type="text" maxlength="1" class="otp-input" style="width: 44px; height: 52px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 22px; font-weight: 700; text-align: center; color: var(--ink); background: var(--surface); transition: all 0.15s; outline: none;">
-            <input type="text" maxlength="1" class="otp-input" style="width: 44px; height: 52px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 22px; font-weight: 700; text-align: center; color: var(--ink); background: var(--surface); transition: all 0.15s; outline: none;">
-            <input type="text" maxlength="1" class="otp-input" style="width: 44px; height: 52px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 22px; font-weight: 700; text-align: center; color: var(--ink); background: var(--surface); transition: all 0.15s; outline: none;">
-            <span class="otp-dash" style="font-size: 20px; color: var(--muted-2); margin: 0 4px;">—</span>
-            <input type="text" maxlength="1" class="otp-input" style="width: 44px; height: 52px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 22px; font-weight: 700; text-align: center; color: var(--ink); background: var(--surface); transition: all 0.15s; outline: none;">
-            <input type="text" maxlength="1" class="otp-input" style="width: 44px; height: 52px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 22px; font-weight: 700; text-align: center; color: var(--ink); background: var(--surface); transition: all 0.15s; outline: none;">
-            <input type="text" maxlength="1" class="otp-input" style="width: 44px; height: 52px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 22px; font-weight: 700; text-align: center; color: var(--ink); background: var(--surface); transition: all 0.15s; outline: none;">
-          </div>
+        <div class="otp-wrap" id="otpWrap">
+          <input class="otp-input" type="tel" maxlength="1" inputmode="numeric" placeholder="">
+          <input class="otp-input" type="tel" maxlength="1" inputmode="numeric" placeholder="">
+          <input class="otp-input" type="tel" maxlength="1" inputmode="numeric" placeholder="">
+          <input class="otp-input" type="tel" maxlength="1" inputmode="numeric" placeholder="">
+          <input class="otp-input" type="tel" maxlength="1" inputmode="numeric" placeholder="">
+          <input class="otp-input" type="tel" maxlength="1" inputmode="numeric" placeholder="">
         </div>
 
-        <button onclick="auth.verifyOTP()" class="btn-primary btn-full" style="width: 100%; padding: 12px; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 var(--duo-green-dark);">
+        <div id="otpError" class="error-msg">
+          <!-- Xato xabari shu yerda chiqadi -->
+        </div>
+
+        <button id="verifyBtn" onclick="auth.verifyOTP()" class="btn-primary btn-full" style="width: 100%; padding: 12px; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 var(--duo-green-dark);" disabled>
           ✅ Tasdiqlash
         </button>
 
         <div style="display: flex; justify-content: space-between; margin-top: 16px;">
-          <button onclick="auth.goToStep(1)" style="background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; text-decoration: underline;">← Boshqa raqam</button>
-          <button onclick="auth.sendOTP()" style="background: none; border: none; color: var(--duo-green); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: underline;">🔄 Yangi kod so'rash</button>
+          <button onclick="auth.goToStep(2)" style="background: none; border: none; color: var(--muted); font-size: 13px; cursor: pointer; text-decoration: underline;">← Orqaga</button>
+          <button id="resendBtn3" onclick="auth.resendOTP()" style="background: none; border: none; color: var(--duo-green); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: underline;">🔄 Yangi kod olish</button>
         </div>
       </div>
 

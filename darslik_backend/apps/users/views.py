@@ -21,34 +21,20 @@ from .serializers import (
 from .otp import format_phone, send_otp, verify_otp
 
 
-def normalize_phone(phone: str) -> str:
-    phone = str(phone).replace('+', '').replace(' ', '').replace('-', '')
-    if not phone.startswith('998'):
-        phone = '998' + phone.lstrip('0').lstrip('8')
-    return phone[:12]
-
+from apps.users.utils import normalize_phone
 
 class SendOTPView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        phone = normalize_phone(request.data.get('phone', ''))
+        raw_phone = request.data.get('phone', '')
+        phone = normalize_phone(raw_phone)
 
+        # Validatsiya
         if len(phone) != 12 or not phone.startswith('998'):
-            return error_response("Telefon raqam noto'g'ri. Misol: 901234567")
-
-        # Check if user has started the bot first
-        from django.db.models import Q
-        formatted = '+' + phone
-        if not TelegramUser.objects.filter(Q(phone=phone) | Q(phone=formatted)).exists():
-            bot_url = f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}?start={phone}"
             return error_response(
-                "Avval Telegram botga kiring va raqamingizni ulashing",
-                errors={
-                    "error": "bot_not_started",
-                    "bot_url": bot_url
-                },
-                status_code=400
+                "Telefon raqam noto'g'ri. "
+                "To'g'ri format: 901234567"
             )
 
         # Spam himoya: 1 daqiqada 1 marta
@@ -60,23 +46,24 @@ class SendOTPView(APIView):
 
         if recent:
             return error_response(
-                "1 daqiqa kuting va qayta urinib ko'ring.",
+                "Iltimos, 1 daqiqa kuting va qayta urinib ko'ring.",
                 status_code=429
             )
 
-        otp_obj = PhoneOTP.generate(phone)
-        send_otp(phone, otp_obj.code)
+        # OTP yaratish (eski kodlar o'chadi)
+        PhoneOTP.generate(phone)
 
+        # Bot URL
         bot_url = (
             f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}"
             f"?start={phone}"
         )
 
         return success_response({
-            'phone':   phone,
-            'bot_url': bot_url,
-            'expires': 5,
-        }, "Botdan kod oling")
+            'phone':           phone,
+            'bot_url':         bot_url,
+            'expires_minutes': 5,
+        }, "Telegram botdan kod oling")
 
 
 class VerifyOTPView(APIView):
@@ -84,33 +71,60 @@ class VerifyOTPView(APIView):
 
     def post(self, request):
         phone = normalize_phone(request.data.get('phone', ''))
-        code  = str(request.data.get('code', '') or request.data.get('otp', '')).strip()
-        role  = request.data.get('role', 'student')
+        code  = str(request.data.get('code', '')).strip()
 
+        # Kod kiritilganmi?
+        if not code or len(code) != 6:
+            return error_response("6 xonali kodni kiriting")
+
+        # Bazadan topish
         otp = PhoneOTP.objects.filter(
-            phone=phone, is_used=False
+            phone=phone,
+            is_used=False
         ).order_by('-created_at').first()
 
         if not otp:
-            return error_response("Kod topilmadi. Yangi kod so'rang.")
+            return error_response(
+                "Kod topilmadi. "
+                "Yangi kod so'rang."
+            )
 
+        # Urinish sanagich
         otp.attempts += 1
         otp.save(update_fields=['attempts'])
 
+        # Yaroqliligini tekshirish
         if not otp.is_valid:
-            return error_response("Kod muddati o'tgan. Yangi kod so'rang.")
+            if otp.attempts >= 3:
+                return error_response(
+                    "3 marta noto'g'ri kiritildi. "
+                    "Yangi kod so'rang."
+                )
+            return error_response(
+                "Kod muddati o'tgan (5 daqiqa). "
+                "Yangi kod so'rang."
+            )
 
+        # Kod to'g'rimi?
         if otp.code != code:
             remaining = 3 - otp.attempts
-            return error_response(f"Kod noto'g'ri. {remaining} urinish qoldi.")
+            if remaining > 0:
+                return error_response(
+                    f"Kod noto'g'ri. "
+                    f"{remaining} ta urinish qoldi."
+                )
+            else:
+                return error_response(
+                    "Urinishlar tugadi. Yangi kod so'rang."
+                )
 
+        # ✅ Kod to'g'ri — ishlatilgan deb belgilash
         otp.is_used = True
         otp.save(update_fields=['is_used'])
 
-        # Check user
-        User = get_user_model()
+        # User topish yoki yaratish
         user = User.objects.filter(phone=phone).first()
-        created = False
+        is_new = False
         if not user:
             import uuid
             fallback_email = f"user_{uuid.uuid4().hex[:10]}@mutp.local"
@@ -118,10 +132,13 @@ class VerifyOTPView(APIView):
                 username=phone,
                 email=fallback_email,
                 phone=phone,
-                role=role,
+                role='student',
                 is_active=True
             )
-            created = True
+            is_new = True
+
+        # Profil to'liqmi?
+        profile_complete = bool(user.first_name and user.last_name)
 
         # Link telegram account if exists
         try:
@@ -132,20 +149,54 @@ class VerifyOTPView(APIView):
         except Exception:
             pass
 
+        # JWT token
         refresh = RefreshToken.for_user(user)
 
         return success_response({
             'access':  str(refresh.access_token),
             'refresh': str(refresh),
             'user': {
-                'id':        user.id,
-                'phone':     user.phone,
-                'full_name': user.full_name,
-                'role':      user.role,
-                'is_new':    created,
-                'profile_complete': user.profile_complete,
+                'id':               user.id,
+                'phone':            user.phone,
+                'full_name':        user.full_name,
+                'role':             user.role,
+                'is_new':           is_new,
+                'profile_complete': profile_complete,
             }
         }, "Muvaffaqiyatli kirdingiz!")
+
+
+class ResendOTPView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        phone = normalize_phone(request.data.get('phone', ''))
+
+        # Spam himoya
+        from datetime import timedelta
+        recent = PhoneOTP.objects.filter(
+            phone=phone,
+            created_at__gte=timezone.now() - timedelta(minutes=1)
+        ).exists()
+
+        if recent:
+            return error_response(
+                "Hali 1 daqiqa o'tmadi. Kuting.",
+                status_code=429
+            )
+
+        PhoneOTP.generate(phone)
+
+        bot_url = (
+            f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}"
+            f"?start={phone}"
+        )
+
+        return success_response({
+            'phone':           phone,
+            'bot_url':         bot_url,
+            'expires_minutes': 5,
+        }, "Yangi kod yaratildi. Botdan oling.")
 
 
 class RegisterCompleteView(APIView):
