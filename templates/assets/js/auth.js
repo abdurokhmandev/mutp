@@ -71,7 +71,7 @@ class OTPAuth {
         toast.error(res.message || "Xatolik yuz berdi");
       }
     } catch (err) {
-      toast.error("Serverga ulanib bo'lmadi");
+      toast.error(err.message || "Serverga ulanib bo'lmadi");
     } finally {
       btn.disabled = false;
       btn.textContent = '📲 Telegram orqali kod olish';
@@ -118,7 +118,7 @@ class OTPAuth {
         this.shakeInputs();
       }
     } catch (err) {
-      toast.error("Xatolik yuz berdi");
+      toast.error(err.message || "Xatolik yuz berdi");
     }
   }
 
@@ -150,7 +150,7 @@ class OTPAuth {
         toast.error(res.message);
       }
     } catch (err) {
-      toast.error("Xatolik yuz berdi");
+      toast.error(err.message || "Xatolik yuz berdi");
     }
   }
 
