@@ -9,7 +9,8 @@ from django.conf import settings
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from .models import User, TeacherProfile, TelegramUser
+from django.utils import timezone
+from .models import User, TeacherProfile, TelegramUser, PhoneOTP
 from .serializers import (
     UserRegisterSerializer,
     UserLoginSerializer,
@@ -17,62 +18,83 @@ from .serializers import (
     TeacherProfileSerializer,
     ChangePasswordSerializer
 )
-from .otp import format_phone, generate_otp, save_otp, send_otp, verify_otp
+
+def normalize_phone(phone: str) -> str:
+    phone = str(phone).replace('+', '').replace(' ', '').replace('-', '')
+    if not phone.startswith('998'):
+        phone = '998' + phone.lstrip('0').lstrip('8')
+    return phone[:12]
 
 
 class SendOTPView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        phone = format_phone(request.data.get('phone', ''))
-        if not phone or len(phone) < 12:
-            return error_response(message="Telefon raqam noto'g'ri", status_code=400)
+        phone = normalize_phone(request.data.get('phone', ''))
 
-        # Telegram bot orqali yuborishdan avval TelegramUser borligini tekshirish
-        if not TelegramUser.objects.filter(phone=phone).exists():
+        if len(phone) != 12 or not phone.startswith('998'):
+            return error_response("Telefon raqam noto'g'ri. Misol: 901234567")
+
+        # Spam himoya: 1 daqiqada 1 marta
+        from datetime import timedelta
+        recent = PhoneOTP.objects.filter(
+            phone=phone,
+            created_at__gte=timezone.now() - timedelta(minutes=1)
+        ).exists()
+
+        if recent:
             return error_response(
-                message="Avval Telegram botga kiring va raqamingizni ulashing",
-                errors={
-                    "error": "bot_not_started",
-                    "bot_url": "https://t.me/mutpbot"
-                },
-                status_code=400
+                "1 daqiqa kuting va qayta urinib ko'ring.",
+                status_code=429
             )
 
-        # Rate limiting: 1 daqiqada 1 ta so'rov
-        rate_key = f"otp_rate:{phone}"
-        if cache.get(rate_key):
-            return error_response(message="Iltimos, 1 daqiqa kuting", status_code=429)
+        PhoneOTP.generate(phone)
 
-        otp = generate_otp()
-        save_otp(phone, otp)
-        success = send_otp(phone, otp)
+        bot_url = (
+            f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}"
+            f"?start={phone}"
+        )
 
-        if success:
-            cache.set(rate_key, True, timeout=60)
-            return success_response(data={'phone': phone}, message="Kod Telegram ga yuborildi")
-        else:
-            return error_response(message="Xato yuz berdi, qayta urinib ko'ring", status_code=500)
+        return success_response({
+            'phone':   phone,
+            'bot_url': bot_url,
+            'expires': 5,
+        }, "Botdan kod oling")
 
 
 class VerifyOTPView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        phone = format_phone(request.data.get('phone', ''))
-        otp = request.data.get('otp', '').strip()
-        role = request.data.get('role', 'student')  # student | teacher
+        phone = normalize_phone(request.data.get('phone', ''))
+        code  = str(request.data.get('code', '')).strip()
+        role  = request.data.get('role', 'student')
 
-        if not verify_otp(phone, otp):
-            return error_response(message="Kod noto'g'ri yoki muddati o'tgan", status_code=400)
+        otp = PhoneOTP.objects.filter(
+            phone=phone, is_used=False
+        ).order_by('-created_at').first()
 
+        if not otp:
+            return error_response("Kod topilmadi. Yangi kod so'rang.")
+
+        otp.attempts += 1
+        otp.save(update_fields=['attempts'])
+
+        if not otp.is_valid:
+            return error_response("Kod muddati o'tgan. Yangi kod so'rang.")
+
+        if otp.code != code:
+            remaining = 3 - otp.attempts
+            return error_response(f"Kod noto'g'ri. {remaining} urinish qoldi.")
+
+        otp.is_used = True
+        otp.save(update_fields=['is_used'])
+
+        # Check user
         User = get_user_model()
-        
-        # Foydalanuvchi bormi?
         user = User.objects.filter(phone=phone).first()
         created = False
         if not user:
-            # Create a user with phone as username and a unique fallback email to bypass unique constraints
             import uuid
             fallback_email = f"user_{uuid.uuid4().hex[:10]}@mutp.local"
             user = User.objects.create_user(
@@ -84,7 +106,7 @@ class VerifyOTPView(APIView):
             )
             created = True
 
-        # Telegram akkauntni ulash
+        # Link telegram account if exists
         try:
             tg = TelegramUser.objects.get(phone=phone)
             tg.linked_user = user
@@ -92,22 +114,37 @@ class VerifyOTPView(APIView):
         except TelegramUser.DoesNotExist:
             pass
 
-        # Token yaratish
         refresh = RefreshToken.for_user(user)
-        user_data = UserProfileSerializer(user, context={'request': request}).data
 
-        data = {
-            'access': str(refresh.access_token),
+        return success_response({
+            'access':  str(refresh.access_token),
             'refresh': str(refresh),
             'user': {
-                'id': user.id,
-                'phone': user.phone,
-                'role': user.role,
-                'is_new': created,
-                'profile_complete': hasattr(user, 'profile_complete') and user.profile_complete,
+                'id':        user.id,
+                'phone':     user.phone,
+                'full_name': user.full_name,
+                'role':      user.role,
+                'is_new':    created,
+                'profile_complete': user.profile_complete,
             }
-        }
-        return success_response(data=data, message="Muvaffaqiyatli tasdiqlandi")
+        }, "Muvaffaqiyatli kirdingiz!")
+
+
+class RegisterCompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        user.first_name = request.data.get('first_name', '')
+        user.last_name  = request.data.get('last_name', '')
+        role = request.data.get('role', 'student')
+        if role in ['student', 'teacher']:
+            user.role = role
+        user.profile_complete = True
+        user.save()
+        if user.role == 'teacher':
+            TeacherProfile.objects.get_or_create(user=user)
+        return success_response({'role': user.role}, "Profil saqlandi!")
 
 
 class LoginRateThrottle(UserRateThrottle):

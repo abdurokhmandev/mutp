@@ -11,21 +11,23 @@ from .views import (
     TeacherDetailView,
     SendOTPView,
     VerifyOTPView,
-    SaveTelegramUserView
+    SaveTelegramUserView,
+    RegisterCompleteView
 )
 
 urlpatterns = [
-    path('register/',        RegisterView.as_view(), name='register'),
-    path('login/',           LoginView.as_view(), name='login'),
-    path('logout/',          LogoutView.as_view(), name='logout'),
-    path('token/refresh/',   TokenRefreshView.as_view(), name='token_refresh'),
-    path('profile/',         ProfileView.as_view(), name='profile'),
-    path('profile/<int:id>/', UserProfileDetailView.as_view(), name='profile_detail'),
-    path('change-password/', ChangePasswordView.as_view(), name='change_password'),
-    path('teachers/',        TeacherListView.as_view(), name='teacher_list'),
-    path('teachers/<int:id>/', TeacherDetailView.as_view(), name='teacher_detail'),
-    path('send-otp/',        SendOTPView.as_view(), name='send_otp'),
-    path('verify-otp/',      VerifyOTPView.as_view(), name='verify_otp'),
-    path('telegram-user/',   SaveTelegramUserView.as_view(), name='save_telegram_user'),
+    path('register/',          RegisterView.as_view(), name='register'),
+    path('login/',             LoginView.as_view(), name='login'),
+    path('logout/',            LogoutView.as_view(), name='logout'),
+    path('token/refresh/',     TokenRefreshView.as_view(), name='token_refresh'),
+    path('profile/',           ProfileView.as_view(), name='profile'),
+    path('profile/<int:id>/',   UserProfileDetailView.as_view(), name='profile_detail'),
+    path('change-password/',   ChangePasswordView.as_view(), name='change_password'),
+    path('teachers/',          TeacherListView.as_view(), name='teacher_list'),
+    path('teachers/<int:id>/',  TeacherDetailView.as_view(), name='teacher_detail'),
+    path('send-otp/',          SendOTPView.as_view(), name='send_otp'),
+    path('verify-otp/',        VerifyOTPView.as_view(), name='verify_otp'),
+    path('telegram-user/',     SaveTelegramUserView.as_view(), name='save_telegram_user'),
+    path('register-complete/', RegisterCompleteView.as_view(), name='register_complete'),
 ]
 

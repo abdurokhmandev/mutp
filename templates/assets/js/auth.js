@@ -43,231 +43,207 @@ const toast = {
   success: (msg) => window.toast ? window.toast.show(msg, 'success') : alert(msg)
 };
 
-let currentPhone = '';
-let timerInterval;
-
-// Step changing helper
-function showStep(step) {
-  document.querySelectorAll('.auth-step').forEach(s => s.style.display = 'none');
-  const activeStep = document.getElementById(`step-${step}`);
-  if (activeStep) activeStep.style.display = 'block';
-}
-
-// Resend timer handler
-function startResendTimer() {
-  let seconds = 60;
-  document.getElementById('resendTimer').style.display = 'inline';
-  document.getElementById('resendBtn').style.display = 'none';
-
-  clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
-    seconds--;
-    const countEl = document.getElementById('timerCount');
-    if (countEl) countEl.textContent = seconds;
-    if (seconds <= 0) {
-      clearInterval(timerInterval);
-      document.getElementById('resendTimer').style.display = 'none';
-      document.getElementById('resendBtn').style.display = 'inline';
-    }
-  }, 1000);
-}
-
-// Get full 6-digit OTP code from boxes
-function getOtpValue() {
-  return Array.from(document.querySelectorAll('.otp-box')).map(b => b.value).join('');
-}
-
-function checkOtpFilled() {
-  const otp = getOtpValue();
-  const verifyBtn = document.getElementById('verifyOtpBtn');
-  if (verifyBtn) verifyBtn.disabled = otp.length < 6;
-}
-
-// Verify OTP logic
-async function verifyOtp() {
-  const otp = getOtpValue();
-  const roleCard = document.querySelector('input[name="role"]:checked');
-  const role = roleCard ? roleCard.value : 'student';
-
-  const btn = document.getElementById('verifyOtpBtn');
-  if (!btn) return;
-  btn.textContent = 'Tekshirilmoqda...';
-  btn.disabled = true;
-
-  try {
-    const response = await fetch(`${API.baseUrl}/auth/verify-otp/`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ phone: currentPhone, otp, role })
-    });
-    const result = await response.json();
-
-    if (response.ok && result.success) {
-      const { access, refresh, user } = result.data;
-      API.setTokens(access, refresh);
-      localStorage.setItem('user_role', user.role);
-      localStorage.setItem('user_data', JSON.stringify(user));
-
-      toast.success('Muvaffaqiyatli kirdingiz! 🎉');
-
-      setTimeout(() => {
-        if (result.data.user.is_new || !result.data.user.profile_complete) {
-          window.location.href = 'onboarding.html';
-        } else {
-          window.location.href = user.role === 'teacher'
-            ? 'dashboard-teacher.html'
-            : 'dashboard-student.html';
-        }
-      }, 1000);
-    } else {
-      const errorMsg = result.message || "Tasdiqlash kodi noto'g'ri";
-      toast.error(errorMsg);
-      document.getElementById('otpError').style.display = 'block';
-      document.querySelectorAll('.otp-box').forEach(b => {
-        b.value = '';
-        b.classList.add('error');
-        // Simple shake animation trigger
-        b.style.animation = 'shake 0.3s ease';
-      });
-      document.querySelector('.otp-box[data-index="0"]').focus();
-      setTimeout(() => {
-        document.querySelectorAll('.otp-box').forEach(b => {
-          b.classList.remove('error');
-          b.style.animation = '';
-        });
-      }, 2000);
-    }
-  } catch (err) {
-    toast.error('Server bilan bog\'lanishda xatolik yuz berdi');
-  } finally {
-    btn.textContent = 'Tasdiqlash ✓';
-    btn.disabled = false;
+class OTPAuth {
+  constructor() {
+    this.phone  = '';
+    this.botUrl = '';
+    this.timer  = null;
   }
-}
 
-// Bind events on DOM load
-document.addEventListener('DOMContentLoaded', () => {
-  // Role selector cards click
-  document.querySelectorAll('.role-card').forEach(card => {
-    card.addEventListener('click', function() {
-      document.querySelectorAll('.role-card').forEach(c => c.classList.remove('active'));
-      this.classList.add('active');
-      const radio = this.querySelector('input[type="radio"]');
-      if (radio) radio.checked = true;
-    });
-  });
+  async sendOTP() {
+    const phone = this.getRawPhone();
+    if (!this.validatePhone(phone)) {
+      toast.error("Telefon raqam noto'g'ri. Misol: 901234567");
+      return;
+    }
+    const btn = document.getElementById('sendOtpBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Yuborilmoqda...';
 
-  // Step 1 button click
-  const sendOtpBtn = document.getElementById('sendOtpBtn');
-  if (sendOtpBtn) {
-    sendOtpBtn.addEventListener('click', async () => {
-      const raw = document.getElementById('phoneInput').value.replace(/\s/g, '').replace(/-/g, '');
-      if (raw.length < 9) {
-        toast.error('Telefon raqamni to\'liq kiriting');
-        return;
+    try {
+      const res = await API.post('/auth/send-otp/', { phone });
+      if (res.success) {
+        this.phone  = res.data.phone;
+        this.botUrl = res.data.bot_url;
+        this.goToStep(2);
+        this.startTimer(300);
+      } else {
+        toast.error(res.message || "Xatolik yuz berdi");
       }
-      
-      const phone = '998' + raw;
-      sendOtpBtn.textContent = 'Yuborilmoqda...';
-      sendOtpBtn.disabled = true;
-      document.getElementById('telegramNotice').style.display = 'none';
+    } catch (err) {
+      toast.error("Serverga ulanib bo'lmadi");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '📲 Telegram orqali kod olish';
+    }
+  }
 
-      try {
-        const response = await fetch(`${API.baseUrl}/auth/send-otp/`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ phone })
-        });
-        const result = await response.json();
+  openBot() {
+    window.open(this.botUrl, '_blank');
+    setTimeout(() => {
+      document.getElementById('gotCodeBtn').style.display = 'inline-flex';
+    }, 2000);
+  }
 
-        if (response.ok && result.success) {
-          currentPhone = phone;
-          showStep('otp');
-          document.getElementById('otpPhoneDisplay').textContent = '+' + phone;
-          startResendTimer();
-          setTimeout(() => {
-            const firstBox = document.querySelector('.otp-box[data-index="0"]');
-            if (firstBox) firstBox.focus();
-          }, 50);
-        } else {
-          // Check for bot not started specific error details
-          if (result.errors && result.errors.error === 'bot_not_started') {
-            document.getElementById('telegramNotice').style.display = 'flex';
-            const botLink = document.querySelector('.btn-telegram');
-            if (botLink && result.errors.bot_url) {
-              botLink.href = result.errors.bot_url;
-            }
-            toast.error('Avval Telegram botni faollashtiring');
+  async verifyOTP() {
+    const code = this.getOTPCode();
+    if (code.length !== 6) {
+      toast.error("6 xonali kodni to'liq kiriting");
+      return;
+    }
+    
+    const roleCard = document.querySelector('#step4 .role-card.selected');
+    const role = roleCard ? roleCard.dataset.role : 'student';
+
+    try {
+      const res = await API.post('/auth/verify-otp/', {
+        phone: this.phone, code, role
+      });
+      if (res.success) {
+        API.setTokens(res.data.access, res.data.refresh);
+        localStorage.setItem('user_role', res.data.user.role);
+        localStorage.setItem('user_data', JSON.stringify(res.data.user));
+
+        toast.success("Muvaffaqiyatli kirdingiz! 🎉");
+
+        setTimeout(() => {
+          if (res.data.user.is_new || !res.data.user.profile_complete) {
+            this.goToStep(4);
           } else {
-            toast.error(result.message || 'Xato yuz berdi');
+            this.redirect(res.data.user.role);
           }
-        }
-      } catch (err) {
-        toast.error('Server bilan bog\'lanishda xato yuz berdi');
-      } finally {
-        sendOtpBtn.textContent = 'Kod olish →';
-        sendOtpBtn.disabled = false;
+        }, 1000);
+      } else {
+        toast.error(res.message || "Kod noto'g'ri");
+        this.shakeInputs();
       }
+    } catch (err) {
+      toast.error("Xatolik yuz berdi");
+    }
+  }
+
+  async completeProfile() {
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName  = document.getElementById('lastName').value.trim();
+    const roleCard  = document.querySelector('#step4 .role-card.selected');
+    const role      = roleCard ? roleCard.dataset.role : 'student';
+    
+    if (!firstName) { 
+      toast.error("Ismingizni kiriting"); 
+      return; 
+    }
+    
+    try {
+      const res = await API.post('/auth/register-complete/', {
+        first_name: firstName, last_name: lastName, role
+      });
+      if (res.success) {
+        // Update local storage role
+        localStorage.setItem('user_role', role);
+        const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+        userData.role = role;
+        userData.full_name = firstName + (lastName ? ' ' + lastName : '');
+        localStorage.setItem('user_data', JSON.stringify(userData));
+        
+        this.redirect(role);
+      } else {
+        toast.error(res.message);
+      }
+    } catch (err) {
+      toast.error("Xatolik yuz berdi");
+    }
+  }
+
+  setupOTPInputs() {
+    const inputs = document.querySelectorAll('.otp-input');
+    inputs.forEach((input, i) => {
+      input.addEventListener('input', () => {
+        input.value = input.value.replace(/\D/g, '');
+        if (input.value && i < 5) inputs[i+1].focus();
+        if (this.getOTPCode().length === 6) this.verifyOTP();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !input.value && i > 0) {
+          inputs[i-1].focus();
+          inputs[i-1].value = '';
+        }
+      });
+      input.addEventListener('paste', (e) => {
+        const p = e.clipboardData.getData('text').replace(/\D/g,'').slice(0, 6);
+        if (p.length === 6) {
+          inputs.forEach((inp, j) => inp.value = p[j] || '');
+          this.verifyOTP();
+        }
+        e.preventDefault();
+      });
     });
   }
 
-  // OTP inputs autofocus navigation and pasting
-  document.querySelectorAll('.otp-box').forEach((box, idx) => {
-    box.addEventListener('input', (e) => {
-      // Allow only numbers
-      box.value = box.value.replace(/\D/g, '');
-      const val = box.value;
-      if (val && idx < 5) {
-        const nextBox = document.querySelector(`.otp-box[data-index="${idx + 1}"]`);
-        if (nextBox) nextBox.focus();
-      }
-      checkOtpFilled();
-    });
+  getOTPCode() {
+    return [...document.querySelectorAll('.otp-input')]
+      .map(i => i.value).join('');
+  }
 
-    box.addEventListener('keydown', (e) => {
-      if (e.key === 'Backspace' && !box.value && idx > 0) {
-        const prevBox = document.querySelector(`.otp-box[data-index="${idx - 1}"]`);
-        if (prevBox) {
-          prevBox.focus();
-          prevBox.value = '';
-        }
-      }
-    });
+  getRawPhone() {
+    return '998' + document.getElementById('phoneInput').value.replace(/\D/g, '');
+  }
 
-    // Paste 6 digits and auto verify
-    box.addEventListener('paste', (e) => {
-      e.preventDefault();
-      const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-      pasted.split('').forEach((char, i) => {
-        const input = document.querySelector(`.otp-box[data-index="${i}"]`);
-        if (input) input.value = char;
-      });
-      checkOtpFilled();
-      if (pasted.length === 6) {
-        verifyOtp();
+  validatePhone(phone) {
+    return phone.replace(/^998/, '').length === 9;
+  }
+
+  startTimer(sec) {
+    clearInterval(this.timer);
+    const el = document.getElementById('timerDisplay');
+    const resendBtn = document.getElementById('resendBtn');
+    resendBtn.disabled = true;
+    let t = sec;
+    this.timer = setInterval(() => {
+      t--;
+      const m = Math.floor(t/60);
+      const s = t % 60;
+      el.textContent = `(${m}:${s.toString().padStart(2,'0')})`;
+      if (t <= 0) {
+        clearInterval(this.timer);
+        resendBtn.disabled = false;
+        el.textContent = '';
       }
-    });
+    }, 1000);
+  }
+
+  shakeInputs() {
+    const wrap = document.querySelector('.otp-wrap');
+    wrap.classList.add('shake');
+    setTimeout(() => wrap.classList.remove('shake'), 400);
+  }
+
+  redirect(role) {
+    const next = localStorage.getItem('redirect_after_login');
+    if (next) { 
+      localStorage.removeItem('redirect_after_login'); 
+      window.location.href = next; 
+      return; 
+    }
+    window.location.href = role === 'teacher'
+      ? '/dashboard-teacher.html'
+      : '/dashboard-student.html';
+  }
+
+  goToStep(n) {
+    document.querySelectorAll('.auth-step').forEach(s => s.style.display = 'none');
+    document.getElementById(`step${n}`).style.display = 'block';
+  }
+}
+
+const auth = new OTPAuth();
+
+document.addEventListener('DOMContentLoaded', () => {
+  // OTP input telefon formatlash
+  document.getElementById('phoneInput')?.addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g,'').slice(0,9);
+    const parts = [v.slice(0,2), v.slice(2,5), v.slice(5,7), v.slice(7,9)].filter(Boolean);
+    e.target.value = parts.join(' ');
   });
 
-  // Verify button click
-  const verifyOtpBtn = document.getElementById('verifyOtpBtn');
-  if (verifyOtpBtn) {
-    verifyOtpBtn.addEventListener('click', verifyOtp);
-  }
-
-  // Back button click
-  const backToPhone = document.getElementById('backToPhone');
-  if (backToPhone) {
-    backToPhone.addEventListener('click', () => {
-      showStep('phone');
-    });
-  }
-
-  // Resend button click
-  const resendBtn = document.getElementById('resendBtn');
-  if (resendBtn) {
-    resendBtn.addEventListener('click', () => {
-      if (sendOtpBtn) sendOtpBtn.click();
-    });
-  }
+  auth.setupOTPInputs();
 });

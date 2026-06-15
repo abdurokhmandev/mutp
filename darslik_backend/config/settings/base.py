@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'apps.chat',
     'apps.courses',
     'apps.analytics',
+    'apps.bot',
 ]
 
 MIDDLEWARE = [
@@ -203,6 +204,7 @@ CACHES = {
 
 # Telegram Bot & OTP settings
 TELEGRAM_BOT_TOKEN = env('TELEGRAM_BOT_TOKEN', default='5839402094:AAF9o_notreal_token_for_dev')
+TELEGRAM_BOT_USERNAME = env('TELEGRAM_BOT_USERNAME', default='EduUzBot')
 OTP_EXPIRE_SECONDS = 300
 OTP_LENGTH = 6
 

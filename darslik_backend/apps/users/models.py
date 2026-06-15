@@ -116,3 +116,40 @@ class TeacherProfile(models.Model):
         return Enrollment.objects.filter(
             course__teacher=self.user
         ).values('student').distinct().count()
+
+
+class PhoneOTP(models.Model):
+    phone      = models.CharField(max_length=15)
+    code       = models.CharField(max_length=6)
+    is_used    = models.BooleanField(default=False)
+    attempts   = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        verbose_name = "OTP kod"
+        verbose_name_plural = "OTP kodlar"
+        ordering = ['-created_at']
+
+    def save(self, *args, **kwargs):
+        import random
+        from django.utils import timezone
+        from datetime import timedelta
+        if not self.pk:
+            self.code = str(random.randint(100000, 999999))
+            self.expires_at = timezone.now() + timedelta(minutes=5)
+        super().save(*args, **kwargs)
+
+    @property
+    def is_valid(self):
+        from django.utils import timezone
+        return (
+            not self.is_used and
+            self.attempts < 3 and
+            timezone.now() < self.expires_at
+        )
+
+    @classmethod
+    def generate(cls, phone):
+        cls.objects.filter(phone=phone, is_used=False).delete()
+        return cls.objects.create(phone=phone)
