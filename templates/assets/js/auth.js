@@ -86,7 +86,7 @@ class OTPAuth {
                 toast.error(res.message);
             }
         } catch (e) {
-            toast.error("Telefon raqami yoki parol noto'g'ri.");
+            toast.error(e.message || "Telefon raqami yoki parol noto'g'ri.");
         } finally {
             btn.disabled = false;
             btn.innerHTML = '🔑 Kirish';
@@ -121,7 +121,7 @@ class OTPAuth {
                 toast.error(res.message);
             }
         } catch (e) {
-            toast.error("Xatolik yuz berdi. Qayta urinib ko'ring.");
+            toast.error(e.message || "Xatolik yuz berdi. Qayta urinib ko'ring.");
         } finally {
             btn.disabled  = false;
             btn.innerHTML = '📲 Telegram orqali kod olish';
@@ -163,7 +163,7 @@ class OTPAuth {
                 toast.error(res.message);
             }
         } catch (e) {
-            toast.error("Xatolik. Qayta urinib ko'ring.");
+            toast.error(e.message || "Xatolik. Qayta urinib ko'ring.");
         }
     }
 
