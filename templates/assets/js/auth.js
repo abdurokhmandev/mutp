@@ -215,7 +215,10 @@ class OTPAuth {
                 this.clearOTP();
             }
         } catch (e) {
-            toast.error("Server bilan bog'lanishda xato.");
+            toast.error(e.message || "Server bilan bog'lanishda xato.");
+            this.showError(e.message || "Server bilan bog'lanishda xato.");
+            this.shakeOTP();
+            this.clearOTP();
         } finally {
             btn.disabled  = false;
             btn.innerHTML = '✅ Tasdiqlash';
