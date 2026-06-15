@@ -9,6 +9,17 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler
 from django.conf import settings
 from apps.users.models import PhoneOTP, User
+from asgiref.sync import sync_to_async
+
+@sync_to_async
+def get_valid_otp(phone):
+    return PhoneOTP.objects.filter(
+        phone=phone, is_used=False
+    ).order_by('-created_at').first()
+
+@sync_to_async
+def update_user_telegram_id(phone, telegram_id):
+    User.objects.filter(phone=phone).update(telegram_id=telegram_id)
 
 
 async def start(update: Update, context):
@@ -21,14 +32,19 @@ async def start(update: Update, context):
         return
 
     phone = normalize_phone(args[0])
-    otp = PhoneOTP.objects.filter(
-        phone=phone, is_used=False
-    ).order_by('-created_at').first()
+    try:
+        otp = await get_valid_otp(phone)
+    except Exception as e:
+        print("Error fetching OTP:", e)
+        otp = None
 
     if otp and otp.is_valid:
         # telegram_id ni saqlash (notification uchun)
         telegram_id = str(update.effective_user.id)
-        User.objects.filter(phone=phone).update(telegram_id=telegram_id)
+        try:
+            await update_user_telegram_id(phone, telegram_id)
+        except Exception as e:
+            print("Error updating user telegram_id:", e)
 
         await update.message.reply_text(
             f"EduUz — Kirish kodi\n\n"
