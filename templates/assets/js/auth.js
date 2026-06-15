@@ -55,10 +55,10 @@ class OTPAuth {
     // ═══════════════════════════════════
     async login() {
         const rawVal = document.getElementById('loginPhoneInput').value.replace(/\D/g, '');
-        const phone = rawVal.startsWith('998') ? rawVal : '998' + rawVal;
+        const phone = this.normalizePhone(rawVal);
         const password = document.getElementById('loginPasswordInput').value;
 
-        if (rawVal.length < 9) {
+        if (phone.replace(/^998/, '').length < 9) {
             toast.error("Telefon raqamni to'liq kiriting");
             return;
         }
@@ -336,12 +336,24 @@ class OTPAuth {
         });
     }
 
+    normalizePhone(rawVal) {
+        let val = rawVal.replace(/\D/g, '');
+        if (val.length === 12 && val.startsWith('998')) {
+            return val;
+        }
+        if (val.length === 9) {
+            return '998' + val;
+        }
+        if (val.startsWith('998') && val.length > 9) {
+            return val;
+        }
+        return '998' + val;
+    }
+
     // Telefondan toza raqam olish
     getRawPhone() {
-        const val = document.getElementById('phoneInput')
-            .value.replace(/\D/g, '');
-        if (val.startsWith('998')) return val;
-        return '998' + val;
+        const val = document.getElementById('phoneInput').value;
+        return this.normalizePhone(val);
     }
 
     // 6 ta inputdan kodni yig'ish
