@@ -56,7 +56,8 @@ def send_otp(phone: str, otp: str) -> bool:
     if not tg_user:
         return False
     try:
-        return asyncio.run(send_otp_telegram_async(tg_user.chat_id, otp))
+        from asgiref.sync import async_to_sync
+        return async_to_sync(send_otp_telegram_async)(tg_user.chat_id, otp)
     except Exception as e:
         print("Failed to run send_otp_telegram_async:", e)
         return False

@@ -37,6 +37,20 @@ class SendOTPView(APIView):
         if len(phone) != 12 or not phone.startswith('998'):
             return error_response("Telefon raqam noto'g'ri. Misol: 901234567")
 
+        # Check if user has started the bot first
+        from django.db.models import Q
+        formatted = '+' + phone
+        if not TelegramUser.objects.filter(Q(phone=phone) | Q(phone=formatted)).exists():
+            bot_url = f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}?start={phone}"
+            return error_response(
+                "Avval Telegram botga kiring va raqamingizni ulashing",
+                errors={
+                    "error": "bot_not_started",
+                    "bot_url": bot_url
+                },
+                status_code=400
+            )
+
         # Spam himoya: 1 daqiqada 1 marta
         from datetime import timedelta
         recent = PhoneOTP.objects.filter(
@@ -50,7 +64,8 @@ class SendOTPView(APIView):
                 status_code=429
             )
 
-        PhoneOTP.generate(phone)
+        otp_obj = PhoneOTP.generate(phone)
+        send_otp(phone, otp_obj.code)
 
         bot_url = (
             f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}"

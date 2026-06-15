@@ -61,8 +61,15 @@ class UserOTPTestCase(TestCase):
         self.assertEqual(res.data['errors']['error'], 'bot_not_started')
 
     def test_verify_otp_success(self):
-        from django.core.cache import cache
-        cache.set('otp:+998901234567', '123456', timeout=300)
+        from apps.users.models import PhoneOTP
+        from django.utils import timezone
+        from datetime import timedelta
+        otp = PhoneOTP.objects.create(
+            phone="998901234567",
+            expires_at=timezone.now() + timedelta(minutes=5)
+        )
+        otp.code = "123456"
+        otp.save()
         res = self.client.post('/api/v1/auth/verify-otp/', {
             'phone': '998901234567',
             'otp': '123456',
