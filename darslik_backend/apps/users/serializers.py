@@ -78,13 +78,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
     specialization = serializers.CharField(required=False, allow_blank=True)
     experience_years = serializers.IntegerField(required=False, min_value=0)
     bank_card = serializers.CharField(required=False, allow_blank=True)
+    address = serializers.CharField(required=False, allow_blank=True)
+    interests = serializers.CharField(required=False, allow_blank=True)
+    found_source = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
         fields = [
             'id', 'full_name', 'first_name', 'last_name', 'email', 'role', 
             'avatar', 'phone', 'bio', 'is_verified', 'profile_complete',
-            'specialization', 'experience_years', 'bank_card'
+            'specialization', 'experience_years', 'bank_card', 'address', 'interests', 'found_source'
         ]
         read_only_fields = ['id', 'email', 'role', 'is_verified']
 
@@ -105,6 +108,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
                 data['specialization'] = profile.specialization
                 data['experience_years'] = profile.experience_years
                 data['bank_card'] = profile.bank_card
+                data['address'] = profile.address
+                data['interests'] = profile.interests
+                data['found_source'] = profile.found_source
                 data['average_rating'] = profile.average_rating
                 data['total_students'] = profile.total_students
                 data['total_earnings'] = float(profile.total_earnings)
@@ -116,6 +122,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         specialization = validated_data.pop('specialization', None)
         experience_years = validated_data.pop('experience_years', None)
         bank_card = validated_data.pop('bank_card', None)
+        address = validated_data.pop('address', None)
+        interests = validated_data.pop('interests', None)
+        found_source = validated_data.pop('found_source', None)
 
         user = super().update(instance, validated_data)
 
@@ -127,6 +136,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
                 profile.experience_years = experience_years
             if bank_card is not None:
                 profile.bank_card = bank_card
+            if address is not None:
+                profile.address = address
+            if interests is not None:
+                profile.interests = interests
+            if found_source is not None:
+                profile.found_source = found_source
             profile.save()
 
         return user

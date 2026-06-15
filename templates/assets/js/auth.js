@@ -241,10 +241,32 @@ class OTPAuth {
             toast.error("Parol kamida 4 xonali bo'lishi shart");
             return;
         }
+
+        let address = '';
+        let specialization = '';
+        let interests = '';
+        let foundSource = '';
+        let bankCard = '';
+
+        if (role === 'teacher') {
+            address = document.getElementById('addressInput').value.trim();
+            specialization = document.getElementById('specializationInput').value.trim();
+            interests = document.getElementById('interestsInput').value.trim();
+            foundSource = document.getElementById('foundSourceInput').value.trim();
+            bankCard = document.getElementById('bankCardInput').value.replace(/\D/g, '');
+        }
         
         try {
             const res = await API.post('/auth/register-complete/', {
-                first_name: firstName, last_name: lastName, role, password
+                first_name: firstName,
+                last_name: lastName,
+                role,
+                password,
+                address,
+                specialization,
+                interests,
+                found_source: foundSource,
+                bank_card: bankCard
             });
             if (res.success) {
                 // Update local storage role

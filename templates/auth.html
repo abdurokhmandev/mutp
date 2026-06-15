@@ -312,6 +312,34 @@
           </div>
         </div>
 
+        <!-- Extra fields for Teacher (initially hidden) -->
+        <div id="teacherExtraFields" style="display: none; text-align: left;">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" style="font-weight: 600; margin-bottom: 8px; display: block;">Yashash joyingiz (Manzilingiz)</label>
+            <input type="text" id="addressInput" placeholder="Masalan: Toshkent sh., Chilonzor t." style="width: 100%; padding: 12px 14px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 15px; outline: none; background: var(--white); color: var(--ink); box-sizing: border-box;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" style="font-weight: 600; margin-bottom: 8px; display: block;">Kasbingiz / Mutaxassisligingiz</label>
+            <input type="text" id="specializationInput" placeholder="Masalan: Matematika o'qituvchisi" style="width: 100%; padding: 12px 14px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 15px; outline: none; background: var(--white); color: var(--ink); box-sizing: border-box;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" style="font-weight: 600; margin-bottom: 8px; display: block;">Qiziqishlaringiz</label>
+            <input type="text" id="interestsInput" placeholder="Masalan: Dasturlash, Fizika, Robototexnika" style="width: 100%; padding: 12px 14px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 15px; outline: none; background: var(--white); color: var(--ink); box-sizing: border-box;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" style="font-weight: 600; margin-bottom: 8px; display: block;">Ushbu saytni qayerdan topdingiz?</label>
+            <input type="text" id="foundSourceInput" placeholder="Masalan: Telegram kanal, do'stimdan, Google" style="width: 100%; padding: 12px 14px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 15px; outline: none; background: var(--white); color: var(--ink); box-sizing: border-box;">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label class="form-label" style="font-weight: 600; margin-bottom: 8px; display: block;">Plastik kartangiz (To'lovlarni qabul qilish uchun)</label>
+            <input type="text" id="bankCardInput" placeholder="8600 0000 0000 0000" maxlength="19" style="width: 100%; padding: 12px 14px; border: 2px solid var(--border-2); border-radius: 12px; font-size: 15px; outline: none; background: var(--white); color: var(--ink); box-sizing: border-box;">
+          </div>
+        </div>
+
         <button onclick="auth.completeProfile()" class="btn-primary btn-full" style="width: 100%; padding: 12px; border-radius: 16px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 var(--duo-green-dark);">
           Davom etish →
         </button>
@@ -347,7 +375,20 @@
       if (target) {
         target.classList.add('active', 'selected');
       }
+      const extraEl = document.getElementById('teacherExtraFields');
+      if (extraEl) {
+        extraEl.style.display = role === 'teacher' ? 'block' : 'none';
+      }
     }
+
+    document.getElementById('bankCardInput')?.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\D/g, '').slice(0, 16);
+      let parts = [];
+      for (let i = 0; i < v.length; i += 4) {
+        parts.push(v.slice(i, i + 4));
+      }
+      e.target.value = parts.join(' ');
+    });
   </script>
 </body>
 </html>

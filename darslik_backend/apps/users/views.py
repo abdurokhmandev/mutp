@@ -217,7 +217,13 @@ class RegisterCompleteView(APIView):
         user.profile_complete = True
         user.save()
         if user.role == 'teacher':
-            TeacherProfile.objects.get_or_create(user=user)
+            profile, _ = TeacherProfile.objects.get_or_create(user=user)
+            profile.address = request.data.get('address', '')
+            profile.specialization = request.data.get('specialization', '')  # kasbi
+            profile.interests = request.data.get('interests', '')
+            profile.found_source = request.data.get('found_source', '')
+            profile.bank_card = request.data.get('bank_card', '')
+            profile.save()
         return success_response({'role': user.role}, "Profil saqlandi!")
 
 

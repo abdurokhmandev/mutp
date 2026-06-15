@@ -84,6 +84,9 @@ class TeacherProfile(models.Model):
                        )
     specialization   = models.CharField(max_length=200, blank=True)
     experience_years = models.PositiveSmallIntegerField(default=0)
+    address          = models.CharField(max_length=255, blank=True)  # yashash joyi
+    interests        = models.TextField(blank=True)                  # qiziqishlari
+    found_source     = models.CharField(max_length=100, blank=True)  # qayerdan topgani
     total_earnings   = models.DecimalField(
                          max_digits=14, decimal_places=2, default=0
                        )
