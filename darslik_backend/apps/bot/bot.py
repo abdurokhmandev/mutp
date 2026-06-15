@@ -1,92 +1,13 @@
 import os
-import django
-
-# Setup Django before importing models
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.base')
-django.setup()
-
+import httpx
 from telegram import Update
 from telegram.ext import Application, CommandHandler
-from django.conf import settings
-from apps.users.models import PhoneOTP, User, TelegramUser
-from asgiref.sync import sync_to_async
 
-@sync_to_async
-def get_valid_otp(phone):
-    return PhoneOTP.objects.filter(
-        phone=phone, is_used=False
-    ).order_by('-created_at').first()
-
-@sync_to_async
-def update_user_telegram_id(phone, telegram_id):
-    User.objects.filter(phone=phone).update(telegram_id=telegram_id)
-
-@sync_to_async
-def create_or_update_telegram_user(phone, chat_id, username, first_name):
-    from apps.users.otp import format_phone
-    formatted_phone = format_phone(phone)
-    TelegramUser.objects.update_or_create(
-        chat_id=chat_id,
-        defaults={
-            'phone': formatted_phone,
-            'username': username or '',
-            'first_name': first_name or '',
-        }
-    )
-
-
-async def start(update: Update, context):
-    args = context.args
-    if not args:
-        await update.message.reply_text(
-            "Salom! Men EduUz botiman.\n"
-            "Saytdan kod olish uchun foydalaning."
-        )
-        return
-
-    phone = normalize_phone(args[0])
-    from django.utils import timezone
-    print(f"DEBUG Bot received: raw={args[0]}, normalized={phone}", flush=True)
-
-    # Save TelegramUser record so backend knows the bot has been started
-    chat_id = update.effective_user.id
-    username = update.effective_user.username
-    first_name = update.effective_user.first_name
-    try:
-        await create_or_update_telegram_user(phone, chat_id, username, first_name)
-    except Exception as e:
-        print("Error saving telegram user:", e, flush=True)
-
-    try:
-        otp = await get_valid_otp(phone)
-        if otp:
-            print(f"DEBUG Found OTP: code={otp.code}, is_used={otp.is_used}, attempts={otp.attempts}, expires={otp.expires_at}, now={timezone.now()}, is_valid={otp.is_valid}", flush=True)
-        else:
-            print(f"DEBUG No OTP found for phone {phone}", flush=True)
-    except Exception as e:
-        print("Error fetching OTP:", e, flush=True)
-        otp = None
-
-    if otp and otp.is_valid:
-        # telegram_id ni saqlash (notification uchun)
-        telegram_id = str(update.effective_user.id)
-        try:
-            await update_user_telegram_id(phone, telegram_id)
-        except Exception as e:
-            print("Error updating user telegram_id:", e, flush=True)
-
-        await update.message.reply_text(
-            f"EduUz — Kirish kodi\n\n"
-            f"{otp.code}\n\n"
-            f"Kod 5 daqiqa amal qiladi.\n"
-            f"Bu kodni hech kimga bermang!"
-        )
-    else:
-        await update.message.reply_text(
-            "Kod topilmadi yoki muddati o'tgan.\n"
-            "Saytga qaytib, yangi kod so'rang."
-        )
-
+# Get env vars
+BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', 'YOUR_BOT_TOKEN')
+BACKEND_API_URL = os.environ.get('BACKEND_API_URL', 'http://127.0.0.1:8000').rstrip('/')
+if BACKEND_API_URL and not BACKEND_API_URL.startswith(('http://', 'https://')):
+    BACKEND_API_URL = 'https://' + BACKEND_API_URL
 
 def normalize_phone(phone: str) -> str:
     phone = phone.replace('+', '').replace(' ', '').replace('-', '')
@@ -94,8 +15,58 @@ def normalize_phone(phone: str) -> str:
         phone = '998' + phone.lstrip('0').lstrip('8')
     return phone[:12]
 
+async def save_or_update_telegram_user_api(chat_id, phone, username, first_name):
+    url = f"{BACKEND_API_URL}/api/auth/telegram-user/"
+    headers = {
+        'X-Bot-Token': BOT_TOKEN,
+        'Content-Type': 'application/json'
+    }
+    payload = {
+        'chat_id': chat_id,
+        'phone': phone,
+        'username': username or '',
+        'first_name': first_name or ''
+    }
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(url, json=payload, headers=headers, timeout=10.0)
+            if response.status_code == 200:
+                return True
+            return False
+        except Exception as e:
+            print(f"Failed to connect to backend: {e}")
+            return False
+
+async def start(update: Update, context):
+    args = context.args
+    if not args:
+        await update.message.reply_text(
+            "Salom! Men MUTP botiman.\n"
+            "Saytdan kod olish uchun foydalaning."
+        )
+        return
+
+    phone = normalize_phone(args[0])
+    chat_id = update.effective_user.id
+    username = update.effective_user.username
+    first_name = update.effective_user.first_name
+
+    success = await save_or_update_telegram_user_api(chat_id, phone, username, first_name)
+    if success:
+        await update.message.reply_text(
+            f"✅ Telefon raqamingiz ulandi: +{phone}\n\n"
+            "Endi saytga qaytib, raqamingizni kiriting va kod oling. "
+            "Tasdiqlash kodi shu chatga yuboriladi!"
+        )
+    else:
+        await update.message.reply_text(
+            "❌ Xatolik yuz berdi. Iltimos, keyinroq qayta urinib ko'ring."
+        )
 
 def run_bot():
-    app = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
+    app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler('start', start))
     app.run_polling()
+
+if __name__ == '__main__':
+    run_bot()
