@@ -64,17 +64,28 @@ const CreateCourse = {
   },
 
   bindEvents() {
-    document.getElementById('thumbInput')?.addEventListener('change', (e) => {
-      this.thumbFile = e.target.files[0];
-      if (this.thumbFile) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const thumb = document.querySelector('.cp-thumb');
-          if (thumb) thumb.innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover">`;
-        };
-        reader.readAsDataURL(this.thumbFile);
+    // Delegated event listener for thumbInput so it survives DOM updates
+    document.addEventListener('change', (e) => {
+      if (e.target && e.target.id === 'thumbInput') {
+        this.thumbFile = e.target.files[0];
+        if (this.thumbFile) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const thumb = document.querySelector('.cp-thumb');
+            if (thumb) thumb.innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover">`;
+            
+            const uploadZone = document.querySelector('.upload-zone');
+            if (uploadZone) {
+              uploadZone.style.backgroundImage = `url(${ev.target.result})`;
+              uploadZone.style.backgroundSize = 'cover';
+              uploadZone.style.backgroundPosition = 'center';
+              uploadZone.innerHTML = `<input type="file" id="thumbInput" style="display:none;" accept="image/jpeg, image/png">`;
+            }
+          };
+          reader.readAsDataURL(this.thumbFile);
+        }
+        this.updateChecklist();
       }
-      this.updateChecklist();
     });
 
     document.getElementById('courseTitle')?.addEventListener('input', () => this.updatePreview());
@@ -142,6 +153,14 @@ const CreateCourse = {
     if (this.course.thumbnail) {
       const thumbUrl = this.getMediaUrl(this.course.thumbnail);
       document.querySelector('.cp-thumb').innerHTML = `<img src="${thumbUrl}" style="width:100%;height:100%;object-fit:cover">`;
+      
+      const uploadZone = document.querySelector('.upload-zone');
+      if (uploadZone) {
+        uploadZone.style.backgroundImage = `url(${thumbUrl})`;
+        uploadZone.style.backgroundSize = 'cover';
+        uploadZone.style.backgroundPosition = 'center';
+        uploadZone.innerHTML = `<input type="file" id="thumbInput" style="display:none;" accept="image/jpeg, image/png">`;
+      }
     }
     if (this.course.preview_video_url) {
       document.getElementById('coursePreviewVideo').value = this.course.preview_video_url;

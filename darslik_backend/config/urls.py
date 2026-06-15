@@ -32,6 +32,31 @@ urlpatterns = [
     path('api/redoc/', staff_member_required(SpectacularRedocView.as_view(url_name='schema')), name='redoc'),
 ]
 
+from django.views.generic import TemplateView
+
+# HTML Templates serving (independent of DEBUG)
+frontend_patterns = [
+    path('', TemplateView.as_view(template_name='index.html'), name='frontend-index'),
+    path('index.html', TemplateView.as_view(template_name='index.html')),
+    path('auth.html', TemplateView.as_view(template_name='auth.html'), name='frontend-auth'),
+    path('courses.html', TemplateView.as_view(template_name='courses.html'), name='frontend-courses'),
+    path('course-detail.html', TemplateView.as_view(template_name='course-detail.html'), name='frontend-course-detail'),
+    path('courses/<slug:slug>/', TemplateView.as_view(template_name='course-detail.html'), name='frontend-course-detail-slug'),
+    path('lesson.html', TemplateView.as_view(template_name='lesson.html'), name='frontend-lesson'),
+    path('dashboard-student.html', TemplateView.as_view(template_name='dashboard-student.html'), name='frontend-dashboard-student'),
+    path('dashboard-teacher.html', TemplateView.as_view(template_name='dashboard-teacher.html'), name='frontend-dashboard-teacher'),
+    path('create-course.html', TemplateView.as_view(template_name='create-course.html'), name='frontend-create-course'),
+    path('profile.html', TemplateView.as_view(template_name='profile.html'), name='frontend-profile'),
+    path('chat.html', TemplateView.as_view(template_name='chat.html'), name='frontend-chat'),
+    path('homework.html', TemplateView.as_view(template_name='homework.html'), name='frontend-homework'),
+    path('invite.html', TemplateView.as_view(template_name='invite.html'), name='frontend-invite'),
+    path('invite/<str:token>/', TemplateView.as_view(template_name='invite.html'), name='frontend-invite-detail'),
+    path('onboarding.html', TemplateView.as_view(template_name='onboarding.html'), name='frontend-onboarding'),
+    path('404.html', TemplateView.as_view(template_name='404.html'), name='frontend-404'),
+]
+urlpatterns += frontend_patterns
+
+# Media and Django static files
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
@@ -41,63 +66,14 @@ else:
         re_path(r'^static/(?P<path>.*)$', static_serve, {'document_root': settings.STATIC_ROOT}),
     ]
 
-    FRONTEND_ROOT = Path(settings.BASE_DIR).parent / 'templates'
+# Assets (CSS/JS/images in templates/assets) serving
+FRONTEND_ROOT = Path(settings.BASE_DIR).parent / 'templates'
 
-    FRONTEND_PAGES = [
-        'index.html',
-        'auth.html',
-        'courses.html',
-        'course-detail.html',
-        'dashboard-student.html',
-        'dashboard-teacher.html',
-        'lesson.html',
-        'profile.html',
-        'create-course.html',
-        'chat.html',
-        'homework.html',
-        'invite.html',
-        'onboarding.html',
-        '404.html',
-    ]
+def serve_frontend_assets(request, path):
+    return static_serve(request, path, document_root=FRONTEND_ROOT / 'assets')
 
-    def serve_frontend(request, filename='index.html'):
-        response = static_serve(request, filename, document_root=FRONTEND_ROOT)
-        if filename.endswith('.html'):
-            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-            response['Pragma'] = 'no-cache'
-            response['Expires'] = '0'
-        return response
-
-    def serve_frontend_assets(request, path):
-        return static_serve(request, path, document_root=FRONTEND_ROOT / 'assets')
-
-    # Bosh sahifa
-    urlpatterns += [
-        path('', serve_frontend, {'filename': 'index.html'}, name='frontend-index'),
-        path('index.html', serve_frontend, {'filename': 'index.html'}),
-    ]
-
-    # Har bir HTML sahifa uchun aniq yo'l
-    for page in FRONTEND_PAGES:
-        if page == 'index.html':
-            continue
-        urlpatterns += [
-            path(page, serve_frontend, {'filename': page}, name=f'frontend-{page.replace(".html", "")}'),
-        ]
-
-    # Course detail route for frontend
-    urlpatterns += [
-        path('courses/<slug:slug>/', serve_frontend, {'filename': 'course-detail.html'}, name='frontend-course-detail-slug'),
-    ]
-
-    # Invite detail route for frontend
-    urlpatterns += [
-        path('invite/<str:token>/', serve_frontend, {'filename': 'invite.html'}, name='frontend-invite-detail'),
-    ]
-
-    # CSS/JS fayllar
-    urlpatterns += [
-        re_path(r'^assets/(?P<path>.*)$', serve_frontend_assets, name='frontend-assets'),
-    ]
+urlpatterns += [
+    re_path(r'^assets/(?P<path>.*)$', serve_frontend_assets, name='frontend-assets'),
+]
 
 handler404 = 'config.views.custom_404'

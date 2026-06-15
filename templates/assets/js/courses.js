@@ -105,7 +105,7 @@ const Courses = {
       .map(
         (cat) => `
         <label class="filter-item">
-          <input type="checkbox" data-category="${cat.slug}">
+          <input type="checkbox" class="category-checkbox" value="${cat.slug}">
           ${cat.icon || '📁'} ${cat.name} (${cat.courses_count || 0})
         </label>
       `,
@@ -117,22 +117,47 @@ const Courses = {
   async initCatalogPage() {
     const grid = document.querySelector('.courses-grid');
     const countEl = document.querySelector('.results-count');
-    const searchInput = document.getElementById('sidebarSearch');
+    const searchInput = document.getElementById('searchInput') || document.getElementById('sidebarSearch');
     const sortSelect = document.querySelector('.sort-select');
-    const categoryContainer = document.querySelector('.filter-group .filter-group-title + .filter-item')
-      ? document.querySelector('.filter-group')
-      : null;
 
     if (!grid) return;
 
-    const load = async () => {
-      grid.innerHTML = '<p style="grid-column:1/-1;color:var(--muted);">Yuklanmoqda...</p>';
+    // Skeletons view before real data is loaded
+    const showSkeletons = (count = 8) => {
+      grid.innerHTML = Array(count).fill(`
+        <div class="course-skeleton skeleton">
+          <div class="course-skeleton-thumb skeleton"></div>
+          <div class="course-skeleton-body">
+            <div class="skeleton-line" style="width:40%"></div>
+            <div class="skeleton-line" style="width:90%"></div>
+            <div class="skeleton-line" style="width:75%"></div>
+            <div class="skeleton-line" style="width:50%"></div>
+          </div>
+        </div>
+      `).join('');
+    };
 
-      const params = {};
-      if (searchInput?.value.trim()) {
-        params.search = searchInput.value.trim();
-      }
+    const getFilterParams = () => {
+      const params = new URLSearchParams();
 
+      // Selected categories
+      const cats = [...document.querySelectorAll('.category-checkbox:checked')]
+        .map(cb => cb.value);
+      if (cats.length) params.set('category', cats.join(','));
+
+      // Level
+      const level = document.querySelector('.level-radio:checked')?.value;
+      if (level) params.set('level', level);
+
+      // Free toggle
+      const free = document.getElementById('freeOnly')?.checked;
+      if (free) params.set('is_free', 'true');
+
+      // Search query
+      const search = searchInput?.value.trim();
+      if (search) params.set('search', search);
+
+      // Sort
       const sortMap = {
         "Eng mashhur": 'popular',
         "Yangi qo'shilganlar": 'newest',
@@ -144,38 +169,88 @@ const Courses = {
         params.sort = sortMap[sortSelect.value] || 'newest';
       }
 
+      return params.toString();
+    };
+
+    const load = async () => {
+      showSkeletons(6);
+
+      const paramsStr = getFilterParams();
       try {
-        const data = await this.loadCourses(params);
-        const courses = data.results || data;
+        const endpoint = paramsStr ? `/courses/?${paramsStr}` : '/courses/';
+        const result = await API.get(endpoint);
+        const data = result.data;
+        const courses = data.results || data || [];
 
         if (!courses.length) {
-          grid.innerHTML = '<p style="grid-column:1/-1;color:var(--muted);">Kurslar topilmadi.</p>';
+          grid.innerHTML = '<p style="grid-column:1/-1;color:var(--muted);text-align:center;padding:40px 0;">Kurslar topilmadi.</p>';
           if (countEl) countEl.textContent = '0 ta kurs topildi';
           return;
         }
 
         grid.innerHTML = courses.map((c, i) => this.renderCourseCard(c, i)).join('');
+        
+        // Re-observe scroll reveal if animations exist
+        if (window.sr && typeof window.sr.observe === 'function') {
+          window.sr.observe('.course-card');
+        }
+
         if (countEl) {
           const total = data.count ?? courses.length;
           countEl.textContent = `${total} ta kurs topildi`;
         }
       } catch (error) {
-        grid.innerHTML = `<p style="grid-column:1/-1;color:var(--rose);">Xatolik: ${error.message}</p>`;
+        grid.innerHTML = `<p style="grid-column:1/-1;color:var(--rose);text-align:center;padding:40px 0;">Xatolik: ${error.message}</p>`;
       }
     };
 
+    // Load categories from API dynamically
     try {
       const categories = await this.loadCategories();
       const catGroup = document.querySelectorAll('.filter-group')[0];
       if (catGroup) this.renderCategories(categories, catGroup);
-    } catch {
-      // Kategoriyalar yuklanmasa, statik filter qoladi
+    } catch (e) {
+      console.error("Kategoriyalarni yuklashda xatolik:", e);
     }
 
+    // Attach event listeners dynamically to document for categories since they render asynchronously
+    document.addEventListener('change', (e) => {
+      if (e.target.classList.contains('category-checkbox')) {
+        load();
+      }
+    });
+
+    // Level radios event listeners
+    document.querySelectorAll('.level-radio').forEach(r => {
+      r.addEventListener('change', () => load());
+    });
+
+    // Free checkbox event listener
+    const freeToggle = document.getElementById('freeOnly');
+    if (freeToggle) {
+      freeToggle.addEventListener('change', () => load());
+    }
+
+    // Search and Sort event listeners
     searchInput?.addEventListener('input', debounce(load, 400));
     sortSelect?.addEventListener('change', load);
+
+    // Clear filters button helper
+    const clearBtn = document.querySelector('.clear-filters');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (searchInput) searchInput.value = '';
+        document.querySelectorAll('.category-checkbox').forEach(cb => cb.checked = false);
+        const allLevelRadio = document.querySelector('.level-radio[value=""]');
+        if (allLevelRadio) allLevelRadio.checked = true;
+        if (freeToggle) freeToggle.checked = false;
+        load();
+      });
+    }
+
     await load();
-  },
+  }
 };
 
 function debounce(fn, delay) {

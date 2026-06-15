@@ -58,7 +58,7 @@ class OTPAuth {
         const phone = this.normalizePhone(rawVal);
         const password = document.getElementById('loginPasswordInput').value;
 
-        if (phone.replace(/^998/, '').length < 9) {
+        if (phone.length < 12) {
             toast.error("Telefon raqamni to'liq kiriting");
             return;
         }
@@ -99,8 +99,7 @@ class OTPAuth {
     async sendOTP() {
         const phone = this.getRawPhone();
 
-        // Validatsiya: kamida 9 ta raqam
-        if (phone.replace(/^998/, '').length < 9) {
+        if (phone.length < 12) {
             toast.error("Telefon raqamni to'liq kiriting");
             return;
         }

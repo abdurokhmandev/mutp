@@ -564,6 +564,8 @@ class CourseCreateView(APIView):
             price=price,
             level=level,
             language=language,
+            learning_outcomes=request.data.get('learning_outcomes', []),
+            preview_video_url=request.data.get('preview_video_url', ''),
             status=Course.Status.DRAFT
         )
 
@@ -601,6 +603,11 @@ class CourseUpdateView(APIView):
                     return error_response(message="Kategoriya topilmadi", status_code=400)
             else:
                 course.category = None
+
+        if 'learning_outcomes' in request.data:
+            course.learning_outcomes = request.data['learning_outcomes']
+        if 'preview_video_url' in request.data:
+            course.preview_video_url = request.data['preview_video_url']
 
         thumbnail = request.FILES.get('thumbnail')
         if thumbnail:

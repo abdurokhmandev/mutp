@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   const hwId = new URLSearchParams(window.location.search).get('id');
   if (!hwId) {
-    window.location.href = 'index.html';
+    window.location.href = '/';
     return;
   }
 

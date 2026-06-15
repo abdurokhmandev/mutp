@@ -150,7 +150,9 @@ const App = {
     const navAuth = document.getElementById('nav-auth');
     if (!navAuth) return;
     const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
-    if (token) {
+    const hasToken = token && token !== 'undefined' && token !== 'null';
+
+    if (hasToken) {
       const user = JSON.parse(localStorage.getItem('user_data') || '{}');
       const role = localStorage.getItem('user_role');
       const dashUrl = role === 'teacher' ? '/dashboard-teacher.html' : '/dashboard-student.html';
@@ -190,6 +192,11 @@ const App = {
           menu.style.display = 'none';
         }
       });
+    } else {
+      navAuth.innerHTML = `
+        <a href="/auth.html?tab=login" class="btn-secondary">Kirish</a>
+        <a href="/auth.html?role=student&tab=register" class="btn-primary">Bepul boshlash</a>
+      `;
     }
   },
 

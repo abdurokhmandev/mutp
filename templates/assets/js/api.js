@@ -123,11 +123,14 @@ const API = {
       headers,
     });
 
-    if (response.status === 401 && this.getRefreshToken() && !options._retried) {
-      const refreshed = await this.refreshToken();
-      if (refreshed) {
-        return this.request(endpoint, { ...options, _retried: true });
+    if (response.status === 401) {
+      if (this.getRefreshToken() && !options._retried) {
+        const refreshed = await this.refreshToken();
+        if (refreshed) {
+          return this.request(endpoint, { ...options, _retried: true });
+        }
       }
+      this.clearTokens();
       window.location.href = '/auth.html';
       throw new Error('Sessiya tugadi. Qayta kiring.');
     }

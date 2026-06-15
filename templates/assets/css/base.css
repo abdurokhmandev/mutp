@@ -1366,9 +1366,25 @@ select.form-control { cursor: pointer; }
   from { opacity:0; transform:translateY(8px); }
   to   { opacity:1; transform:translateY(0); }
 }
-.toast-success { background:#F0FDF4; color:#16A34A; border:0.5px solid #BBF7D0; }
-.toast-error   { background:#FEF2F2; color:#DC2626; border:0.5px solid #FECACA; }
-.toast-info    { background:#EFF6FF; color:#2563EB; border:0.5px solid #BFDBFE; }
+/* ── TOAST MODIFICATIONS ── */
+.toast-success {
+    background: #F0FDF4;
+    color: #15803D;       /* Yashil, aniq kontrast */
+    border: 1px solid #BBF7D0;
+    font-weight: 500;
+}
+.toast-error {
+    background: #FEF2F2;
+    color: #DC2626;       /* Qizil, aniq kontrast */
+    border: 1px solid #FECACA;
+    font-weight: 500;
+}
+.toast-info {
+    background: #EFF6FF;
+    color: #1D4ED8;       /* Ko'k, aniq kontrast */
+    border: 1px solid #BFDBFE;
+    font-weight: 500;
+}
 
 .section { padding: 56px 40px; }
 .section-label {
@@ -1443,5 +1459,295 @@ select.form-control { cursor: pointer; }
   background: var(--primary-light);
   border-left-color: var(--primary);
   font-weight: 500;
+}
+
+/* ══════════════════════════════════════════════════
+   ANIMATION & MICRO-INTERACTION STYLES
+   ══════════════════════════════════════════════════ */
+
+/* ── Scroll Reveal ── */
+.reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ── Hover Micro-animations ── */
+.course-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.15s !important;
+}
+.course-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 12px 28px rgba(0,0,0,.1) !important;
+}
+
+.btn-primary {
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+}
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37,99,235,.3);
+}
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.nav-link {
+    transition: color 0.15s, background 0.15s;
+    position: relative;
+}
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: var(--primary);
+    transition: width 0.2s ease, left 0.2s ease;
+}
+.nav-link:hover::after,
+.nav-link.active::after {
+    width: 100%;
+    left: 0;
+}
+
+.cat-card {
+    transition: transform 0.2s ease, border-color 0.15s, background 0.15s;
+}
+.cat-card:hover {
+    transform: translateY(-3px) scale(1.01);
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.sidebar-nav-item {
+    transition: color 0.15s, background 0.15s, border-left-color 0.15s, padding-left 0.15s;
+}
+.sidebar-nav-item:hover {
+    padding-left: 24px;
+}
+
+.avatar {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.avatar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+
+/* ── Progress bar shine ── */
+.progress-fill {
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,0.4),
+        transparent
+    );
+    animation: progressShine 2s infinite;
+}
+@keyframes progressShine {
+    0%   { left: -60%; }
+    100% { left: 110%; }
+}
+
+/* ── Page Load Fade In ── */
+body {
+    animation: pageLoad 0.3s ease;
+}
+@keyframes pageLoad {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* ── Hero text animations ── */
+.hero h1 {
+    animation: slideUp 0.6s ease both;
+}
+.hero p {
+    animation: slideUp 0.6s ease 0.1s both;
+}
+.hero .btn-hero {
+    animation: slideUp 0.6s ease 0.2s both;
+}
+.hero-stats {
+    animation: slideUp 0.6s ease 0.3s both;
+}
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Loading Skeleton ── */
+.skeleton {
+    background: var(--surface);
+    border-radius: var(--r-md);
+    position: relative;
+    overflow: hidden;
+}
+.skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255,255,255,0.6) 50%,
+        transparent 100%
+    );
+    animation: skeleton-wave 1.5s infinite;
+    transform: translateX(-100%);
+}
+@keyframes skeleton-wave {
+    to { transform: translateX(100%); }
+}
+
+.course-skeleton {
+    height: 280px;
+    border: 2px solid var(--border);
+    background: var(--white);
+}
+.course-skeleton-thumb {
+    height: 120px;
+    background: var(--line-soft);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+.course-skeleton-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.skeleton-line {
+    height: 12px;
+    border-radius: 6px;
+    background: var(--line-soft);
+}
+
+/* ── Notification Bell ── */
+@keyframes bellRing {
+    0%, 100% { transform: rotate(0); }
+    10%       { transform: rotate(15deg); }
+    30%       { transform: rotate(-15deg); }
+    50%       { transform: rotate(10deg); }
+    70%       { transform: rotate(-10deg); }
+    90%       { transform: rotate(5deg); }
+}
+.bell-icon.has-unread {
+    animation: bellRing 1s ease 0.5s both;
+}
+
+.notification-badge {
+    animation: badgePop 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+@keyframes badgePop {
+    from { transform: scale(0); }
+    to   { transform: scale(1); }
+}
+
+/* ── OTP Input ── */
+.otp-input:not(:placeholder-shown) {
+    animation: inputFill 0.2s ease;
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+@keyframes inputFill {
+    from { transform: scale(0.9); }
+    to   { transform: scale(1); }
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%       { transform: translateX(-8px); }
+    40%       { transform: translateX(8px); }
+    60%       { transform: translateX(-5px); }
+    80%       { transform: translateX(5px); }
+}
+.otp-wrap.shake {
+    animation: shake 0.4s ease;
+}
+
+/* ── Dropdown and Modals ── */
+.dropdown-menu {
+    transform-origin: top right;
+    animation: dropdownOpen 0.15s ease;
+}
+@keyframes dropdownOpen {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-overlay {
+    animation: modalFadeIn 0.2s ease;
+}
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.modal {
+    animation: modalSlideIn 0.25s ease;
+}
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-16px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Ripple effect container */
+.btn-primary {
+    position: relative;
+    overflow: hidden;
+}
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255,255,255,0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.5s ease, height 0.5s ease, opacity 0.5s;
+    opacity: 0;
+}
+.btn-primary:active::before {
+    width: 200px;
+    height: 200px;
+    opacity: 0;
 }
 

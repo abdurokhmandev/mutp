@@ -99,30 +99,30 @@
     <aside class="sidebar">
       <!-- Search inside sidebar for larger screens -->
       <div class="form-group">
-        <input type="text" class="form-control" placeholder="Kurs nomini qidirish..." id="sidebarSearch">
+        <input type="text" class="form-control" placeholder="Kurs nomini qidirish..." id="searchInput">
       </div>
       
       <div class="filter-group">
         <div class="filter-group-title">Kategoriya</div>
-        <label class="filter-item"><input type="checkbox" checked> 💻 Dasturlash (124)</label>
-        <label class="filter-item"><input type="checkbox"> 🗣️ Tillar (87)</label>
-        <label class="filter-item"><input type="checkbox"> 🎨 Dizayn (63)</label>
-        <label class="filter-item"><input type="checkbox"> 📊 Biznes (45)</label>
-        <label class="filter-item"><input type="checkbox"> 🔢 Matematika (38)</label>
-        <label class="filter-item"><input type="checkbox"> 📸 Multimedia (29)</label>
+        <label class="filter-item"><input type="checkbox" class="category-checkbox" value="dasturlash" checked> 💻 Dasturlash (124)</label>
+        <label class="filter-item"><input type="checkbox" class="category-checkbox" value="tillar"> 🗣️ Tillar (87)</label>
+        <label class="filter-item"><input type="checkbox" class="category-checkbox" value="dizayn"> 🎨 Dizayn (63)</label>
+        <label class="filter-item"><input type="checkbox" class="category-checkbox" value="biznes"> 📊 Biznes (45)</label>
+        <label class="filter-item"><input type="checkbox" class="category-checkbox" value="matematika"> 🔢 Matematika (38)</label>
+        <label class="filter-item"><input type="checkbox" class="category-checkbox" value="multimedia"> 📸 Multimedia (29)</label>
       </div>
 
       <div class="filter-group">
         <div class="filter-group-title">Daraja</div>
-        <label class="filter-item"><input type="radio" name="level" checked> Barcha darajalar</label>
-        <label class="filter-item"><input type="radio" name="level"> Boshlang'ich</label>
-        <label class="filter-item"><input type="radio" name="level"> O'rta</label>
-        <label class="filter-item"><input type="radio" name="level"> Yuqori</label>
+        <label class="filter-item"><input type="radio" name="level" class="level-radio" value="" checked> Barcha darajalar</label>
+        <label class="filter-item"><input type="radio" name="level" class="level-radio" value="beginner"> Boshlang'ich</label>
+        <label class="filter-item"><input type="radio" name="level" class="level-radio" value="intermediate"> O'rta</label>
+        <label class="filter-item"><input type="radio" name="level" class="level-radio" value="advanced"> Yuqori</label>
       </div>
 
       <div class="filter-group">
         <div class="filter-group-title">Narx</div>
-        <label class="filter-item" style="margin-bottom:16px;"><input type="checkbox"> Faqat bepul kurslar</label>
+        <label class="filter-item" style="margin-bottom:16px;"><input type="checkbox" id="freeOnly"> Faqat bepul kurslar</label>
         <input type="range" class="range-slider" min="0" max="1000000" value="500000" step="50000">
         <div class="range-labels">
           <span>0</span>
@@ -295,6 +295,7 @@
   <script src="assets/js/auth.js"></script>
   <script src="assets/js/app.js"></script>
   <script src="assets/js/courses.js"></script>
+  <script src="assets/js/animations.js"></script>
   <script>
     const nav = document.querySelector('.nav');
     window.addEventListener('scroll', () => {
