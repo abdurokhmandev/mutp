@@ -209,6 +209,11 @@ class RegisterCompleteView(APIView):
         role = request.data.get('role', 'student')
         if role in ['student', 'teacher']:
             user.role = role
+        
+        password = request.data.get('password', '')
+        if password:
+            user.set_password(password)
+
         user.profile_complete = True
         user.save()
         if user.role == 'teacher':
@@ -243,18 +248,27 @@ class LoginView(APIView):
     throttle_classes = [LoginRateThrottle]
 
     def post(self, request):
-        serializer = UserLoginSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            user = serializer.validated_data['user']
-            refresh = RefreshToken.for_user(user)
-            user_data = UserProfileSerializer(user, context={'request': request}).data
-            data = {
-                "user": user_data,
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-            }
-            return success_response(data=data, message="Tizimga kirildi", status_code=200)
-        return error_response(message="Xatolik yuz berdi", errors=serializer.errors, status_code=400)
+        phone = normalize_phone(request.data.get('phone', ''))
+        password = request.data.get('password', '')
+
+        if not phone or not password:
+            return error_response("Telefon raqami va parol kiritilishi shart.")
+
+        user = User.objects.filter(phone=phone).first()
+        if not user or not user.check_password(password):
+            return error_response("Telefon raqami yoki parol xato.")
+
+        if not user.is_active:
+            return error_response("Foydalanuvchi hisobi faol emas.")
+
+        refresh = RefreshToken.for_user(user)
+        user_data = UserProfileSerializer(user, context={'request': request}).data
+        data = {
+            "user": user_data,
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        }
+        return success_response(data=data, message="Tizimga kirildi", status_code=200)
 
 
 class LogoutView(APIView):

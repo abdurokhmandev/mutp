@@ -51,6 +51,49 @@ class OTPAuth {
     }
 
     // ═══════════════════════════════════
+    // Tizimga kirish (Telefon + Parol)
+    // ═══════════════════════════════════
+    async login() {
+        const rawVal = document.getElementById('loginPhoneInput').value.replace(/\D/g, '');
+        const phone = rawVal.startsWith('998') ? rawVal : '998' + rawVal;
+        const password = document.getElementById('loginPasswordInput').value;
+
+        if (rawVal.length < 9) {
+            toast.error("Telefon raqamni to'liq kiriting");
+            return;
+        }
+        if (!password) {
+            toast.error("Parolingizni kiriting");
+            return;
+        }
+
+        const btn = document.getElementById('loginBtn');
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Kirilmoqda...';
+
+        try {
+            const res = await API.post('/auth/login/', { phone, password });
+            if (res.success) {
+                API.setTokens(res.data.access, res.data.refresh);
+                localStorage.setItem('user_role', res.data.user.role);
+                localStorage.setItem('user_data', JSON.stringify(res.data.user));
+
+                toast.success("Muvaffaqiyatli kirdingiz!");
+                setTimeout(() => {
+                    this.redirect(res.data.user.role);
+                }, 1000);
+            } else {
+                toast.error(res.message);
+            }
+        } catch (e) {
+            toast.error("Telefon raqami yoki parol noto'g'ri.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '🔑 Kirish';
+        }
+    }
+
+    // ═══════════════════════════════════
     // QADAM 1: Telefon yuborish
     // ═══════════════════════════════════
     async sendOTP() {
@@ -183,6 +226,7 @@ class OTPAuth {
     async completeProfile() {
         const firstName = document.getElementById('firstName').value.trim();
         const lastName  = document.getElementById('lastName').value.trim();
+        const password  = document.getElementById('newPassword').value;
         const roleCard  = document.querySelector('#step4 .role-card.selected') || document.querySelector('#step4 .role-card.active');
         const role      = roleCard ? roleCard.dataset.role : 'student';
         
@@ -190,10 +234,14 @@ class OTPAuth {
             toast.error("Ismingizni kiriting"); 
             return; 
         }
+        if (!password || password.length < 4) {
+            toast.error("Parol kamida 4 xonali bo'lishi shart");
+            return;
+        }
         
         try {
             const res = await API.post('/auth/register-complete/', {
-                first_name: firstName, last_name: lastName, role
+                first_name: firstName, last_name: lastName, role, password
             });
             if (res.success) {
                 // Update local storage role
@@ -380,6 +428,21 @@ document.addEventListener('DOMContentLoaded', () => {
   // Enter bilan yuborish
   document.getElementById('phoneInput')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') auth.sendOTP();
+  });
+
+  // Login telefon formatlash
+  document.getElementById('loginPhoneInput')?.addEventListener('input', (e) => {
+    let v = e.target.value.replace(/\D/g,'').slice(0,9);
+    const parts = [v.slice(0,2), v.slice(2,5), v.slice(5,7), v.slice(7,9)].filter(Boolean);
+    e.target.value = parts.join(' ');
+  });
+
+  // Enter bilan Login qilish
+  document.getElementById('loginPhoneInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') auth.login();
+  });
+  document.getElementById('loginPasswordInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') auth.login();
   });
 
   auth.setupOTPInputs();
