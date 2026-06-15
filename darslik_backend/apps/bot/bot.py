@@ -32,10 +32,17 @@ async def start(update: Update, context):
         return
 
     phone = normalize_phone(args[0])
+    from django.utils import timezone
+    print(f"DEBUG Bot received: raw={args[0]}, normalized={phone}", flush=True)
+
     try:
         otp = await get_valid_otp(phone)
+        if otp:
+            print(f"DEBUG Found OTP: code={otp.code}, is_used={otp.is_used}, attempts={otp.attempts}, expires={otp.expires_at}, now={timezone.now()}, is_valid={otp.is_valid}", flush=True)
+        else:
+            print(f"DEBUG No OTP found for phone {phone}", flush=True)
     except Exception as e:
-        print("Error fetching OTP:", e)
+        print("Error fetching OTP:", e, flush=True)
         otp = None
 
     if otp and otp.is_valid:
@@ -44,7 +51,7 @@ async def start(update: Update, context):
         try:
             await update_user_telegram_id(phone, telegram_id)
         except Exception as e:
-            print("Error updating user telegram_id:", e)
+            print("Error updating user telegram_id:", e, flush=True)
 
         await update.message.reply_text(
             f"EduUz — Kirish kodi\n\n"
