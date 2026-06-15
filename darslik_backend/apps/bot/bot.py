@@ -1,16 +1,6 @@
 # apps/bot/bot.py
-# MUHIM: Django ni avval yuklash kerak
-import django
 import os
-import sys
-
-# Add project root to path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(PROJECT_ROOT)
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.base')
-django.setup()
-
+import httpx
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import (
     Application,
@@ -19,49 +9,50 @@ from telegram.ext import (
     filters,
     ContextTypes
 )
-from django.conf import settings
-from apps.users.models import PhoneOTP, User, TelegramUser
-from apps.users.utils import normalize_phone
+
+# Get environment variables
+BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', 'YOUR_BOT_TOKEN')
+BACKEND_API_URL = os.environ.get('BACKEND_API_URL', 'http://127.0.0.1:8000').rstrip('/')
+if BACKEND_API_URL and not BACKEND_API_URL.startswith(('http://', 'https://')):
+    BACKEND_API_URL = 'https://' + BACKEND_API_URL
+
+def normalize_phone(phone: str) -> str:
+    """Format phone number to standard format"""
+    phone = str(phone).replace('+', '').replace(' ', '').replace('-', '')
+    if phone.startswith('0'):
+        phone = '998' + phone[1:]
+    if not phone.startswith('998'):
+        phone = '998' + phone
+    return phone[:12]
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    /start buyrug'i ikki holda keladi:
-
-    1. Saytdan yo'naltirilganda:
-       /start 998901234567
-       → Raqam argument sifatida keladi
-       → Bazadan kodni topib yuboradi
-
-    2. Oddiy /start (foydalanuvchi o'zi kirganda):
-       /start
-       → Raqam so'raydi (contact button bilan)
+    /start command handler
     """
     args = context.args
 
     if args:
-        # Saytdan yo'naltirilgan holat
+        # Referred from site with phone argument
         phone = normalize_phone(args[0])
         await send_otp_to_user(update, context, phone)
     else:
-        # Oddiy kirish — raqam so'rash
+        # Normal entry, ask for phone
         await ask_for_phone(update)
 
 
 async def ask_for_phone(update: Update):
     """
-    Foydalanuvchidan raqam so'raydi.
-    "📱 Raqamimni yuborish" tugmasi — Telegram contact_button.
-    Bosiganda raqam avtomatik bot ga ketadi.
+    Request contact sharing from user
     """
     button = KeyboardButton(
         text="📱 Raqamimni yuborish",
-        request_contact=True  # ← shu qator contact yuborishni so'raydi
+        request_contact=True
     )
     keyboard = ReplyKeyboardMarkup(
         [[button]],
         resize_keyboard=True,
-        one_time_keyboard=True  # Yuborilgandan keyin tugma yo'qoladi
+        one_time_keyboard=True
     )
     await update.message.reply_text(
         "Salom! 👋\n\n"
@@ -73,108 +64,71 @@ async def ask_for_phone(update: Update):
 
 async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    Foydalanuvchi "📱 Raqamimni yuborish" bosganida.
-    Telegram contact obyektini qabul qiladi.
+    Handle Telegram contact object
     """
     contact = update.message.contact
     phone = normalize_phone(contact.phone_number)
     await send_otp_to_user(update, context, phone)
 
 
-from asgiref.sync import sync_to_async
-
-
-@sync_to_async
-def get_active_otp(phone):
-    try:
-        return PhoneOTP.objects.filter(
-            phone=phone,
-            is_used=False
-        ).order_by('-created_at').first()
-    except Exception as e:
-        print("Error getting active OTP:", e)
-        return None
-
-
-@sync_to_async
-def update_or_create_tg_user(chat_id, phone, username, first_name):
-    try:
-        return TelegramUser.objects.update_or_create(
-            chat_id=chat_id,
-            defaults={
-                'phone': phone,
-                'username': username,
-                'first_name': first_name,
-            }
-        )
-    except Exception as e:
-        print("Error updating or creating telegram user:", e)
-        return None
-
-
-@sync_to_async
-def link_telegram_id(phone, telegram_id):
-    try:
-        return User.objects.filter(phone=phone).update(
-            telegram_id=telegram_id
-        )
-    except Exception as e:
-        print("Error linking telegram id:", e)
-        return 0
-
-
 async def send_otp_to_user(update: Update, context, phone: str):
     """
-    Berilgan raqam uchun OTP topib yuboradi.
+    Request OTP from Backend API and display it
     """
     telegram_id = str(update.effective_user.id)
     username = update.effective_user.username or ''
     first_name = update.effective_user.first_name or ''
 
-    # Bazadan faol OTP topish
-    otp = await get_active_otp(phone)
+    # Call Backend API
+    url = f"{BACKEND_API_URL}/api/v1/auth/bot/get-otp/"
+    headers = {
+        'X-Bot-Token': BOT_TOKEN,
+        'Content-Type': 'application/json'
+    }
+    payload = {
+        'phone': phone,
+        'telegram_id': telegram_id,
+        'username': username,
+        'first_name': first_name
+    }
 
-    # Avval TelegramUser jadvaliga saqlab qo'yamiz/yangilaymiz kelajakda link qilish uchun
-    await update_or_create_tg_user(
-        chat_id=update.effective_user.id,
-        phone=phone,
-        username=username,
-        first_name=first_name
-    )
-
-    if otp and otp.is_valid:
-        # Telegram ID ni saqlash (kelajakda notification uchun)
-        await link_telegram_id(phone, telegram_id)
-
-        # Kodni chiroyli formatda yuborish
-        code_display = ' '.join(list(otp.code))
-        # "482931" → "4 8 2 9 3 1" (o'qish oson bo'lsin)
-
-        await update.message.reply_text(
-            f"✅ EduUz kirish kodi:\n\n"
-            f"<b>{code_display}</b>\n\n"
-            f"⏱ Kod 5 daqiqa amal qiladi.\n"
-            f"🔒 Bu kodni hech kimga bermang!\n\n"
-            f"Saytga qaytib kodni kiriting.",
-            parse_mode='HTML'
-        )
-    else:
-        # OTP yo'q yoki muddati o'tgan
-        await update.message.reply_text(
-            "❌ Bu raqam uchun faol kod topilmadi.\n\n"
-            "Saytga qaytib, <b>\"Kod olish\"</b> "
-            "tugmasini qayta bosing.",
-            parse_mode='HTML'
-        )
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(url, json=payload, headers=headers, timeout=10.0)
+            if response.status_code == 200:
+                res_data = response.json()
+                if res_data.get('success'):
+                    code = res_data['data']['code']
+                    code_display = ' '.join(list(code))
+                    await update.message.reply_text(
+                        f"✅ EduUz kirish kodi:\n\n"
+                        f"<b>{code_display}</b>\n\n"
+                        f"⏱ Kod 5 daqiqa amal qiladi.\n"
+                        f"🔒 Bu kodni hech kimga bermang!\n\n"
+                        f"Saytga qaytib kodni kiriting.",
+                        parse_mode='HTML'
+                    )
+                    return
+            
+            # If failed or not found
+            await update.message.reply_text(
+                "❌ Bu raqam uchun faol kod topilmadi.\n\n"
+                "Saytga qaytib, <b>\"Kod olish\"</b> "
+                "tugmasini qayta bosing.",
+                parse_mode='HTML'
+            )
+        except Exception as e:
+            print(f"Failed to connect to backend: {e}")
+            await update.message.reply_text(
+                "❌ Server bilan ulanishda xatolik yuz berdi. Iltimos, keyinroq qayta urinib ko'ring."
+            )
 
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    Foydalanuvchi matn yuborganda (raqam yozsa ham ishlaydi).
+    Handle raw text inputs
     """
     text = update.message.text.strip()
-
-    # Raqam yuborganmi?
     cleaned = text.replace('+', '').replace(' ', '').replace('-', '')
     if cleaned.isdigit() and len(cleaned) >= 9:
         phone = normalize_phone(cleaned)
@@ -188,21 +142,11 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 def run_bot():
-    """Botni ishga tushirish (to'xtamaydigan jarayon)"""
-    app = Application.builder().token(settings.TELEGRAM_BOT_TOKEN).build()
-
-    # /start buyrug'i
+    """Start polling"""
+    app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler('start', start))
-
-    # Contact (raqam) yuborilganda
     app.add_handler(MessageHandler(filters.CONTACT, handle_contact))
-
-    # Matn yuborilganda
-    app.add_handler(MessageHandler(
-        filters.TEXT & ~filters.COMMAND,
-        handle_text
-    ))
-
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
     print("Bot ishga tushdi...")
     app.run_polling()
 

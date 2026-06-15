@@ -13,7 +13,8 @@ from .views import (
     VerifyOTPView,
     ResendOTPView,
     SaveTelegramUserView,
-    RegisterCompleteView
+    RegisterCompleteView,
+    GetOTPFromBotView
 )
 
 urlpatterns = [
@@ -31,5 +32,6 @@ urlpatterns = [
     path('resend-otp/',        ResendOTPView.as_view(), name='resend_otp'),
     path('telegram-user/',     SaveTelegramUserView.as_view(), name='save_telegram_user'),
     path('register-complete/', RegisterCompleteView.as_view(), name='register_complete'),
+    path('bot/get-otp/',       GetOTPFromBotView.as_view(), name='bot_get_otp'),
 ]
 

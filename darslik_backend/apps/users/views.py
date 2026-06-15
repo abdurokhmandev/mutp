@@ -386,3 +386,48 @@ class SaveTelegramUserView(APIView):
             data={'created': created, 'id': tg_user.id},
             message="Telegram user saqlandi"
         )
+
+
+class GetOTPFromBotView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        bot_token = request.headers.get('X-Bot-Token')
+        expected_token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
+        if not bot_token or bot_token != expected_token:
+            return error_response(message="Unauthorized", status_code=401)
+
+        phone = normalize_phone(request.data.get('phone', ''))
+        telegram_id = str(request.data.get('telegram_id', ''))
+        username = request.data.get('username', '')
+        first_name = request.data.get('first_name', '')
+
+        if not phone or not telegram_id:
+            return error_response(message="phone va telegram_id kiritilishi shart", status_code=400)
+
+        # Bazadan faol OTP topish
+        otp = PhoneOTP.objects.filter(
+            phone=phone,
+            is_used=False
+        ).order_by('-created_at').first()
+
+        # TelegramUser jadvaliga saqlab qo'yamiz/yangilaymiz
+        TelegramUser.objects.update_or_create(
+            chat_id=int(telegram_id),
+            defaults={
+                'phone': phone,
+                'username': username or '',
+                'first_name': first_name or '',
+            }
+        )
+
+        if otp and otp.is_valid:
+            # Telegram ID ni saqlash
+            User.objects.filter(phone=phone).update(
+                telegram_id=telegram_id
+            )
+            return success_response({
+                'code': otp.code
+            }, "Faol OTP topildi")
+        else:
+            return error_response("Bu raqam uchun faol kod topilmadi.", status_code=404)
