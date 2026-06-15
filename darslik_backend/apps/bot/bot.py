@@ -81,6 +81,48 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_otp_to_user(update, context, phone)
 
 
+from asgiref.sync import sync_to_async
+
+
+@sync_to_async
+def get_active_otp(phone):
+    try:
+        return PhoneOTP.objects.filter(
+            phone=phone,
+            is_used=False
+        ).order_by('-created_at').first()
+    except Exception as e:
+        print("Error getting active OTP:", e)
+        return None
+
+
+@sync_to_async
+def update_or_create_tg_user(chat_id, phone, username, first_name):
+    try:
+        return TelegramUser.objects.update_or_create(
+            chat_id=chat_id,
+            defaults={
+                'phone': phone,
+                'username': username,
+                'first_name': first_name,
+            }
+        )
+    except Exception as e:
+        print("Error updating or creating telegram user:", e)
+        return None
+
+
+@sync_to_async
+def link_telegram_id(phone, telegram_id):
+    try:
+        return User.objects.filter(phone=phone).update(
+            telegram_id=telegram_id
+        )
+    except Exception as e:
+        print("Error linking telegram id:", e)
+        return 0
+
+
 async def send_otp_to_user(update: Update, context, phone: str):
     """
     Berilgan raqam uchun OTP topib yuboradi.
@@ -90,26 +132,19 @@ async def send_otp_to_user(update: Update, context, phone: str):
     first_name = update.effective_user.first_name or ''
 
     # Bazadan faol OTP topish
-    otp = PhoneOTP.objects.filter(
-        phone=phone,
-        is_used=False
-    ).order_by('-created_at').first()
+    otp = await get_active_otp(phone)
 
     # Avval TelegramUser jadvaliga saqlab qo'yamiz/yangilaymiz kelajakda link qilish uchun
-    TelegramUser.objects.update_or_create(
+    await update_or_create_tg_user(
         chat_id=update.effective_user.id,
-        defaults={
-            'phone': phone,
-            'username': username,
-            'first_name': first_name,
-        }
+        phone=phone,
+        username=username,
+        first_name=first_name
     )
 
     if otp and otp.is_valid:
         # Telegram ID ni saqlash (kelajakda notification uchun)
-        User.objects.filter(phone=phone).update(
-            telegram_id=telegram_id
-        )
+        await link_telegram_id(phone, telegram_id)
 
         # Kodni chiroyli formatda yuborish
         code_display = ' '.join(list(otp.code))
