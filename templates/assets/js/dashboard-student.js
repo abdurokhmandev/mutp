@@ -6,14 +6,17 @@ const StudentDashboard = {
     if (!App.requireAuth(['student'])) return;
     App.updateNav();
 
-    // Set global click handler for logo-name to render avatar initials
     const userAvatarEl = document.querySelector('[data-user-avatar]');
     const userNameEl = document.querySelector('[data-user-name]');
+    const xpDisplayEl = document.getElementById('user-xp-display');
     
-    // User profile sidebar details loading
+    // Initial load from localStorage
     const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
     if (currentUser) {
       if (userNameEl) userNameEl.textContent = currentUser.full_name || currentUser.username;
+      if (xpDisplayEl) {
+        xpDisplayEl.textContent = `XP: ${currentUser.xp || 0} | Daraja: ${currentUser.level || 1}`;
+      }
       if (userAvatarEl) {
         if (currentUser.avatar) {
           userAvatarEl.innerHTML = `<img src="${currentUser.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
@@ -23,11 +26,32 @@ const StudentDashboard = {
       }
     }
 
+    // Load real-time profile data
+    try {
+      const profileRes = await API.get('/auth/profile/');
+      const user = profileRes.data;
+      localStorage.setItem('user', JSON.stringify(user));
+      if (userNameEl) userNameEl.textContent = user.full_name || user.username;
+      if (xpDisplayEl) {
+        xpDisplayEl.textContent = `XP: ${user.xp || 0} | Daraja: ${user.level || 1}`;
+      }
+      if (userAvatarEl) {
+        if (user.avatar) {
+          userAvatarEl.innerHTML = `<img src="${user.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+        } else {
+          userAvatarEl.textContent = App.initials(user.full_name || user.username);
+        }
+      }
+    } catch (e) {
+      // silent fallback
+    }
+
     try {
       const result = await API.get('/student/dashboard/');
       this.render(result.data);
       await this.initNotifications();
       await this.loadHomeworksBadge();
+      await this.loadLeaderboard();
       this.initHomeworkListeners();
     } catch (e) {
       if (e.status === 403) {
@@ -489,6 +513,39 @@ const StudentDashboard = {
     if (diff < 3600) return `${Math.floor(diff/60)} daqiqa oldin`;
     if (diff < 86400) return `${Math.floor(diff/3600)} soat oldin`;
     return `${Math.floor(diff/86400)} kun oldin`;
+  },
+
+  async loadLeaderboard() {
+    const listEl = document.getElementById('leaderboardList');
+    if (!listEl) return;
+
+    try {
+      const res = await API.get('/auth/leaderboard/');
+      const leaderboard = res.data.leaderboard || [];
+      
+      if (!leaderboard.length) {
+        listEl.innerHTML = '<p style="color:var(--text-2);font-size:13px">Hozircha ma\'lumot yo\'q</p>';
+        return;
+      }
+
+      listEl.innerHTML = leaderboard.map(u => {
+        const highlightStyle = u.is_self ? 'background: var(--purple-light); font-weight: bold; border-radius: 8px; padding: 4px 8px;' : '';
+        return `
+          <div class="leaderboard-item" style="display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); ${highlightStyle}">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: 700; width: 20px; text-align: center;">${u.rank}</span>
+              <span style="font-size: 13px;">${u.full_name}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="hw-badge" style="background: var(--purple-light); color: var(--purple); font-size: 11px;">Lv. ${u.level}</span>
+              <span style="font-weight: 600; font-size: 12px; color: var(--text-2);">${u.xp} XP</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      listEl.innerHTML = `<p style="color:var(--red); font-size:13px;">Natijalarni yuklab bo'lmadi</p>`;
+    }
   }
 };
 

@@ -380,6 +380,27 @@
 
         <div class="right-col">
 
+          <!-- Analytics Card -->
+          <div class="card" style="margin-bottom: 20px;">
+            <div class="card-head">
+              <span class="card-head-title">📊 Kurs Analitikasi</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 13px; color: var(--text-2);">Kurs bitirish ko'rsatkichi:</span>
+                <span id="overallCompletionRate" style="font-weight: 700; color: var(--green);">0%</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 13px; color: var(--text-2);">O'quvchilar chiqib ketishi (Drop-off):</span>
+                <span id="overallDropoffRate" style="font-weight: 700; color: var(--red);">0%</span>
+              </div>
+              <hr style="border: none; border-top: 1px solid var(--border);">
+              <div id="courseAnalyticsList" style="display: flex; flex-direction: column; gap: 10px;">
+                <p style="color:var(--text-2);font-size:12px">Yuklanmoqda...</p>
+              </div>
+            </div>
+          </div>
+
           <!-- Students -->
           <div class="card" id="students-section">
             <div class="card-head">

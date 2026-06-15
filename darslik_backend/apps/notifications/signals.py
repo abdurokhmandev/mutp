@@ -35,3 +35,17 @@ def notify_teacher_homework(sender, instance, created, **kwargs):
             message=f'{instance.student.full_name} "{instance.homework.title}" vazifasini topshirdi',
             link=f'dashboard-teacher.html#homeworks-section'
         )
+
+
+@receiver(post_save, sender=Notification)
+def send_telegram_notification_trigger(sender, instance, created, **kwargs):
+    if created and instance.recipient and instance.recipient.telegram_id:
+        from .utils import send_telegram_notification
+        import threading
+        chat_id = instance.recipient.telegram_id
+        tg_message = (
+            f"🔔 <b>{instance.title or 'Yangi bildirishnoma'}</b>\n\n"
+            f"{instance.message}\n\n"
+            f"Batafsil ko'rish uchun saytga kiring."
+        )
+        threading.Thread(target=send_telegram_notification, args=(chat_id, tg_message)).start()

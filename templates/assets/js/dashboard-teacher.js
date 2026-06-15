@@ -106,6 +106,33 @@ const TeacherDashboard = {
       studentList.innerHTML = '<p style="padding:20px;color:var(--text-2);font-size:13px">Hali o\'quvchilar yo\'q</p>';
     }
 
+    const overallCompletionRateEl = document.getElementById('overallCompletionRate');
+    const overallDropoffRateEl = document.getElementById('overallDropoffRate');
+    const courseAnalyticsListEl = document.getElementById('courseAnalyticsList');
+
+    if (overallCompletionRateEl) {
+      overallCompletionRateEl.textContent = `${data.overall_completion_rate || 0}%`;
+    }
+    if (overallDropoffRateEl) {
+      overallDropoffRateEl.textContent = `${data.overall_dropoff_rate || 0}%`;
+    }
+    if (courseAnalyticsListEl) {
+      if (data.courses_analytics && data.courses_analytics.length > 0) {
+        courseAnalyticsListEl.innerHTML = data.courses_analytics.map(c => `
+          <div style="display: flex; flex-direction: column; gap: 4px; padding: 6px 0; border-bottom: 1px dashed var(--border);">
+            <div style="font-size: 13px; font-weight: 600; color: var(--text);">${c.title}</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-2);">
+              <span>Bitirish: <b style="color:var(--green)">${c.completion_rate}%</b></span>
+              <span>Chiqib ketish: <b style="color:var(--red)">${c.drop_off_rate}%</b></span>
+              <span>Jami o'quvchi: <b>${c.total_students}</b></span>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        courseAnalyticsListEl.innerHTML = '<p style="color:var(--text-2);font-size:12px">Kurslar mavjud emas</p>';
+      }
+    }
+
     this.renderChart(data.monthly_earnings || []);
   },
 

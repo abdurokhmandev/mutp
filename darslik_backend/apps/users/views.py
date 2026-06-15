@@ -451,3 +451,38 @@ class GetOTPFromBotView(APIView):
             }, "Faol OTP topildi")
         else:
             return error_response("Bu raqam uchun faol kod topilmadi.", status_code=404)
+
+
+class LeaderboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        top_users = User.objects.filter(role=User.Role.STUDENT).order_by('-xp')[:20]
+        data = []
+        for i, user in enumerate(top_users, start=1):
+            data.append({
+                "rank": i,
+                "full_name": user.full_name,
+                "username": user.username,
+                "xp": user.xp,
+                "level": user.level,
+                "is_self": user == request.user
+            })
+        
+        self_data = None
+        if request.user.role == User.Role.STUDENT:
+            user_xp = request.user.xp
+            rank = User.objects.filter(role=User.Role.STUDENT, xp__gt=user_xp).count() + 1
+            self_data = {
+                "rank": rank,
+                "full_name": request.user.full_name,
+                "username": request.user.username,
+                "xp": request.user.xp,
+                "level": request.user.level,
+                "is_self": True
+            }
+
+        return success_response({
+            "leaderboard": data,
+            "self": self_data
+        }, "Leaderboard ma'lumotlari yuklandi")

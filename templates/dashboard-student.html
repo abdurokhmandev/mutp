@@ -190,7 +190,7 @@
         <div class="av-sm" data-user-avatar>?</div>
         <div>
           <div class="student-name" data-user-name>Yuklanmoqda...</div>
-          <div class="student-role">O'quvchi</div>
+          <div class="student-role" id="user-xp-display">XP: — | Daraja: —</div>
         </div>
       </div>
       <button onclick="Auth.logout()" style="margin-top:10px;background:none;border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;width:100%;color:var(--text-2)">Chiqish</button>
@@ -310,6 +310,16 @@
               <span class="card-head-title">Sertifikatlarim</span>
             </div>
             <div class="cert-list">
+              <p style="color:var(--text-2);font-size:13px">Yuklanmoqda...</p>
+            </div>
+          </div>
+
+          <!-- Leaderboard -->
+          <div class="card">
+            <div class="card-head">
+              <span class="card-head-title">🏆 Top O'quvchilar</span>
+            </div>
+            <div id="leaderboardList" style="display:flex; flex-direction:column; gap:10px;">
               <p style="color:var(--text-2);font-size:13px">Yuklanmoqda...</p>
             </div>
           </div>

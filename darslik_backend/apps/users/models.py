@@ -28,6 +28,8 @@ class User(AbstractUser):
     telegram_id = models.CharField(max_length=50, blank=True)
     is_verified = models.BooleanField(default=False)  # o'qituvchi uchun tasdiqlash
     profile_complete = models.BooleanField(default=False)
+    xp          = models.PositiveIntegerField(default=0)
+    level       = models.PositiveIntegerField(default=1)
     created_at  = models.DateTimeField(auto_now_add=True)
 
     # Use email for login instead of username (can be overridden/fallback in OTP flow)
@@ -53,6 +55,23 @@ class User(AbstractUser):
     @property
     def is_student(self):
         return self.role == self.Role.STUDENT
+
+    def add_xp(self, amount):
+        if amount <= 0:
+            return
+        self.xp += amount
+        new_level = (self.xp // 100) + 1
+        if new_level > self.level:
+            self.level = new_level
+            from apps.notifications.models import Notification
+            Notification.objects.create(
+                recipient=self,
+                type=Notification.Type.LEVEL_UP,
+                title='Yangi daraja! 🎉',
+                message=f'Tabriklaymiz! Siz {new_level}-darajaga ko\'tarildingiz!',
+                link='dashboard.html'
+            )
+        self.save(update_fields=['xp', 'level'])
 
 
 class TelegramUser(models.Model):

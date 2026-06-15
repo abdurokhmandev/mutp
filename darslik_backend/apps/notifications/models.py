@@ -11,6 +11,7 @@ class Notification(models.Model):
         ENROLLMENT_REQUEST = 'enrollment_request', "Yozilish so'rovi"
         ENROLLMENT_APPROVED = 'enrollment_approved', 'Yozilish tasdiqlandi'
         ENROLLMENT_REJECTED = 'enrollment_rejected', 'Yozilish rad etildi'
+        LEVEL_UP = 'level_up', 'Level Up'
 
     recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
     type = models.CharField(max_length=30, choices=Type.choices)

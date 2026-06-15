@@ -242,6 +242,7 @@ class LessonProgressUpdateView(APIView):
             defaults={'watched_seconds': 0}
         )
 
+        was_completed = progress.is_completed if not created else False
         is_completed = request.data.get('is_completed', None)
         if is_completed is not None:
             progress.is_completed = bool(is_completed)
@@ -257,6 +258,9 @@ class LessonProgressUpdateView(APIView):
             # Trigger daily study time log via analytics util
             from apps.analytics.utils import log_study_time
             log_study_time(request.user, diff_seconds)
+
+        if not was_completed and progress.is_completed:
+            request.user.add_xp(10)
 
         data = {
             "watched_seconds": progress.watched_seconds,
@@ -367,6 +371,9 @@ class LessonQuizSubmitView(APIView):
         score = (correct_count / total) * 100.0
         is_passed = score >= 70.0
 
+        # Check if already passed before
+        already_passed = QuizAttempt.objects.filter(student=request.user, lesson=lesson, score__gte=70.0).exists()
+
         # Save attempt
         QuizAttempt.objects.create(
             student=request.user,
@@ -383,6 +390,10 @@ class LessonQuizSubmitView(APIView):
         if is_passed:
             progress.is_completed = True
             progress.save()
+            
+            if not already_passed:
+                xp_reward = 20 + int(score)
+                request.user.add_xp(xp_reward)
 
         data = {
             "score": round(score, 1),
@@ -972,6 +983,33 @@ class TeacherDashboardView(APIView):
                 "enrolled_at": enrollment.enrolled_at.isoformat() if enrollment.enrolled_at else None,
             })
 
+        # Calculate analytics metrics (Feature 5)
+        total_enrolls = Enrollment.objects.filter(course__teacher=request.user).count()
+        total_completed = Enrollment.objects.filter(course__teacher=request.user, is_completed=True).count()
+        total_dropoff = Enrollment.objects.filter(course__teacher=request.user, progress_percent__lt=30).count()
+        
+        overall_completion_rate = (total_completed / total_enrolls * 100) if total_enrolls > 0 else 0.0
+        overall_dropoff_rate = (total_dropoff / total_enrolls * 100) if total_enrolls > 0 else 0.0
+
+        courses_analytics = []
+        for course in Course.objects.filter(teacher=request.user):
+            c_enrolls = Enrollment.objects.filter(course=course)
+            c_total = c_enrolls.count()
+            c_completed = c_enrolls.filter(is_completed=True).count()
+            c_dropoff = c_enrolls.filter(progress_percent__lt=30).count()
+            
+            c_completion_rate = (c_completed / c_total * 100) if c_total > 0 else 0.0
+            c_dropoff_rate = (c_dropoff / c_total * 100) if c_total > 0 else 0.0
+            
+            courses_analytics.append({
+                "id": course.id,
+                "title": course.title,
+                "total_students": c_total,
+                "completed_students": c_completed,
+                "completion_rate": round(c_completion_rate, 1),
+                "drop_off_rate": round(c_dropoff_rate, 1)
+            })
+
         data = {
             "total_earnings": total_earnings,
             "pending_payout": pending_payout,
@@ -979,7 +1017,10 @@ class TeacherDashboardView(APIView):
             "total_courses": total_courses,
             "average_rating": average_rating,
             "monthly_earnings": monthly_earnings,
-            "recent_enrollments": recent_enrollments
+            "recent_enrollments": recent_enrollments,
+            "overall_completion_rate": round(overall_completion_rate, 1),
+            "overall_dropoff_rate": round(overall_dropoff_rate, 1),
+            "courses_analytics": courses_analytics
         }
 
         return success_response(data=data, message="Ustoz boshqaruv paneli ma'lumotlari")
@@ -1167,6 +1208,8 @@ class HomeworkSubmitView(APIView):
             student=request.user
         )
 
+        was_submitted = submission.status in ['submitted', 'reviewed']
+
         if homework.type == 'quiz':
             raw_answers = request.data.get('answers', {})
             answers = {}
@@ -1215,6 +1258,9 @@ class HomeworkSubmitView(APIView):
                 progress, _ = LessonProgress.objects.get_or_create(enrollment=enrollment, lesson=homework.after_lesson)
                 progress.is_completed = True
                 progress.save()
+
+        if not was_submitted:
+            request.user.add_xp(15)
 
         serializer = HomeworkSubmissionSerializer(submission, context={'request': request})
         return success_response(data=serializer.data, message="Vazifa topshirildi")
@@ -1334,6 +1380,7 @@ class HomeworkReviewView(APIView):
         if submission.homework.course.teacher != request.user:
             return error_response(message="Ruxsat yo'q", status_code=403)
 
+        was_reviewed = (submission.status == 'reviewed')
         submission.feedback = request.data.get('feedback', '')
         score = request.data.get('score', None)
         if score is not None:
@@ -1344,6 +1391,10 @@ class HomeworkReviewView(APIView):
         submission.status = 'reviewed'
         submission.reviewed_at = timezone.now()
         submission.save()
+
+        # Award +30 XP if first review and passing grade (score >= 60)
+        if not was_reviewed and submission.teacher_score is not None and submission.teacher_score >= 60:
+            submission.student.add_xp(30)
 
         # Notification — o'quvchiga "Ustozingiz vazifangizni tekshirdi"
         Notification.objects.create(

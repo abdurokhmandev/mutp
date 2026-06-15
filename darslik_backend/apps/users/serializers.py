@@ -86,10 +86,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'full_name', 'first_name', 'last_name', 'email', 'role', 
-            'avatar', 'phone', 'bio', 'is_verified', 'profile_complete',
+            'avatar', 'phone', 'bio', 'is_verified', 'profile_complete', 'xp', 'level',
             'specialization', 'experience_years', 'bank_card', 'address', 'interests', 'found_source'
         ]
-        read_only_fields = ['id', 'email', 'role', 'is_verified']
+        read_only_fields = ['id', 'email', 'role', 'is_verified', 'xp', 'level']
 
 
     def get_avatar(self, obj):
