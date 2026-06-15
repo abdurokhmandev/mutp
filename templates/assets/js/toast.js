@@ -39,6 +39,18 @@ class Toast {
       setTimeout(() => toast.remove(), 200);
     }, 3000);
   }
+
+  success(message) {
+    this.show(message, 'success');
+  }
+
+  error(message) {
+    this.show(message, 'error');
+  }
+
+  info(message) {
+    this.show(message, 'info');
+  }
 }
 
 window.toast = new Toast();
