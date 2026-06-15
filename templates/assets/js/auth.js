@@ -71,7 +71,14 @@ class OTPAuth {
         toast.error(res.message || "Xatolik yuz berdi");
       }
     } catch (err) {
-      toast.error(err.message || "Serverga ulanib bo'lmadi");
+      if (err.errors && err.errors.error === 'bot_not_started') {
+        toast.info("Telegram bot ochilmoqda. Botga o'tib 'Start' tugmasini bosing.");
+        setTimeout(() => {
+          window.open(err.errors.bot_url, '_blank');
+        }, 1500);
+      } else {
+        toast.error(err.message || "Serverga ulanib bo'lmadi");
+      }
     } finally {
       btn.disabled = false;
       btn.textContent = '📲 Telegram orqali kod olish';
