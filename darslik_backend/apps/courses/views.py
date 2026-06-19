@@ -530,31 +530,59 @@ class CourseCreateView(APIView):
     permission_classes = [IsVerifiedTeacher]
 
     def post(self, request):
-        # Teacher is set automatically from current user
-        data = request.data.copy()
-        serializer = CourseDetailSerializer(data=data, context={'request': request})
-        
-        # We manually validate since teacher field isn't in request data
-        if serializer.is_valid():
-            pass
-            
-        # Instead, let's create a custom flow or use model save
         title = request.data.get('title')
         description = request.data.get('description', '')
         category_id = request.data.get('category_id')
         price = request.data.get('price', 0)
+        discount_price = request.data.get('discount_price')
         level = request.data.get('level', Course.Level.BEGINNER)
         language = request.data.get('language', Course.Language.UZBEK)
+        is_private = request.data.get('is_private')
+        require_approval = request.data.get('require_approval')
+        max_students = request.data.get('max_students')
 
         if not title:
             return error_response(message="Kurs sarlavhasi kiritilishi shart", status_code=400)
+
+        # Parse boolean values in case they are sent as strings
+        if isinstance(is_private, str):
+            is_private = is_private.lower() in ('true', '1', 'yes')
+        else:
+            is_private = bool(is_private) if is_private is not None else False
+
+        if isinstance(require_approval, str):
+            require_approval = require_approval.lower() in ('true', '1', 'yes')
+        else:
+            require_approval = bool(require_approval) if require_approval is not None else False
+
+        if max_students:
+            try:
+                max_students = int(max_students)
+            except ValueError:
+                max_students = None
+
+        if discount_price:
+            try:
+                discount_price = float(discount_price)
+            except ValueError:
+                discount_price = None
 
         category = None
         if category_id:
             try:
                 category = Category.objects.get(id=category_id)
-            except Category.DoesNotExist:
+            except (Category.DoesNotExist, ValueError):
                 return error_response(message="Kategoriya topilmadi", status_code=400)
+
+        learning_outcomes = request.data.get('learning_outcomes', [])
+        if isinstance(learning_outcomes, str):
+            import json
+            try:
+                learning_outcomes = json.loads(learning_outcomes)
+            except ValueError:
+                pass
+
+        thumbnail = request.FILES.get('thumbnail')
 
         course = Course.objects.create(
             teacher=request.user,
@@ -562,11 +590,16 @@ class CourseCreateView(APIView):
             title=title,
             description=description,
             price=price,
+            discount_price=discount_price,
             level=level,
             language=language,
-            learning_outcomes=request.data.get('learning_outcomes', []),
+            learning_outcomes=learning_outcomes,
             preview_video_url=request.data.get('preview_video_url', ''),
-            status=Course.Status.DRAFT
+            status=Course.Status.DRAFT,
+            thumbnail=thumbnail,
+            is_private=is_private,
+            require_approval=require_approval,
+            max_students=max_students
         )
 
         serializer = CourseDetailSerializer(course, context={'request': request})
