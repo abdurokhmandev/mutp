@@ -67,7 +67,7 @@ else:
     ]
 
 # Assets (CSS/JS/images in templates/assets) serving
-FRONTEND_ROOT = Path(settings.BASE_DIR).parent / 'templates'
+FRONTEND_ROOT = Path(settings.BASE_DIR) / 'templates'
 
 def serve_frontend_assets(request, path):
     return static_serve(request, path, document_root=FRONTEND_ROOT / 'assets')
