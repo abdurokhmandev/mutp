@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MUTP - Premium CRM Admin Panel</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Tabler Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #151c2c;
+            --bg-tertiary: #1f293d;
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.15);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.15);
+            --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.15);
+            --warning: #f59e0b;
+            --border: #2d3748;
+            --sidebar-width: 260px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styling */
+        aside {
+            width: var(--sidebar-width);
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 10;
+        }
+
+        .sidebar-brand {
+            padding: 24px;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 20px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            color: var(--text-main);
+            background-color: var(--accent-glow);
+            box-shadow: inset 3px 0 0 var(--accent);
+        }
+
+        .menu-item i {
+            font-size: 20px;
+        }
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-logout {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--danger);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* Main Content Styling */
+        main {
+            margin-left: var(--sidebar-width);
+            flex-grow: 1;
+            padding: 40px;
+            min-height: 100vh;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-secondary);
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: 1px solid var(--border);
+        }
+
+        .avatar-placeholder {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        /* Grid Stats Layout */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--accent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .stat-card:hover::after {
+            opacity: 1;
+        }
+
+        .stat-info h3 {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-info p {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background-color: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--accent);
+        }
+
+        /* Sections and Tables */
+        .section-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .section-card.active {
+            display: block;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            padding: 14px 16px;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background-color: rgba(255,255,255,0.02);
+        }
+
+        /* Badges */
+        .badge {
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .badge-success {
+            background-color: var(--success-glow);
+            color: var(--success);
+        }
+
+        .badge-danger {
+            background-color: var(--danger-glow);
+            color: var(--danger);
+        }
+
+        .badge-warning {
+            background-color: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        /* Action Buttons */
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-verify {
+            background-color: var(--success-glow);
+            color: var(--success);
+        }
+
+        .btn-verify:hover {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-unverify {
+            background-color: var(--danger-glow);
+            color: var(--danger);
+        }
+
+        .btn-unverify:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: var(--text-muted);
+            font-weight: 500;
+            gap: 10px;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside>
+        <div class="sidebar-brand">
+            <i class="ti ti-crown"></i> MUTP CRM
+        </div>
+        <ul class="sidebar-menu">
+            <li>
+                <div class="menu-item active" onclick="switchSection('dashboard')">
+                    <i class="ti ti-layout-dashboard"></i> Boshqaruv
+                </div>
+            </li>
+            <li>
+                <div class="menu-item" onclick="switchSection('teachers')">
+                    <i class="ti ti-users-group"></i> O'qituvchilar
+                </div>
+            </li>
+            <li>
+                <div class="menu-item" onclick="switchSection('courses')">
+                    <i class="ti ti-book-2"></i> Kurslar
+                </div>
+            </li>
+            <li>
+                <div class="menu-item" onclick="switchSection('users')">
+                    <i class="ti ti-users"></i> Foydalanuvchilar
+                </div>
+            </li>
+        </ul>
+        <div class="sidebar-footer">
+            <a href="/admin/logout/" class="btn-logout">
+                <i class="ti ti-logout"></i> Tizimdan chiqish
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main>
+        <header>
+            <div>
+                <h1 id="page-title">Platforma Statistikasi</h1>
+                <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">MUTP boshqaruv paneli orqali platformani nazorat qiling</p>
+            </div>
+            <div class="user-info">
+                <div class="avatar-placeholder">A</div>
+                <span>Administrator</span>
+            </div>
+        </header>
+
+        <!-- Stats Grid (Always Visible) -->
+        <section class="stats-grid" id="stats-grid">
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Jami O'quvchilar</h3>
+                    <p id="stat-students">0</p>
+                </div>
+                <div class="stat-icon"><i class="ti ti-school"></i></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Jami O'qituvchilar</h3>
+                    <p id="stat-teachers">0</p>
+                </div>
+                <div class="stat-icon"><i class="ti ti-users"></i></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Jami Kurslar</h3>
+                    <p id="stat-courses">0</p>
+                </div>
+                <div class="stat-icon"><i class="ti ti-book"></i></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Tasdiqlanmagan Ustozlar</h3>
+                    <p id="stat-unverified" style="color: var(--warning);">0</p>
+                </div>
+                <div class="stat-icon"><i class="ti ti-user-exclamation"></i></div>
+            </div>
+        </section>
+
+        <!-- Dynamic Sections -->
+        <!-- 1. General Dashboard/Info -->
+        <section class="section-card active" id="sec-dashboard">
+            <div class="section-header">
+                <h2 class="section-title">Boshqaruv markaziga xush kelibsiz</h2>
+            </div>
+            <div style="padding: 20px; line-height: 1.6; color: var(--text-muted);">
+                <p style="margin-bottom: 16px;">Siz ushbu bo'lim orqali yangi o'qituvchilarni tasdiqlashingiz, kurslarni ko'rib chiqib, ularni ommaga taqdim etishingiz va foydalanuvchilar holatlarini nazorat qilishingiz mumkin.</p>
+                <div style="background: var(--bg-tertiary); border: 1px dashed var(--accent); padding: 16px; border-radius: 12px; color: var(--text-main); display: flex; align-items: center; gap: 12px;">
+                    <i class="ti ti-info-circle" style="font-size: 24px; color: var(--accent);"></i>
+                    <span>Chap tomondagi menyu orqali tegishli boshqaruv jadvaliga o'ting.</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Teachers Section -->
+        <section class="section-card" id="sec-teachers">
+            <div class="section-header">
+                <h2 class="section-title">O'qituvchilar Ro'yxati</h2>
+                <button class="btn btn-primary btn-sm" onclick="loadTeachers()"><i class="ti ti-refresh"></i> Yangilash</button>
+            </div>
+            <div class="table-responsive">
+                <table id="table-teachers">
+                    <thead>
+                        <tr>
+                            <th>Ism / Familiya</th>
+                            <th>Telefon raqam</th>
+                            <th>Yo'nalish</th>
+                            <th>Yaratilgan vaqti</th>
+                            <th>Status</th>
+                            <th>Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-teachers">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 3. Courses Section -->
+        <section class="section-card" id="sec-courses">
+            <div class="section-header">
+                <h2 class="section-title">Kurslar Ro'yxati</h2>
+                <button class="btn btn-primary btn-sm" onclick="loadCourses()"><i class="ti ti-refresh"></i> Yangilash</button>
+            </div>
+            <div class="table-responsive">
+                <table id="table-courses">
+                    <thead>
+                        <tr>
+                            <th>Kurs Sarlavhasi</th>
+                            <th>O'qituvchi</th>
+                            <th>Kategoriya</th>
+                            <th>Narxi</th>
+                            <th>Holati</th>
+                            <th>Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-courses">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 4. Users Section -->
+        <section class="section-card" id="sec-users">
+            <div class="section-header">
+                <h2 class="section-title">Foydalanuvchilar Ro'yxati</h2>
+                <button class="btn btn-primary btn-sm" onclick="loadUsers()"><i class="ti ti-refresh"></i> Yangilash</button>
+            </div>
+            <div class="table-responsive">
+                <table id="table-users">
+                    <thead>
+                        <tr>
+                            <th>Ism / Familiya</th>
+                            <th>Telefon</th>
+                            <th>Email</th>
+                            <th>Roli</th>
+                            <th>Akkaunt Holati</th>
+                            <th>Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="body-users">
+                        <!-- Filled by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Helpers for Cookies and CSRF
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Switch page sections
+        function switchSection(sectionId) {
+            document.querySelectorAll('.section-card').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            
+            const targetSection = document.getElementById(`sec-${sectionId}`);
+            if (targetSection) targetSection.classList.add('active');
+            
+            // Add active class to clicked menu item
+            const eventTarget = window.event ? window.event.currentTarget : null;
+            if (eventTarget) {
+                eventTarget.classList.add('active');
+            }
+
+            // Update title
+            const titles = {
+                'dashboard': 'Platforma Statistikasi',
+                'teachers': 'O\'qituvchilar boshqaruvi',
+                'courses': 'Kurslarni tasdiqlash',
+                'users': 'Foydalanuvchilarni sozlash'
+            };
+            document.getElementById('page-title').innerText = titles[sectionId] || 'MUTP CRM';
+
+            // Load data accordingly
+            if (sectionId === 'teachers') loadTeachers();
+            if (sectionId === 'courses') loadCourses();
+            if (sectionId === 'users') loadUsers();
+        }
+
+        // Fetch API Helper
+        async function apiCall(url, method = 'GET', body = null) {
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            };
+            const options = { method, headers };
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+            try {
+                const response = await fetch(url, options);
+                return await response.json();
+            } catch (err) {
+                console.error("API Call error:", err);
+                return { success: false, message: "Kutilmagan xatolik yuz berdi" };
+            }
+        }
+
+        // Load dashboard stats
+        async function loadStats() {
+            const res = await apiCall('/api/v1/admin/crm/stats/');
+            if (res.success && res.data) {
+                document.getElementById('stat-students').innerText = res.data.total_students;
+                document.getElementById('stat-teachers').innerText = res.data.total_teachers;
+                document.getElementById('stat-courses').innerText = res.data.total_courses;
+                document.getElementById('stat-unverified').innerText = res.data.unverified_teachers;
+            }
+        }
+
+        // Load Teachers Table
+        async function loadTeachers() {
+            const tbody = document.getElementById('body-teachers');
+            tbody.innerHTML = `<tr><td colspan="6"><div class="loader"><div class="spinner"></div> Yuklanmoqda...</div></td></tr>`;
+            const res = await apiCall('/api/v1/admin/crm/teachers/');
+            if (res.success && res.data) {
+                tbody.innerHTML = '';
+                if (res.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Hozircha o'qituvchilar mavjud emas.</td></tr>`;
+                    return;
+                }
+                res.data.forEach(t => {
+                    const badgeClass = t.is_verified ? 'badge-success' : 'badge-danger';
+                    const badgeText = t.is_verified ? 'Tasdiqlangan' : 'Tasdiqlanmagan';
+                    const btnClass = t.is_verified ? 'btn-unverify' : 'btn-verify';
+                    const btnText = t.is_verified ? 'Tasdiqni bekor qilish' : 'Tasdiqlash';
+                    const btnIcon = t.is_verified ? 'ti-square-rounded-x' : 'ti-square-rounded-check';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="font-weight: 600;">${t.full_name}</td>
+                            <td>${t.phone}</td>
+                            <td>${t.specialization || '<span style="color: var(--text-muted);">Kiritilmagan</span>'}</td>
+                            <td>${t.created_at}</td>
+                            <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                            <td>
+                                <button class="btn ${btnClass} btn-sm" onclick="toggleTeacherVerify(${t.id})">
+                                    <i class="ti ${btnIcon}"></i> ${btnText}
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        async function toggleTeacherVerify(id) {
+            const res = await apiCall(`/api/v1/admin/crm/teachers/${id}/verify/`, 'POST');
+            if (res.success) {
+                loadTeachers();
+                loadStats();
+            }
+        }
+
+        // Load Courses Table
+        async function loadCourses() {
+            const tbody = document.getElementById('body-courses');
+            tbody.innerHTML = `<tr><td colspan="6"><div class="loader"><div class="spinner"></div> Yuklanmoqda...</div></td></tr>`;
+            const res = await apiCall('/api/v1/admin/crm/courses/');
+            if (res.success && res.data) {
+                tbody.innerHTML = '';
+                if (res.data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Hozircha kurslar mavjud emas.</td></tr>`;
+                    return;
+                }
+                res.data.forEach(c => {
+                    let badgeClass = 'badge-warning';
+                    if (c.status === 'published') badgeClass = 'badge-success';
+                    if (c.status === 'draft') badgeClass = 'badge-danger';
+
+                    const actions = c.status === 'review' 
+                        ? `<button class="btn btn-verify btn-sm" onclick="approveCourse(${c.id}, 'published')"><i class="ti ti-check"></i> Chop etish</button>
+                           <button class="btn btn-unverify btn-sm" onclick="approveCourse(${c.id}, 'draft')"><i class="ti ti-x"></i> Qoralama qilish</button>`
+                        : `<button class="btn btn-primary btn-sm" onclick="changeStatusPrompt(${c.id}, '${c.status}')"><i class="ti ti-edit"></i> O'zgartirish</button>`;
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="font-weight: 600;">${c.title}</td>
+                            <td>${c.teacher}</td>
+                            <td>${c.category}</td>
+                            <td>${c.price.toLocaleString('uz-UZ')} UZS</td>
+                            <td><span class="badge ${badgeClass}">${c.status_display}</span></td>
+                            <td><div style="display: flex; gap: 8px;">${actions}</div></td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        async function approveCourse(id, status) {
+            const res = await apiCall(`/api/v1/admin/crm/courses/${id}/change-status/`, 'POST', { status });
+            if (res.success) {
+                loadCourses();
+                loadStats();
+            }
+        }
+
+        async function changeStatusPrompt(id, currentStatus) {
+            const newStatus = prompt("Yangi status kiriting (draft, review, published, archived):", currentStatus);
+            if (newStatus) {
+                approveCourse(id, newStatus);
+            }
+        }
+
+        // Load Users Table
+        async function loadUsers() {
+            const tbody = document.getElementById('body-users');
+            tbody.innerHTML = `<tr><td colspan="6"><div class="loader"><div class="spinner"></div> Yuklanmoqda...</div></td></tr>`;
+            const res = await apiCall('/api/v1/admin/crm/users/');
+            if (res.success && res.data) {
+                tbody.innerHTML = '';
+                res.data.forEach(u => {
+                    const badgeClass = u.is_active ? 'badge-success' : 'badge-danger';
+                    const badgeText = u.is_active ? 'Faol' : 'Bloklangan';
+                    const btnClass = u.is_active ? 'btn-unverify' : 'btn-verify';
+                    const btnText = u.is_active ? 'Bloklash' : 'Faollashtirish';
+                    const btnIcon = u.is_active ? 'ti-user-off' : 'ti-user-check';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="font-weight: 600;">${u.full_name}</td>
+                            <td>${u.phone}</td>
+                            <td>${u.email}</td>
+                            <td style="text-transform: capitalize;">${u.role_display}</td>
+                            <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                            <td>
+                                <button class="btn ${btnClass} btn-sm" onclick="toggleUserActive(${u.id})">
+                                    <i class="ti ${btnIcon}"></i> ${btnText}
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        async function toggleUserActive(id) {
+            const res = await apiCall(`/api/v1/admin/crm/users/${id}/toggle-active/`, 'POST');
+            if (res.success) {
+                loadUsers();
+            }
+        }
+
+        // Init load
+        document.addEventListener("DOMContentLoaded", () => {
+            loadStats();
+        });
+    </script>
+</body>
+</html>

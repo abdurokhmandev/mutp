@@ -10,8 +10,26 @@ from apps.courses.views import InviteDetailView, InviteJoinView
 
 from django.contrib.admin.views.decorators import staff_member_required
 
+from apps.users.admin_views import (
+    AdminCRMPageView,
+    AdminCRMStatsView,
+    AdminCRMTeachersView,
+    AdminCRMCoursesView,
+    AdminCRMUsersView
+)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # Custom CRM Admin Panel
+    path('admin-crm/', AdminCRMPageView.as_view(), name='admin_crm_page'),
+    path('api/v1/admin/crm/stats/', AdminCRMStatsView.as_view(), name='admin_crm_stats'),
+    path('api/v1/admin/crm/teachers/', AdminCRMTeachersView.as_view(), name='admin_crm_teachers'),
+    path('api/v1/admin/crm/teachers/<int:pk>/verify/', AdminCRMTeachersView.as_view(), name='admin_crm_teachers_verify'),
+    path('api/v1/admin/crm/courses/', AdminCRMCoursesView.as_view(), name='admin_crm_courses'),
+    path('api/v1/admin/crm/courses/<int:pk>/change-status/', AdminCRMCoursesView.as_view(), name='admin_crm_courses_status'),
+    path('api/v1/admin/crm/users/', AdminCRMUsersView.as_view(), name='admin_crm_users'),
+    path('api/v1/admin/crm/users/<int:pk>/toggle-active/', AdminCRMUsersView.as_view(), name='admin_crm_users_toggle'),
 
     # API endpoints
     path('api/v1/auth/', include('apps.users.urls')),
