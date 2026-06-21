@@ -284,6 +284,10 @@ class Enrollment(models.Model):
             self.is_completed = True
             self.completed_at = timezone.now()
             Certificate.objects.get_or_create(enrollment=self)
+            
+            # Award badges when a course is completed
+            from apps.gamification.services import check_and_award_badges
+            check_and_award_badges(self.student)
         self.save(update_fields=['progress_percent', 'is_completed', 'completed_at'])
 
 

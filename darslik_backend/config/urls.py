@@ -39,6 +39,7 @@ urlpatterns = [
     path('api/v1/notifications/', include('apps.notifications.urls')),
     path('api/v1/chat/', include('apps.chat.urls')),
     path('api/v1/teacher/', include('apps.teacher.urls')),
+    path('api/v1/gamification/', include('apps.gamification.urls')),
 
     # Invite endpoints
     path('api/v1/invite/<str:token>/', InviteDetailView.as_view(), name='api_invite_detail'),

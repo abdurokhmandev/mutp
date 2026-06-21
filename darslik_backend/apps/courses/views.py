@@ -381,6 +381,10 @@ class LessonQuizSubmitView(APIView):
             score=score
         )
 
+        # Check and award badges
+        from apps.gamification.services import check_and_award_badges
+        check_and_award_badges(request.user)
+
         # Update progress
         progress, created = LessonProgress.objects.get_or_create(
             enrollment=enrollment,

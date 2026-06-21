@@ -10,3 +10,12 @@ def update_study_log(sender, instance, created, **kwargs):
         from apps.analytics.utils import log_study_time
         # For simplicity in MVP, each progress update adds 5 seconds to daily log
         log_study_time(instance.enrollment.student, 5)
+        
+        # Update streak on activity
+        from apps.analytics.models import UserStreak
+        streak, _ = UserStreak.objects.get_or_create(user=instance.enrollment.student)
+        streak.update_on_activity()
+        
+        # Check and award badges
+        from apps.gamification.services import check_and_award_badges
+        check_and_award_badges(instance.enrollment.student)

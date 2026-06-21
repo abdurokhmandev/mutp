@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'apps.courses',
     'apps.analytics',
     'apps.bot',
+    'apps.gamification',
 ]
 
 MIDDLEWARE = [
