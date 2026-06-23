@@ -249,33 +249,35 @@ const CreateCourse = {
     }
   },
 
-  async addModule() {
+  addModule() {
     if (!this.course?.slug) {
       window.toast?.show('Avval 1-qadamni saqlang', 'error');
       return;
     }
-    const title = prompt("Bo'lim nomini kiriting:");
-    if (!title?.trim()) return;
+    document.getElementById('btnAddModule').style.display = 'none';
+    document.getElementById('addModuleForm').style.display = 'flex';
+    document.getElementById('newModuleTitle').value = '';
+    document.getElementById('newModuleTitle').focus();
+  },
 
-    const addModBtn = document.getElementById('btnAddModule');
-    let originalBtnText = '';
-    if (addModBtn) {
-      originalBtnText = addModBtn.innerHTML;
-      addModBtn.disabled = true;
-      addModBtn.innerHTML = '⏳ Qo\'shilmoqda...';
+  cancelAddModule() {
+    document.getElementById('addModuleForm').style.display = 'none';
+    document.getElementById('btnAddModule').style.display = 'inline-block';
+  },
+
+  async saveNewModule() {
+    const title = document.getElementById('newModuleTitle').value.trim();
+    if (!title) {
+      window.toast?.show("Bo'lim nomini kiriting!", 'error');
+      return;
     }
-
     try {
-      await API.post(`/courses/teacher/courses/${this.course.slug}/modules/`, { title: title.trim() });
+      await API.post(`/courses/teacher/courses/${this.course.slug}/modules/`, { title });
       await this.refreshCourse();
       window.toast?.show("Bo'lim qo'shildi", 'success');
+      this.cancelAddModule();
     } catch (e) {
       window.toast?.show(e.message, 'error');
-    } finally {
-      if (addModBtn) {
-        addModBtn.disabled = false;
-        addModBtn.innerHTML = originalBtnText;
-      }
     }
   },
 
@@ -380,12 +382,14 @@ const CreateCourse = {
   currentLessonId: null,
   quizQuestions: [],
   lessonResources: [],
+  localResources: [],
 
   openLessonModal(moduleId, lessonId = null) {
     this.currentModuleId = moduleId;
     this.currentLessonId = lessonId;
     this.quizQuestions = [];
     this.lessonResources = [];
+    this.localResources = [];
 
     // Reset fields
     document.getElementById('lessonForm').reset();
@@ -507,37 +511,6 @@ const CreateCourse = {
 
     // Add Resource Click
     document.getElementById('addResourceBtn').onclick = async () => {
-      // Auto-save lesson first if not saved yet
-      if (!this.currentLessonId) {
-        const lTitle = document.getElementById('lessonTitle').value.trim();
-        if (!lTitle) {
-          window.toast?.show("Avval dars nomini kiriting!", 'warning');
-          return;
-        }
-        window.toast?.show("Dars saqlanmoqda...", 'info');
-        try {
-          const lType = document.getElementById('lessonType').value;
-          const fd2 = new FormData();
-          fd2.append('title', lTitle);
-          fd2.append('lesson_type', lType);
-          if (lType === 'video') {
-            const vSource = document.getElementById('videoSource').value;
-            if (vSource === 'url') {
-              const vUrl = document.getElementById('lessonVideoUrl').value.trim();
-              if (vUrl) fd2.append('video_url', vUrl);
-            }
-          } else if (lType === 'text') {
-            fd2.append('text_content', document.getElementById('lessonTextContent').value.trim());
-          }
-          const saveRes = await API.post(`/courses/teacher/modules/${this.currentModuleId}/lessons/`, fd2);
-          this.currentLessonId = saveRes.data.id;
-          window.toast?.show("Dars saqlandi! Endi resurs qo'shilmoqda...", 'success');
-        } catch (saveErr) {
-          window.toast?.show("Darsni saqlashda xatolik: " + saveErr.message, 'error');
-          return;
-        }
-      }
-
       const rType = document.getElementById('resourceType').value;
       const rTitle = document.getElementById('resourceTitle').value.trim();
       
@@ -545,10 +518,6 @@ const CreateCourse = {
         window.toast?.show("Resurs nomini kiriting!", 'error');
         return;
       }
-
-      const fd = new FormData();
-      fd.append('title', rTitle);
-      fd.append('resource_type', rType);
 
       if (rType === 'file') {
         const fileInput = document.getElementById('resourceFile');
@@ -567,32 +536,72 @@ const CreateCourse = {
           window.toast?.show("Fayl formati noto'g'ri! Faqat: pdf, doc, docx, ppt, pptx, zip, jpg, png", 'error');
           return;
         }
-        fd.append('file', file);
+
+        if (this.currentLessonId) {
+          // Upload immediately for already created lesson
+          try {
+            window.toast?.show("Resurs yuklanmoqda...", "info");
+            const fd = new FormData();
+            fd.append('title', rTitle);
+            fd.append('resource_type', rType);
+            fd.append('file', file);
+            const res = await API.post(`/courses/lessons/${this.currentLessonId}/resources/`, fd);
+            window.toast?.show("Resurs muvaffaqiyatli qo'shildi!", "success");
+            this.lessonResources.push(res.data);
+            this.renderResourceList();
+          } catch (err) {
+            window.toast?.show(err.message, 'error');
+          }
+        } else {
+          // Stage locally
+          this.localResources.push({
+            title: rTitle,
+            resource_type: rType,
+            file: file,
+            url: ''
+          });
+          this.renderResourceList();
+          window.toast?.show("Resurs vaqtinchalik saqlandi. Dars saqlanganda yuklanadi.", "info");
+        }
       } else {
         const url = document.getElementById('resourceUrl').value.trim();
         if (!url) {
           window.toast?.show("Havolani kiriting!", 'error');
           return;
         }
-        fd.append('url', url);
+
+        if (this.currentLessonId) {
+          // Upload immediately for already created lesson
+          try {
+            window.toast?.show("Resurs qo'shilmoqda...", "info");
+            const fd = new FormData();
+            fd.append('title', rTitle);
+            fd.append('resource_type', rType);
+            fd.append('url', url);
+            const res = await API.post(`/courses/lessons/${this.currentLessonId}/resources/`, fd);
+            window.toast?.show("Resurs muvaffaqiyatli qo'shildi!", "success");
+            this.lessonResources.push(res.data);
+            this.renderResourceList();
+          } catch (err) {
+            window.toast?.show(err.message, 'error');
+          }
+        } else {
+          // Stage locally
+          this.localResources.push({
+            title: rTitle,
+            resource_type: rType,
+            file: null,
+            url: url
+          });
+          this.renderResourceList();
+          window.toast?.show("Resurs vaqtinchalik saqlandi. Dars saqlanganda yuklanadi.", "info");
+        }
       }
 
-      try {
-        window.toast?.show("Resurs yuklanmoqda...", "info");
-        const res = await API.post(`/courses/lessons/${this.currentLessonId}/resources/`, fd);
-        window.toast?.show("Resurs muvaffaqiyatli qo'shildi!", "success");
-        
-        this.lessonResources.push(res.data);
-        this.renderResourceList();
-
-        document.getElementById('resourceTitle').value = '';
-        document.getElementById('resourceFile').value = '';
-        document.getElementById('resourceUrl').value = '';
-      } catch (err) {
-        window.toast?.show(err.message, 'error');
-      }
+      document.getElementById('resourceTitle').value = '';
+      document.getElementById('resourceFile').value = '';
+      document.getElementById('resourceUrl').value = '';
     };
-
 
     // Add Question Click
     document.getElementById('addQuestionBtn').onclick = () => {
@@ -666,6 +675,22 @@ const CreateCourse = {
           this.currentLessonId = savedLesson.id;
         }
 
+        // Upload staged local resources
+        if (this.localResources && this.localResources.length > 0) {
+          for (const localRes of this.localResources) {
+            const resFd = new FormData();
+            resFd.append('title', localRes.title);
+            resFd.append('resource_type', localRes.resource_type);
+            if (localRes.resource_type === 'file') {
+              resFd.append('file', localRes.file);
+            } else {
+              resFd.append('url', localRes.url);
+            }
+            await API.post(`/courses/lessons/${this.currentLessonId}/resources/`, resFd);
+          }
+          this.localResources = [];
+        }
+
         // Savollarni saqlash
         if (lType === 'quiz') {
           const validatedQuestions = this.collectQuizData();
@@ -694,17 +719,35 @@ const CreateCourse = {
     const container = document.getElementById('resourceList');
     if (!container) return;
 
-    if (this.lessonResources.length === 0) {
+    const totalCount = this.lessonResources.length + this.localResources.length;
+    if (totalCount === 0) {
       container.innerHTML = '<p class="empty-state" style="padding: 8px;">Resurslar yo\'q.</p>';
       return;
     }
 
-    container.innerHTML = this.lessonResources.map(r => `
-      <div class="resource-builder-item">
-        <span class="title">${r.title} (${r.resource_type === 'link' ? 'Havola' : 'Fayl'})</span>
-        <button type="button" class="remove-btn" onclick="CreateCourse.deleteResource(${r.id})">✕</button>
+    let html = '';
+    // Render already saved resources
+    html += this.lessonResources.map(r => `
+      <div class="resource-builder-item" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface); padding:8px 12px; border-radius:8px; margin-bottom:6px;">
+        <span class="title" style="font-size:13px; font-weight:500;">${r.title} (${r.resource_type === 'link' ? 'Havola' : 'Fayl'})</span>
+        <button type="button" class="remove-btn" onclick="CreateCourse.deleteResource(${r.id})" style="background:none; border:none; color:var(--rose); cursor:pointer; font-weight:700;">✕</button>
       </div>
     `).join('');
+
+    // Render locally staged resources (not yet saved)
+    html += this.localResources.map((r, idx) => `
+      <div class="resource-builder-item" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface); padding:8px 12px; border-radius:8px; margin-bottom:6px; border: 1px dashed var(--accent);">
+        <span class="title" style="font-size:13px; font-weight:500;">${r.title} (${r.resource_type === 'link' ? 'Havola' : 'Fayl'}) <em style="font-size:11px; color:var(--muted)">(Saqlanmagan)</em></span>
+        <button type="button" class="remove-btn" onclick="CreateCourse.deleteLocalResource(${idx})" style="background:none; border:none; color:var(--rose); cursor:pointer; font-weight:700;">✕</button>
+      </div>
+    `).join('');
+
+    container.innerHTML = html;
+  },
+
+  deleteLocalResource(idx) {
+    this.localResources.splice(idx, 1);
+    this.renderResourceList();
   },
 
   async deleteResource(id) {

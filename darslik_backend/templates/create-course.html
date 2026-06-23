@@ -212,9 +212,16 @@
       
       <!-- Step 2 -->
       <div class="step-content" id="step2">
-        <div style="margin-bottom:24px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="margin-bottom:24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
           <h3 style="font-size:18px;font-family:'Plus Jakarta Sans'">Darslar tarkibi</h3>
-          <button class="btn-secondary" id="btnAddModule" style="padding:6px 12px;font-size:13px;"><i class="ti ti-plus"></i> Bo'lim qo'shish</button>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div id="addModuleForm" style="display:none; align-items:center; gap:8px;">
+              <input type="text" id="newModuleTitle" class="form-control" placeholder="Bo'lim nomi..." style="max-width:180px; padding:6px 12px; font-size:13px;">
+              <button type="button" class="btn-primary" onclick="CreateCourse.saveNewModule()" style="padding:6px 12px; font-size:13px;">Saqlash</button>
+              <button type="button" class="btn-secondary" onclick="CreateCourse.cancelAddModule()" style="padding:6px 12px; font-size:13px;">Bekor</button>
+            </div>
+            <button class="btn-secondary" id="btnAddModule" style="padding:6px 12px;font-size:13px;"><i class="ti ti-plus"></i> Bo'lim qo'shish</button>
+          </div>
         </div>
         
         <div id="modulesContainer">
