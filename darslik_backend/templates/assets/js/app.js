@@ -294,52 +294,20 @@ const App = {
   },
 
   initTheme() {
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
-    this.renderThemeToggle(savedTheme);
+    document.documentElement.setAttribute('data-theme', 'light');
+    localStorage.setItem('theme', 'light');
   },
 
   toggleTheme() {
-    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
-    this.updateThemeToggleIcon(newTheme);
+    // Disabled
   },
 
   renderThemeToggle(currentTheme) {
-    const existing = document.getElementById('themeToggleBtn');
-    if (existing) existing.remove();
-
-    const btn = document.createElement('button');
-    btn.id = 'themeToggleBtn';
-    btn.style = `
-      position: fixed; bottom: 24px; right: 24px; width: 48px; height: 48px;
-      border-radius: 50%; background: var(--white); border: 2px solid var(--border-2);
-      box-shadow: 0 8px 16px rgba(0,0,0,0.1); display: flex; align-items: center;
-      justify-content: center; cursor: pointer; z-index: 9999;
-      font-size: 20px; transition: transform 0.2s, background 0.2s;
-    `;
-    btn.onmouseover = () => btn.style.transform = 'scale(1.1)';
-    btn.onmouseout = () => btn.style.transform = 'scale(1)';
-    btn.onclick = () => this.toggleTheme();
-
-    const icon = document.createElement('i');
-    icon.className = currentTheme === 'light' ? 'ti ti-moon' : 'ti ti-sun';
-    icon.style.color = 'var(--ink)';
-    btn.appendChild(icon);
-
-    document.body.appendChild(btn);
+    // Disabled
   },
 
   updateThemeToggleIcon(theme) {
-    const btn = document.getElementById('themeToggleBtn');
-    if (btn) {
-      const icon = btn.querySelector('i');
-      if (icon) {
-        icon.className = theme === 'light' ? 'ti ti-moon' : 'ti ti-sun';
-      }
-    }
+    // Disabled
   }
 };
 

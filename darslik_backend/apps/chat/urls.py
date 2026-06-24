@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (
     ChannelListView, DirectChatView, MessageListCreateView,
     MessageDetailView, MessageReactView, ChannelReadView,
-    ChannelUnreadView, ChannelMembersView
+    ChannelUnreadView, ChannelMembersView, ChannelDetailView,
+    UserSearchView
 )
 
 urlpatterns = [
@@ -15,4 +16,6 @@ urlpatterns = [
     path('channels/<int:id>/unread/', ChannelUnreadView.as_view(), name='channel_unread'),
     path('channels/<int:id>/members/', ChannelMembersView.as_view(), name='channel_members'),
     path('channels/<int:id>/members/<int:user_id>/', ChannelMembersView.as_view(), name='channel_member_delete'),
+    path('channels/<int:id>/detail/', ChannelDetailView.as_view(), name='channel_detail'),
+    path('users/search/', UserSearchView.as_view(), name='user_search'),
 ]

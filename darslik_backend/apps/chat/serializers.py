@@ -58,10 +58,34 @@ class ChannelSerializer(serializers.ModelSerializer):
     other_user = serializers.SerializerMethodField()
     last_message = serializers.SerializerMethodField()
     unread_count = serializers.SerializerMethodField()
+    members = serializers.SerializerMethodField()
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = Channel
-        fields = ['id', 'name', 'channel_type', 'description', 'other_user', 'last_message', 'unread_count', 'created_at']
+        fields = ['id', 'name', 'channel_type', 'description', 'image', 'other_user', 'last_message', 'unread_count', 'members', 'created_at']
+
+    def get_image(self, obj):
+        request = self.context.get('request')
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        return None
+
+    def get_members(self, obj):
+        request = self.context.get('request')
+        members = obj.channelmember_set.all()
+        res = []
+        for m in members:
+            avatar_url = None
+            if m.user.avatar and request:
+                avatar_url = request.build_absolute_uri(m.user.avatar.url)
+            res.append({
+                'id': m.user.id,
+                'full_name': m.user.full_name,
+                'avatar': avatar_url,
+                'role': m.role,
+            })
+        return res
 
     def get_other_user(self, obj):
         if obj.channel_type != Channel.ChannelType.DIRECT:

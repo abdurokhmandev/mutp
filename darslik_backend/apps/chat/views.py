@@ -243,3 +243,63 @@ class ChannelMembersView(APIView):
         member = get_object_or_404(ChannelMember, channel=channel, user_id=user_id)
         member.delete()
         return success_response(message="A'zo muvaffaqiyatli chiqarildi")
+
+
+class ChannelDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        channel = get_object_or_404(Channel, id=id, members=request.user)
+        serializer = ChannelSerializer(channel, context={'request': request})
+        return success_response(data=serializer.data)
+
+    def patch(self, request, id):
+        channel = get_object_or_404(Channel, id=id)
+        get_object_or_404(ChannelMember, channel=channel, user=request.user, role=ChannelMember.Role.ADMIN)
+
+        name = request.data.get('name')
+        description = request.data.get('description')
+        image = request.FILES.get('image')
+
+        if name is not None:
+            name_str = name.strip()
+            if not name_str:
+                return error_response(message="Guruh nomi bo'sh bo'lishi mumkin emas", status_code=400)
+            channel.name = name_str
+
+        if description is not None:
+            channel.description = description.strip()
+
+        if image is not None:
+            channel.image = image
+
+        channel.save()
+        serializer = ChannelSerializer(channel, context={'request': request})
+        return success_response(data=serializer.data, message="Guruh muvaffaqiyatli yangilandi")
+
+    def delete(self, request, id):
+        channel = get_object_or_404(Channel, id=id)
+        get_object_or_404(ChannelMember, channel=channel, user=request.user, role=ChannelMember.Role.ADMIN)
+        
+        channel.delete()
+        return success_response(message="Guruh o'chirib yuborildi")
+
+
+class UserSearchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.db.models import Q
+        q = request.query_params.get('q', '').strip()
+        if len(q) < 2:
+            return success_response(data=[])
+        
+        users = User.objects.filter(
+            Q(full_name__icontains=q) | 
+            Q(email__icontains=q) | 
+            Q(phone__icontains=q)
+        ).exclude(id=request.user.id)[:20]
+        
+        from .serializers import UserBriefSerializer
+        serializer = UserBriefSerializer(users, many=True, context={'request': request})
+        return success_response(data=serializer.data)

@@ -26,6 +26,7 @@ class Channel(models.Model):
                      through='ChannelMember'
                    )
     description  = models.TextField(blank=True)
+    image        = models.ImageField(upload_to='chat/logos/%Y/%m/', blank=True, null=True)
     is_archived  = models.BooleanField(default=False)
     created_at   = models.DateTimeField(auto_now_add=True)
 
