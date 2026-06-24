@@ -237,6 +237,7 @@ const LessonPage = {
           if (videoEl) {
             videoEl.style.display = 'block';
             videoEl.src = src;
+            videoEl.load();
             videoEl.removeAttribute('controls');
             this.initPlayer();
           }

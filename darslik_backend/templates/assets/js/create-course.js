@@ -420,7 +420,7 @@ const CreateCourse = {
       document.getElementById('lessonHomeworkDesc').value = l.homework_description || '';
       document.getElementById('lessonHomeworkDeadline').value = l.homework_deadline_days || '';
       
-      if (l.video_url && (l.video_url.includes('youtube.com') || l.video_url.includes('youtu.be'))) {
+      if (l.video_url) {
         this.setVideoSource('url');
         document.getElementById('lessonVideoUrl').value = l.video_url;
         this.showYouTubePreview(l.video_url);
@@ -643,7 +643,7 @@ const CreateCourse = {
         if (vSource === 'url') {
           const vUrl = document.getElementById('lessonVideoUrl').value.trim();
           if (!vUrl) {
-            window.toast?.show("YouTube havolasini kiriting!", 'error');
+            window.toast?.show("Video havolasini kiriting!", 'error');
             if (submitBtn) {
               submitBtn.disabled = false;
               submitBtn.innerHTML = originalBtnText;
