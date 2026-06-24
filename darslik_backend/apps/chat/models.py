@@ -27,6 +27,10 @@ class Channel(models.Model):
                    )
     description  = models.TextField(blank=True)
     image        = models.ImageField(upload_to='chat/logos/%Y/%m/', blank=True, null=True)
+    pinned_message = models.ForeignKey(
+                       'Message', null=True, blank=True,
+                       on_delete=models.SET_NULL, related_name='+'
+                     )
     is_archived  = models.BooleanField(default=False)
     created_at   = models.DateTimeField(auto_now_add=True)
 
@@ -48,6 +52,7 @@ class ChannelMember(models.Model):
     role      = models.CharField(max_length=10, choices=Role, default=Role.MEMBER)
     joined_at = models.DateTimeField(auto_now_add=True)
     last_read = models.DateTimeField(null=True, blank=True)
+    last_typing = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = ['channel', 'user']
@@ -60,6 +65,8 @@ class Message(models.Model):
         FILE   = 'file',   'Fayl'
         IMAGE  = 'image',  'Rasm'
         SYSTEM = 'system', 'Tizim xabari'
+        VOICE  = 'voice',  'Ovozli xabar'
+        POLL   = 'poll',   'So\'rovnoma'
 
     channel      = models.ForeignKey(
                      Channel, on_delete=models.CASCADE, related_name='messages'
@@ -104,3 +111,14 @@ class MessageReaction(models.Model):
 
     class Meta:
         unique_together = ['message', 'user', 'emoji']
+
+
+class PollVote(models.Model):
+    """So'rovnomada ovoz berish"""
+    message    = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='poll_votes')
+    user       = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    option_id  = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['message', 'user']

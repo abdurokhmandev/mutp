@@ -109,6 +109,20 @@
     .menu-item:hover { background: var(--bg); }
     .menu-item.danger { color: #DC2626; }
 
+    /* Poll Option styles */
+    .poll-option-row { position: relative; border: 1.5px solid var(--border); border-radius: 10px; padding: 8px 12px; margin-top: 6px; cursor: pointer; overflow: hidden; background: transparent; transition: all 0.2s; }
+    .poll-option-row:hover { background: rgba(0, 0, 0, 0.02); }
+    .poll-option-progress { position: absolute; left: 0; top: 0; bottom: 0; background: var(--purple-light); z-index: 1; transition: width 0.3s; }
+    .poll-option-content { position: relative; z-index: 2; display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 500; }
+    .poll-option-row.voted { border-color: var(--purple); }
+    .poll-option-row.voted .poll-option-progress { background: #DDBEFE; }
+
+    /* Shared Media lists */
+    .shared-media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+    .shared-media-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; cursor: pointer; }
+    .shared-media-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+    .shared-media-item { display: flex; align-items: center; gap: 8px; font-size: 12px; text-decoration: none; color: var(--text-2); background: var(--bg); padding: 8px 10px; border-radius: 8px; }
+
     @media (max-width: 700px) {
       .chat-sidebar { width: 100%; position: absolute; z-index: 10; height: 100%; transform: translateX(0); transition: transform .25s; }
       .chat-sidebar.hidden { transform: translateX(-100%); }
@@ -162,13 +176,25 @@
           <div class="chat-header-name" id="headerName">—</div>
           <div class="chat-header-role" id="headerRole"></div>
         </div>
-        <!-- Group settings gear icon -->
+        
+        <!-- Header action buttons -->
+        <button onclick="ChatApp.toggleMessageSearch()" class="btn-back" style="border:none; font-size:18px; cursor:pointer; margin-right:8px;" title="Qidiruv"><i class="ti ti-search"></i></button>
         <button id="groupSettingsBtn" onclick="ChatApp.openGroupSettings()" class="btn-back" style="display:none; border:none; font-size:18px; cursor:pointer;"><i class="ti ti-settings"></i></button>
       </div>
-      
-      <!-- Connection Loss Banner -->
-      <div id="connLossBanner" style="display:none; background:#FFF1F2; color:#E11D48; padding:8px 16px; text-align:center; font-weight:700; font-size:13px; border-bottom:1px solid #FDA4AF; align-items:center; justify-content:center; gap:8px;">
-        <span>⚠️ Tarmoq bilan aloqa uzildi. Qayta ulanishga harakat qilinmoqda...</span>
+
+      <!-- Sticky Pinned Message Banner -->
+      <div id="pinBanner" style="display:none; background:#EFF6FF; border-bottom:1px solid var(--border); padding:8px 20px; align-items:center; justify-content:space-between; font-size:12px; flex-shrink:0;">
+        <div style="flex:1; cursor:pointer; min-width:0;" onclick="ChatApp.scrollToPinnedMessage()">
+          <span style="color:var(--purple); font-weight:700;">📌 Qadalgan xabar:</span>
+          <span id="pinText" style="margin-left:4px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; max-width:70%; vertical-align:bottom;"></span>
+        </div>
+        <button onclick="ChatApp.unpinActiveMessage()" style="background:transparent; border:none; color:var(--text-3); cursor:pointer; font-size:14px;"><i class="ti ti-x"></i></button>
+      </div>
+
+      <!-- Message Search Bar -->
+      <div id="messageSearchInputBar" style="display:none; background:var(--surface); border-bottom:1px solid var(--border); padding:8px 20px; align-items:center; gap:10px; flex-shrink:0;">
+        <input id="searchMsgInput" type="text" placeholder="Xabarlarni qidirish..." oninput="ChatApp.searchMessages(this.value)" style="flex:1; padding:6px 12px; border:2px solid var(--border); border-radius:10px; font-size:12px; outline:none; background:var(--bg);">
+        <button onclick="ChatApp.closeMessageSearch()" style="background:transparent; border:none; color:#DC2626; cursor:pointer;"><i class="ti ti-x"></i></button>
       </div>
       
       <div class="chat-messages" id="chatMessages"></div>
@@ -185,6 +211,7 @@
         <button onclick="ChatApp.clearSelectedFile()" style="background:transparent; border:none; color:#DC2626; cursor:pointer;"><i class="ti ti-x"></i></button>
       </div>
 
+      <!-- Input bar -->
       <div class="chat-input-bar">
         <!-- Attachment button -->
         <button onclick="document.getElementById('fileInput').click()" class="btn-send" style="background:#E2E8F0; color:#4A5568; box-shadow:none; margin-right:4px;" title="Fayl yuklash">
@@ -192,7 +219,17 @@
         </button>
         <input type="file" id="fileInput" style="display:none;" onchange="ChatApp.handleFileUpload(event)">
 
-        <textarea id="msgInput" rows="1" placeholder="Xabar yozing..." oninput="ChatApp.autoResize(this)" onkeydown="ChatApp.handleKey(event)"></textarea>
+        <!-- Poll button -->
+        <button id="pollBtn" onclick="ChatApp.openCreatePollModal()" class="btn-send" style="background:#E2E8F0; color:#4A5568; box-shadow:none; margin-right:4px; display:none;" title="So'rovnoma">
+          <i class="ti ti-chart-bar"></i>
+        </button>
+
+        <!-- Voice message button -->
+        <button id="micBtn" onclick="ChatApp.toggleVoiceRecord()" class="btn-send" style="background:#E2E8F0; color:#4A5568; box-shadow:none; margin-right:4px;" title="Ovozli xabar">
+          <i class="ti ti-microphone"></i>
+        </button>
+
+        <textarea id="msgInput" rows="1" placeholder="Xabar yozing..." oninput="ChatApp.handleInputKeyPress()" onkeydown="ChatApp.handleKey(event)"></textarea>
         <button class="btn-send" id="sendBtn" onclick="ChatApp.sendMessage()" title="Yuborish">
           <i class="ti ti-send"></i>
         </button>
@@ -228,6 +265,7 @@
     <span onclick="ChatApp.triggerMenuAction('react', '🔥')" style="cursor:pointer; transition:transform 0.1s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='none'">🔥</span>
   </div>
   <div class="menu-item" onclick="ChatApp.triggerMenuAction('reply')"><i class="ti ti-arrow-back-up"></i> Javob yozish</div>
+  <div class="menu-item" id="menuPinOpt" onclick="ChatApp.triggerMenuAction('pin')"><i class="ti ti-pin"></i> Qadash (Pin)</div>
   <div class="menu-item mine-only" id="menuEditOpt" onclick="ChatApp.triggerMenuAction('edit')"><i class="ti ti-edit"></i> Tahrirlash</div>
   <div class="menu-item mine-only" id="menuDeleteOpt" onclick="ChatApp.triggerMenuAction('delete')" style="color:#DC2626;"><i class="ti ti-trash"></i> O'chirish</div>
 </div>
@@ -259,8 +297,14 @@
       <button onclick="document.getElementById('groupSettingsModal').style.display='none'" style="background:transparent; border:none; font-size:20px; cursor:pointer; color:var(--text-2);"><i class="ti ti-x"></i></button>
     </div>
     
-    <div style="flex:1; overflow-y:auto; padding-right:4px; display:flex; flex-direction:column; gap:16px;">
-      <!-- Logo, Name and Desc -->
+    <!-- Tab toggles within Settings -->
+    <div style="display:flex; border-bottom:1px solid var(--border); margin-bottom:16px; flex-shrink:0;">
+      <button class="chat-tab-btn active" id="settingsTabMembersBtn" onclick="ChatApp.switchSettingsTab('members')">A'zolar</button>
+      <button class="chat-tab-btn" id="settingsTabMediaBtn" onclick="ChatApp.switchSettingsTab('media')">Galereya</button>
+    </div>
+
+    <!-- MEMBERS TAB CONTENT -->
+    <div id="settingsTabMembers" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:16px;">
       <div style="display:flex; align-items:center; gap:16px;">
         <div id="groupSettingsLogoContainer" onclick="document.getElementById('groupLogoInput').click()" style="width:64px; height:64px; border-radius:50%; background:var(--purple-light); color:var(--purple); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; cursor:pointer; position:relative; overflow:hidden;">
           <span id="groupSettingsInitials">?</span>
@@ -280,39 +324,65 @@
         <textarea id="groupSettingsDesc" rows="2" style="width:100%; padding:8px 12px; border:2px solid var(--border); border-radius:10px; font-size:13px; outline:none; resize:none; font-family:inherit; background:var(--bg);"></textarea>
       </div>
 
-      <!-- Save changes button for info -->
       <button id="saveGroupBtn" onclick="ChatApp.saveGroupInfo()" class="btn-primary" style="padding:8px 16px; border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; background:var(--purple); border:none; color:white; align-self:flex-end;">Saqlash</button>
       
       <hr style="border:none; border-top:1px solid var(--border);">
       
-      <!-- Members section -->
       <div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <h4 style="font-size:13px; font-weight:700;">A'zolar</h4>
           <button id="addMemberToggleBtn" onclick="ChatApp.showAddMemberForm(true)" class="btn-back" style="padding:4px 8px; font-size:11px; color:var(--purple); border-color:var(--purple); cursor:pointer;"><i class="ti ti-plus"></i> Qo'shish</button>
         </div>
         
-        <!-- Search / Add Member Section inline -->
         <div id="addMemberSection" style="display:none; background:var(--bg); border-radius:12px; padding:12px; margin-bottom:12px;">
           <div style="display:flex; gap:8px;">
             <input id="memberSearchInput" type="text" placeholder="Qidirish (ism, email)..." oninput="ChatApp.searchUsersToAdd(this.value)" style="flex:1; padding:8px 12px; border:2px solid var(--border); border-radius:10px; font-size:12px; outline:none; background:white;">
             <button onclick="ChatApp.showAddMemberForm(false)" style="background:transparent; border:none; color:#DC2626; cursor:pointer;"><i class="ti ti-x"></i></button>
           </div>
-          <div id="memberSearchResults" style="display:flex; flex-direction:column; gap:6px; margin-top:8px; max-height:120px; overflow-y:auto;">
-            <!-- Search results -->
-          </div>
+          <div id="memberSearchResults" style="display:flex; flex-direction:column; gap:6px; margin-top:8px; max-height:120px; overflow-y:auto;"></div>
         </div>
         
-        <div id="groupSettingsMembersList" style="display:flex; flex-direction:column; gap:10px; max-height:200px; overflow-y:auto;">
-          <!-- Members render with kick options -->
-        </div>
+        <div id="groupSettingsMembersList" style="display:flex; flex-direction:column; gap:10px; max-height:200px; overflow-y:auto;"></div>
       </div>
+    </div>
+
+    <!-- GALLERY TAB CONTENT -->
+    <div id="settingsTabMedia" style="display:none; flex:1; overflow-y:auto; padding-right:4px;">
+      <h4 style="font-size:13px; font-weight:700; margin-bottom:10px;">Rasmlar (Media)</h4>
+      <div id="sharedMediaImages" class="shared-media-grid"></div>
+      
+      <h4 style="font-size:13px; font-weight:700; margin-top:20px; margin-bottom:10px;">Fayllar (Hujjatlar)</h4>
+      <div id="sharedMediaFiles" class="shared-media-list"></div>
+      
+      <h4 style="font-size:13px; font-weight:700; margin-top:20px; margin-bottom:10px;">Havolalar (Linklar)</h4>
+      <div id="sharedMediaLinks" class="shared-media-list"></div>
     </div>
 
     <!-- Danger zone / Delete group -->
     <div style="margin-top:16px; border-top:1px solid var(--border); padding-top:12px; display:flex; justify-content:space-between; flex-shrink:0;">
       <button id="deleteGroupBtn" onclick="ChatApp.deleteGroup()" class="btn-secondary" style="background:#FEE2E2; border:none; color:#DC2626; padding:8px 16px; border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; display:none;">Guruhni o'chirish</button>
       <button onclick="document.getElementById('groupSettingsModal').style.display='none'" class="btn-secondary" style="padding:8px 16px; border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; background:#f3f4f6; border:none; margin-left:auto;">Yopish</button>
+    </div>
+  </div>
+</div>
+
+<!-- Poll Modal -->
+<div id="pollModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index:300; align-items:center; justify-content:center; font-family:'Plus Jakarta Sans', sans-serif;">
+  <div style="background:white; border-radius:20px; padding:24px; width:100%; max-width:400px; box-shadow:0 15px 35px rgba(0,0,0,0.15);">
+    <h3 style="font-size:15px; font-weight:700; margin-bottom:16px;">Yangi so'rovnoma</h3>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Savol</label>
+      <input id="pollQuestion" type="text" placeholder="Savolni kiriting..." style="width:100%; padding:10px; border:2px solid var(--border); border-radius:10px; font-size:12px; outline:none; background:var(--bg);">
+    </div>
+    <div id="pollOptionsContainer" style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+      <label style="font-size:11px; font-weight:700; display:block;">Variantlar</label>
+      <input class="poll-opt-input" type="text" placeholder="1-variant" style="width:100%; padding:10px; border:2px solid var(--border); border-radius:10px; font-size:12px; outline:none; background:var(--bg);">
+      <input class="poll-opt-input" type="text" placeholder="2-variant" style="width:100%; padding:10px; border:2px solid var(--border); border-radius:10px; font-size:12px; outline:none; background:var(--bg);">
+    </div>
+    <button onclick="ChatApp.addPollOptionField()" class="btn-back" style="padding:6px; font-size:11px; color:var(--purple); border-color:var(--purple); width:100%; cursor:pointer; margin-bottom:16px;"><i class="ti ti-plus"></i> Variant qo'shish</button>
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+      <button onclick="document.getElementById('pollModal').style.display='none'" class="btn-secondary" style="padding:8px 14px; border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; background:#f3f4f6; border:none;">Bekor qilish</button>
+      <button onclick="ChatApp.submitPoll()" class="btn-primary" style="padding:8px 16px; border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; background:var(--duo-green); border:none; color:white;">Yuborish</button>
     </div>
   </div>
 </div>
@@ -336,6 +406,17 @@ const ChatApp = {
   contextMenuTargetMsgId: null,
   contextMenuTargetMsgText: '',
   editingMsgId: null,
+
+  // Voice recording state
+  mediaRecorder: null,
+  audioChunks: [],
+  isRecording: false,
+  recordTimer: null,
+  recordDuration: 0,
+
+  // Typing cooldown
+  lastTypingSent: 0,
+  searchQuery: '',
 
   async init() {
     if (!App.requireAuth(['teacher', 'student'])) return;
@@ -412,6 +493,11 @@ const ChatApp = {
         avatarHtml = this.initials(displayName);
       }
 
+      let typingLabel = '';
+      if (c.typing_users && c.typing_users.length > 0) {
+        typingLabel = `<span style="color:var(--green); font-weight:600;">yozmoqda...</span>`;
+      }
+
       const lastMsg = c.last_message?.text || '';
       const unread = c.unread_count || 0;
       return `
@@ -419,7 +505,7 @@ const ChatApp = {
           <div class="conv-av">${avatarHtml}</div>
           <div class="conv-info">
             <div class="conv-name">${displayName}</div>
-            <div class="conv-last">${lastMsg ? (lastMsg.length > 35 ? lastMsg.slice(0, 35) + '…' : lastMsg) : 'Hali xabar yo\'q'}</div>
+            <div class="conv-last">${typingLabel || (lastMsg ? (lastMsg.length > 35 ? lastMsg.slice(0, 35) + '…' : lastMsg) : 'Hali xabar yo\'q')}</div>
           </div>
           ${unread ? `<span class="conv-badge">${unread}</span>` : ''}
         </div>`;
@@ -445,6 +531,10 @@ const ChatApp = {
     const convEl = document.getElementById(`conv-${convId}`);
     if (convEl) convEl.classList.add('active');
 
+    // Close search & editing modes
+    this.closeMessageSearch();
+    this.cancelEditMode();
+
     const conv = this.conversations.find(c => c.id === convId);
     if (conv) {
       const isDirect = conv.channel_type === 'direct';
@@ -463,15 +553,59 @@ const ChatApp = {
       document.getElementById('headerName').textContent = displayName;
       document.getElementById('headerRole').textContent = isDirect ? (conv.other_user?.role === 'teacher' ? 'Ustoz' : "O'quvchi") : "Guruh";
       
+      // Toggle poll button: only in groups
+      document.getElementById('pollBtn').style.display = (!isDirect) ? 'block' : 'none';
+
       const settingsBtn = document.getElementById('groupSettingsBtn');
       if (settingsBtn) {
         settingsBtn.style.display = (!isDirect) ? 'block' : 'none';
       }
+
+      // Handle Pin Banner on load
+      this.updatePinnedBanner(conv.pinned_message);
     }
 
     await this.loadMessages();
     clearInterval(this.pollTimer);
     this.pollTimer = setInterval(() => this.pollMessages(), 3000);
+  },
+
+  updatePinnedBanner(pinnedMsg) {
+    const banner = document.getElementById('pinBanner');
+    const pText = document.getElementById('pinText');
+    if (pinnedMsg) {
+      pText.textContent = pinnedMsg.message_type === 'poll' ? "📊 So'rovnoma" : pinnedMsg.text;
+      banner.style.display = 'flex';
+      banner.dataset.msgId = pinnedMsg.id;
+    } else {
+      banner.style.display = 'none';
+    }
+  },
+
+  scrollToPinnedMessage() {
+    const banner = document.getElementById('pinBanner');
+    const msgId = banner.dataset.msgId;
+    if (msgId) {
+      const target = document.getElementById(`msg-${msgId}`);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.style.background = '#EFF6FF';
+        setTimeout(() => target.style.background = 'transparent', 2000);
+      } else {
+        window.toast?.show("Xabar topilmadi", 'info');
+      }
+    }
+  },
+
+  async unpinActiveMessage() {
+    if (!confirm("Xabarni pin'dan olib tashlamoqchimisiz?")) return;
+    try {
+      await API.post(`/chat/channels/${this.activeConvId}/pin/`, {});
+      document.getElementById('pinBanner').style.display = 'none';
+      await this.loadConversations();
+    } catch(e) {
+      window.toast?.show(e.message, 'error');
+    }
   },
 
   async startOrOpenConv(userId) {
@@ -492,7 +626,10 @@ const ChatApp = {
     const el = document.getElementById('chatMessages');
     el.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
     try {
-      const res = await API.get(`/chat/channels/${this.activeConvId}/messages/`);
+      const url = this.searchQuery 
+        ? `/chat/channels/${this.activeConvId}/messages/?q=${encodeURIComponent(this.searchQuery)}`
+        : `/chat/channels/${this.activeConvId}/messages/`;
+      const res = await API.get(url);
       this.renderMessages(res.data || []);
     } catch (e) {
       el.innerHTML = `<div style="padding:20px;color:var(--text-2)">Yuklanmadi: ${e.message}</div>`;
@@ -507,7 +644,7 @@ const ChatApp = {
       const msgs = res.data || [];
       const banner = document.getElementById('connLossBanner');
       if (banner) banner.style.display = 'none';
-      if (msgs.length !== this.lastMsgCount) {
+      if (msgs.length !== this.lastMsgCount && !this.searchQuery) {
         if (msgs.length > this.lastMsgCount) {
           const lastMsg = msgs[msgs.length - 1];
           if (lastMsg.sender_id !== this.currentUser?.id) {
@@ -515,6 +652,24 @@ const ChatApp = {
           }
         }
         this.renderMessages(msgs);
+      }
+
+      // Check for Pinned message & Typing indicator updates on polling
+      const convRes = await API.get('/chat/channels/');
+      this.conversations = convRes.data || [];
+      this.renderConvList(this.conversations);
+
+      const activeChannel = this.conversations.find(c => c.id === this.activeConvId);
+      if (activeChannel) {
+        this.updatePinnedBanner(activeChannel.pinned_message);
+        
+        // Render typing indicator
+        const subHeaderRole = document.getElementById('headerRole');
+        if (activeChannel.typing_users && activeChannel.typing_users.length > 0) {
+          subHeaderRole.innerHTML = `<span style="color:var(--green); font-weight:600;">✍️ ${activeChannel.typing_users.map(u => u.full_name).join(', ')} yozmoqda...</span>`;
+        } else {
+          subHeaderRole.textContent = activeChannel.channel_type === 'direct' ? (activeChannel.other_user?.role === 'teacher' ? 'Ustoz' : "O'quvchi") : "Guruh";
+        }
       }
     } catch (e) {
       const banner = document.getElementById('connLossBanner');
@@ -530,6 +685,109 @@ const ChatApp = {
       });
     } else if (!document.hidden) {
       window.toast?.show(`Yangi xabar: ${sender} - ${text.slice(0, 30)}...`, 'info');
+    }
+  },
+
+  // Message Search Toggle
+  toggleMessageSearch() {
+    const bar = document.getElementById('messageSearchInputBar');
+    bar.style.display = bar.style.display === 'none' ? 'flex' : 'none';
+    document.getElementById('searchMsgInput').value = '';
+    this.searchQuery = '';
+    document.getElementById('searchMsgInput').focus();
+  },
+
+  closeMessageSearch() {
+    document.getElementById('messageSearchInputBar').style.display = 'none';
+    document.getElementById('searchMsgInput').value = '';
+    if (this.searchQuery) {
+      this.searchQuery = '';
+      this.loadMessages();
+    }
+  },
+
+  searchMessages(q) {
+    this.searchQuery = q.trim();
+    this.loadMessages();
+  },
+
+  // Typing action
+  handleInputKeyPress() {
+    const now = Date.now();
+    if (now - this.lastTypingSent > 2000) {
+      this.lastTypingSent = now;
+      API.post(`/chat/channels/${this.activeConvId}/typing/`, {}).catch(() => {});
+    }
+    const input = document.getElementById('msgInput');
+    this.autoResize(input);
+  },
+
+  // Voice recording logic
+  async toggleVoiceRecord() {
+    if (this.isRecording) {
+      this.stopVoiceRecord();
+    } else {
+      await this.startVoiceRecord();
+    }
+  },
+
+  async startVoiceRecord() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.audioChunks = [];
+      this.mediaRecorder = new MediaRecorder(stream);
+      this.mediaRecorder.ondataavailable = (e) => this.audioChunks.push(e.data);
+      this.mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        await this.sendVoiceMessage(audioBlob);
+      };
+
+      this.mediaRecorder.start();
+      this.isRecording = true;
+      this.recordDuration = 0;
+      
+      const input = document.getElementById('msgInput');
+      input.disabled = true;
+      document.getElementById('micBtn').style.color = '#DC2626';
+      
+      this.recordTimer = setInterval(() => {
+        this.recordDuration++;
+        const mins = Math.floor(this.recordDuration / 60);
+        const secs = this.recordDuration % 60;
+        input.value = `🎤 Ovoz yozilmoqda: ${mins}:${secs < 10 ? '0' : ''}${secs}... (to'xtatish uchun bosing)`;
+      }, 1000);
+      
+    } catch(e) {
+      window.toast?.show("Mikrofonni ulash imkoni bo'lmadi: " + e.message, 'error');
+    }
+  },
+
+  stopVoiceRecord() {
+    if (this.mediaRecorder && this.isRecording) {
+      this.mediaRecorder.stop();
+      this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+      clearInterval(this.recordTimer);
+      
+      this.isRecording = false;
+      const input = document.getElementById('msgInput');
+      input.disabled = false;
+      input.value = '';
+      document.getElementById('micBtn').style.color = '#4A5568';
+    }
+  },
+
+  async sendVoiceMessage(blob) {
+    const fd = new FormData();
+    fd.append('file', blob, 'voice.webm');
+    fd.append('message_type', 'voice');
+    fd.append('text', 'Ovozli xabar');
+
+    try {
+      await API.post(`/chat/channels/${this.activeConvId}/messages/`, fd);
+      await this.loadMessages();
+      await this.loadConversations();
+    } catch (e) {
+      window.toast?.show(e.message || 'Ovoz yuborilmadi', 'error');
     }
   },
 
@@ -585,13 +843,44 @@ const ChatApp = {
       const time = new Date(m.created_at).toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
       
       let fileHtml = '';
-      if (m.file) {
+      if (m.file && m.message_type === 'voice') {
+        fileHtml = `<div style="margin-top:6px;"><audio src="${m.file}" controls style="max-width:100%; border-radius:8px; display:block;"></audio></div>`;
+      } else if (m.file) {
         const isImage = m.file.match(/\.(jpeg|jpg|gif|png|webp)/i);
         if (isImage) {
           fileHtml = `<div style="margin-top:6px; max-width:200px;"><img src="${m.file}" style="width:100%; border-radius:8px; display:block; cursor:pointer;" onclick="window.open('${m.file}', '_blank'); event.stopPropagation();"></div>`;
         } else {
           fileHtml = `<div style="margin-top:6px;"><a href="${m.file}" target="_blank" onclick="event.stopPropagation();" style="color:${isMine ? '#fff' : 'var(--purple)'}; text-decoration:underline; font-size:12px; display:flex; align-items:center; gap:4px;"><i class="ti ti-download"></i> ${m.file_name || 'Faylni yuklash'}</a></div>`;
         }
+      }
+
+      // Render Polls
+      let pollHtml = '';
+      if (m.message_type === 'poll' && m.poll_data) {
+        const poll = m.poll_data;
+        const results = m.poll_results || {};
+        const total = results.total_votes || 0;
+        
+        pollHtml = `
+          <div style="background:var(--bg); border:1.5px solid var(--border); border-radius:12px; padding:12px; margin-top:8px; color:var(--text); width:280px; text-align:left;">
+            <div style="font-weight:700; font-size:13px; margin-bottom:10px; display:flex; align-items:center; gap:6px;"><i class="ti ti-chart-bar" style="color:var(--purple); font-size:16px;"></i> ${this.escHtml(poll.question)}</div>
+            <div>
+              ${(poll.options || []).map(opt => {
+                const count = results.counts?.[opt.id] || 0;
+                const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+                const isMyVote = results.my_vote === opt.id;
+                return `
+                  <div onclick="ChatApp.votePoll(${m.id}, ${opt.id}); event.stopPropagation();" class="poll-option-row ${isMyVote ? 'voted' : ''}">
+                    <div class="poll-option-progress" style="width: ${percent}%;"></div>
+                    <div class="poll-option-content">
+                      <span>${this.escHtml(opt.text)}</span>
+                      <span>${percent}% (${count})</span>
+                    </div>
+                  </div>`;
+              }).join('')}
+            </div>
+            <div style="font-size:10px; color:var(--text-3); margin-top:10px; text-align:right;">Jami ovozlar: ${total}</div>
+          </div>`;
       }
 
       let reactsHtml = '';
@@ -610,13 +899,14 @@ const ChatApp = {
         : this.initials(m.sender_name);
 
       return `
-        <div class="msg ${isMine ? 'mine' : 'theirs'}" style="position:relative;">
+        <div class="msg ${isMine ? 'mine' : 'theirs'}" id="msg-${m.id}" style="position:relative;">
           ${!isMine ? `<div class="msg-av" onclick="window.location.href='/profile.html?id=${m.sender_id}'">${avatarSrc}</div>` : ''}
           <div style="max-width: 65%;">
             <div class="msg-bubble" onclick="ChatApp.showContextMenu(event, ${m.id}, ${isMine}, '${m.text.replace(/'/g, "\\'")}')" style="max-width:100%;">
               ${!isMine ? `<span onclick="window.location.href='/profile.html?id=${m.sender_id}'; event.stopPropagation();" style="cursor:pointer; font-weight:700; color:var(--purple); display:block; margin-bottom:4px; font-size:11.5px;">${m.sender_name}</span>` : ''}
-              <div>${this.escHtml(m.text)}</div>
+              ${m.message_type !== 'poll' ? `<div>${this.escHtml(m.text)}</div>` : ''}
               ${fileHtml}
+              ${pollHtml}
               <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; gap:8px;">
                 <div class="msg-time" style="margin:0;">${time} ${m.is_edited ? '(tahrirlangan)' : ''}</div>
               </div>
@@ -655,6 +945,15 @@ const ChatApp = {
       await this.toggleReact(msgId, data);
     } else if (action === 'reply') {
       this.openThread(msgId);
+    } else if (action === 'pin') {
+      try {
+        await API.post(`/chat/channels/${this.activeConvId}/pin/`, { message_id: msgId });
+        window.toast?.show("Xabar pin qilindi", 'success');
+        await this.loadConversations();
+        await this.openConv(this.activeConvId);
+      } catch (e) {
+        window.toast?.show(e.message, 'error');
+      }
     } else if (action === 'edit') {
       this.enterEditMode(msgId, this.contextMenuTargetMsgText);
     } else if (action === 'delete') {
@@ -742,11 +1041,141 @@ const ChatApp = {
     }
   },
 
-  // --- GROUP SETTINGS ---
+  // --- POLLS ---
+  openCreatePollModal() {
+    document.getElementById('pollModal').style.display = 'flex';
+    document.getElementById('pollQuestion').value = '';
+    const container = document.getElementById('pollOptionsContainer');
+    container.innerHTML = `
+      <label style="font-size:11px; font-weight:700; display:block;">Variantlar</label>
+      <input class="poll-opt-input" type="text" placeholder="1-variant" style="width:100%; padding:10px; border:2px solid var(--border); border-radius:10px; font-size:12px; outline:none; background:var(--bg);">
+      <input class="poll-opt-input" type="text" placeholder="2-variant" style="width:100%; padding:10px; border:2px solid var(--border); border-radius:10px; font-size:12px; outline:none; background:var(--bg);">
+    `;
+  },
+
+  addPollOptionField() {
+    const container = document.getElementById('pollOptionsContainer');
+    const idx = container.querySelectorAll('.poll-opt-input').length + 1;
+    const input = document.createElement('input');
+    input.className = 'poll-opt-input';
+    input.type = 'text';
+    input.placeholder = `${idx}-variant`;
+    input.style.cssText = "width:100%; padding:10px; border:2px solid var(--border); border-radius:10px; font-size:12px; outline:none; background:var(--bg);";
+    container.appendChild(input);
+  },
+
+  async submitPoll() {
+    const q = document.getElementById('pollQuestion').value.trim();
+    if (!q) {
+      window.toast?.show("Savolni yozing", 'error');
+      return;
+    }
+
+    const inputs = document.querySelectorAll('.poll-opt-input');
+    const options = [];
+    inputs.forEach((input, idx) => {
+      const val = input.value.trim();
+      if (val) {
+        options.push({ id: idx, text: val });
+      }
+    });
+
+    if (options.length < 2) {
+      window.toast?.show("Kamida 2 ta variant bo'lishi kerak", 'error');
+      return;
+    }
+
+    const pollData = JSON.stringify({ question: q, options });
+
+    try {
+      await API.post(`/chat/channels/${this.activeConvId}/messages/`, {
+        text: pollData,
+        message_type: 'poll'
+      });
+      document.getElementById('pollModal').style.display = 'none';
+      await this.loadMessages();
+    } catch(e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  async votePoll(msgId, optionId) {
+    try {
+      await API.post(`/chat/messages/${msgId}/vote/`, { option_id: optionId });
+      await this.loadMessages();
+    } catch(e) {
+      window.toast?.show(e.message, 'error');
+    }
+  },
+
+  // --- GROUP SETTINGS TABS ---
+  currentSettingsTab: 'members',
+  switchSettingsTab(tab) {
+    this.currentSettingsTab = tab;
+    document.getElementById('settingsTabMembersBtn').classList.toggle('active', tab === 'members');
+    document.getElementById('settingsTabMediaBtn').classList.toggle('active', tab === 'media');
+    
+    document.getElementById('settingsTabMembers').style.display = tab === 'members' ? 'flex' : 'none';
+    document.getElementById('settingsTabMedia').style.display = tab === 'media' ? 'block' : 'none';
+
+    if (tab === 'media') {
+      this.loadSharedMedia();
+    }
+  },
+
+  async loadSharedMedia() {
+    try {
+      const res = await API.get(`/chat/channels/${this.activeConvId}/media/`);
+      const media = res.data;
+
+      // Render images
+      const imgDiv = document.getElementById('sharedMediaImages');
+      if (media.images && media.images.length > 0) {
+        imgDiv.innerHTML = media.images.map(img => `
+          <img src="${img.file}" onclick="window.open('${img.file}', '_blank')">
+        `).join('');
+      } else {
+        imgDiv.innerHTML = '<div style="grid-column: span 3; font-size:11px; color:var(--text-3); text-align:center;">Rasm yo\'q</div>';
+      }
+
+      // Render files
+      const fileDiv = document.getElementById('sharedMediaFiles');
+      if (media.files && media.files.length > 0) {
+        fileDiv.innerHTML = media.files.map(f => `
+          <a href="${f.file}" target="_blank" class="shared-media-item">
+            <i class="ti ti-file"></i> 
+            <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${f.file_name || 'Fayl'}</span>
+          </a>
+        `).join('');
+      } else {
+        fileDiv.innerHTML = '<div style="font-size:11px; color:var(--text-3); text-align:center;">Fayllar yo\'q</div>';
+      }
+
+      // Render links
+      const linkDiv = document.getElementById('sharedMediaLinks');
+      if (media.links && media.links.length > 0) {
+        linkDiv.innerHTML = media.links.map(l => `
+          <a href="${l.text}" target="_blank" class="shared-media-item">
+            <i class="ti ti-link"></i> 
+            <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${l.text}</span>
+          </a>
+        `).join('');
+      } else {
+        linkDiv.innerHTML = '<div style="font-size:11px; color:var(--text-3); text-align:center;">Havolalar yo\'q</div>';
+      }
+
+    } catch (e) {
+      console.error("Shared media yuklanmadi", e);
+    }
+  },
+
+  // --- GROUP SETTINGS MEMBERS ---
   groupSettingsMembers: [],
   async openGroupSettings() {
     const conv = this.conversations.find(c => c.id === this.activeConvId);
     if (!conv || conv.channel_type === 'direct') return;
+
+    this.switchSettingsTab('members'); // Reset to members tab on open
 
     try {
       const res = await API.get(`/chat/channels/${this.activeConvId}/detail/`);

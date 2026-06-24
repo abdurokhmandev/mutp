@@ -85,14 +85,17 @@ class MessageListCreateView(APIView):
         channel = get_object_or_404(Channel, id=channel_id, members=request.user)
         after_id = request.query_params.get('after')
         before_id = request.query_params.get('before')
-
         parent_id = request.query_params.get('parent')
+        q = request.query_params.get('q', '').strip()
 
         qs = channel.messages.filter(is_deleted=False)
-        if parent_id:
-            qs = qs.filter(parent_id=parent_id)
+        if q:
+            qs = qs.filter(text__icontains=q)
         else:
-            qs = qs.filter(parent__isnull=True)
+            if parent_id:
+                qs = qs.filter(parent_id=parent_id)
+            else:
+                qs = qs.filter(parent__isnull=True)
 
         if after_id:
             qs = qs.filter(id__gt=after_id)
@@ -303,3 +306,85 @@ class UserSearchView(APIView):
         from .serializers import UserBriefSerializer
         serializer = UserBriefSerializer(users, many=True, context={'request': request})
         return success_response(data=serializer.data)
+
+
+class ChannelPinView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        channel = get_object_or_404(Channel, id=id)
+        get_object_or_404(ChannelMember, channel=channel, user=request.user, role=ChannelMember.Role.ADMIN)
+
+        message_id = request.data.get('message_id')
+        if not message_id:
+            channel.pinned_message = None
+            channel.save()
+            return success_response(message="Xabar pin'dan olindi")
+        
+        msg = get_object_or_404(Message, id=message_id, channel=channel)
+        channel.pinned_message = msg
+        channel.save()
+        return success_response(message="Xabar muvaffaqiyatli pin qilindi")
+
+
+class ChannelTypingView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        channel = get_object_or_404(Channel, id=id, members=request.user)
+        ChannelMember.objects.filter(channel=channel, user=request.user).update(last_typing=timezone.now())
+        return success_response(message="Typing status yangilandi")
+
+
+class ChannelSharedMediaView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, id):
+        channel = get_object_or_404(Channel, id=id, members=request.user)
+        messages = channel.messages.filter(is_deleted=False)
+        
+        images = messages.filter(message_type=Message.MessageType.IMAGE).order_by('-created_at')[:30]
+        files = messages.filter(message_type=Message.MessageType.FILE).order_by('-created_at')[:30]
+        
+        from django.db.models import Q
+        links = messages.filter(
+            Q(text__contains='http://') | Q(text__contains='https://')
+        ).exclude(message_type__in=[Message.MessageType.IMAGE, Message.MessageType.FILE]).order_by('-created_at')[:30]
+
+        img_serializer = MessageSerializer(images, many=True, context={'request': request})
+        file_serializer = MessageSerializer(files, many=True, context={'request': request})
+        link_serializer = MessageSerializer(links, many=True, context={'request': request})
+
+        return success_response(data={
+            'images': img_serializer.data,
+            'files': file_serializer.data,
+            'links': link_serializer.data
+        })
+
+
+class PollVoteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        msg = get_object_or_404(Message, id=id)
+        if msg.message_type != Message.MessageType.POLL:
+            return error_response(message="Bu xabar so'rovnoma emas", status_code=400)
+
+        try:
+            option_id = int(request.data.get('option_id'))
+        except (TypeError, ValueError):
+            return error_response(message="Noto'g'ri variant tanlandi", status_code=400)
+
+        from .models import PollVote
+        vote = PollVote.objects.filter(message=msg, user=request.user).first()
+        if vote:
+            if vote.option_id == option_id:
+                vote.delete()
+                return success_response(message="Ovoz olib tashlandi")
+            else:
+                vote.option_id = option_id
+                vote.save()
+                return success_response(message="Ovoz yangilandi")
+        else:
+            PollVote.objects.create(message=msg, user=request.user, option_id=option_id)
+            return success_response(message="Ovoz muvaffaqiyatli saqlandi")

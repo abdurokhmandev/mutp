@@ -20,6 +20,8 @@ class MessageSerializer(serializers.ModelSerializer):
     sender_avatar = serializers.SerializerMethodField()
     reactions = serializers.SerializerMethodField()
     replies_count = serializers.SerializerMethodField()
+    poll_data = serializers.SerializerMethodField()
+    poll_results = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
@@ -27,7 +29,7 @@ class MessageSerializer(serializers.ModelSerializer):
             'id', 'sender_id', 'sender_name', 'sender_avatar', 'message_type',
             'text', 'file', 'file_name', 'file_size', 'parent',
             'is_edited', 'edited_at', 'is_deleted', 'created_at', 'reactions',
-            'replies_count'
+            'replies_count', 'poll_data', 'poll_results'
         ]
         read_only_fields = ['id', 'sender_id', 'sender_name', 'is_edited', 'edited_at', 'created_at']
 
@@ -53,6 +55,36 @@ class MessageSerializer(serializers.ModelSerializer):
             })
         return result
 
+    def get_poll_data(self, obj):
+        if obj.message_type != Message.MessageType.POLL:
+            return None
+        import json
+        try:
+            return json.loads(obj.text)
+        except Exception:
+            return None
+
+    def get_poll_results(self, obj):
+        if obj.message_type != Message.MessageType.POLL:
+            return None
+        
+        request = self.context.get('request')
+        user = request.user if request else None
+
+        votes = obj.poll_votes.all()
+        counts = {}
+        my_vote = None
+        for v in votes:
+            counts[v.option_id] = counts.get(v.option_id, 0) + 1
+            if user and v.user_id == user.id:
+                my_vote = v.option_id
+
+        return {
+            'total_votes': votes.count(),
+            'counts': counts,
+            'my_vote': my_vote
+        }
+
 
 class ChannelSerializer(serializers.ModelSerializer):
     other_user = serializers.SerializerMethodField()
@@ -60,10 +92,15 @@ class ChannelSerializer(serializers.ModelSerializer):
     unread_count = serializers.SerializerMethodField()
     members = serializers.SerializerMethodField()
     image = serializers.SerializerMethodField()
+    pinned_message = serializers.SerializerMethodField()
+    typing_users = serializers.SerializerMethodField()
 
     class Meta:
         model = Channel
-        fields = ['id', 'name', 'channel_type', 'description', 'image', 'other_user', 'last_message', 'unread_count', 'members', 'created_at']
+        fields = [
+            'id', 'name', 'channel_type', 'description', 'image', 'other_user', 
+            'last_message', 'unread_count', 'members', 'pinned_message', 'typing_users', 'created_at'
+        ]
 
     def get_image(self, obj):
         request = self.context.get('request')
@@ -84,6 +121,35 @@ class ChannelSerializer(serializers.ModelSerializer):
                 'full_name': m.user.full_name,
                 'avatar': avatar_url,
                 'role': m.role,
+            })
+        return res
+
+    def get_pinned_message(self, obj):
+        if not obj.pinned_message:
+            return None
+        return {
+            'id': obj.pinned_message.id,
+            'text': obj.pinned_message.text,
+            'sender_name': obj.pinned_message.sender.full_name if obj.pinned_message.sender else "Tizim",
+            'message_type': obj.pinned_message.message_type
+        }
+
+    def get_typing_users(self, obj):
+        from django.utils import timezone
+        from datetime import timedelta
+        cutoff = timezone.now() - timedelta(seconds=4)
+        typing_members = obj.channelmember_set.filter(last_typing__gt=cutoff)
+        
+        request = self.context.get('request')
+        current_user = request.user if request else None
+
+        res = []
+        for m in typing_members:
+            if current_user and m.user_id == current_user.id:
+                continue
+            res.append({
+                'id': m.user.id,
+                'full_name': m.user.full_name
             })
         return res
 
