@@ -12,6 +12,7 @@ from .views import (
     LessonResourceCreateView,
     LessonResourceDeleteView,
     ReviewCreateView,
+    GlobalReviewListView,
     CertificateView,
     TeacherCourseListView,
     TeacherCourseDetailView,
@@ -58,6 +59,7 @@ urlpatterns = [
     path('<slug:slug>/enroll/',          EnrollView.as_view(), name='enroll'),
     path('<slug:slug>/save/',            SaveCourseView.as_view(), name='save_course'),
     path('<slug:slug>/review/',          ReviewCreateView.as_view(), name='review_create'),
+    path('reviews/recent/',              GlobalReviewListView.as_view(), name='global_reviews'),
 
     # Darslar
     path('lessons/<int:id>/',            LessonDetailView.as_view(), name='lesson_detail'),

@@ -1,4 +1,4 @@
-// index.js — bosh sahifada real kurslar
+// index.js — bosh sahifada real kurslar, o'qituvchilar va fikrlar
 const IndexPage = {
   allCourses: [],
 
@@ -130,14 +130,83 @@ const IndexPage = {
           </div>
         `;
       }).join('');
+
+      this.populateFeaturedTeacher(teachers);
     } catch (e) {
       console.error("O'qituvchilarni yuklashda xatolik:", e);
     }
   },
 
+  populateFeaturedTeacher(teachers) {
+    const card = document.querySelector('.teacher-card');
+    if (!card || !teachers.length) return;
+
+    const topTeacher = [...teachers].sort((a, b) => (b.total_students || 0) - (a.total_students || 0))[0];
+    if (!topTeacher) return;
+
+    const u = topTeacher.user_details || {};
+    const initials = App.initials(u.full_name);
+    const earnings = parseFloat(topTeacher.total_earnings || 0);
+    const earningsStr = earnings > 0 ? (earnings / 1e6).toFixed(1) + 'M' : '0';
+
+    card.innerHTML = `
+      <div class="teacher-avatar">${initials}</div>
+      <div class="teacher-name">${u.full_name}</div>
+      <div class="teacher-role">${topTeacher.specialization || "O'qituvchi"} · ${topTeacher.address || "Toshkent"}</div>
+      <div class="teacher-stats">
+        <div class="t-stat"><div class="t-stat-num">${topTeacher.total_students || 0}</div><div class="t-stat-label">O'quvchilar</div></div>
+        <div class="t-stat"><div class="t-stat-num">${topTeacher.courses_count || 0}</div><div class="t-stat-label">Kurslar</div></div>
+        <div class="t-stat"><div class="t-stat-num">${(topTeacher.average_rating || 0).toFixed(1)}★</div><div class="t-stat-label">Reyting</div></div>
+        <div class="t-stat"><div class="t-stat-num">${earningsStr}</div><div class="t-stat-label">Daromad (so'm)</div></div>
+      </div>
+    `;
+  },
+
+  async loadReviews() {
+    const grid = document.querySelector('.testimonials-grid');
+    if (!grid) return;
+
+    try {
+      const result = await API.get('/courses/reviews/recent/');
+      const reviews = result.data || [];
+      if (!reviews.length) {
+        grid.innerHTML = '<p style="color:var(--muted);padding:20px;grid-column:1/-1;text-align:center">Hozircha o\'quvchilar tomonidan fikrlar qoldirilmagan.</p>';
+        return;
+      }
+
+      const colors = [
+        { bg: '#DBEAFE', color: '#1D4ED8' },
+        { bg: '#D1FAE5', color: '#065F46' },
+        { bg: '#EDE9FE', color: '#5B21B6' },
+        { bg: '#FFE4E6', color: '#9F1239' }
+      ];
+
+      grid.innerHTML = reviews.map((r, idx) => {
+        const col = colors[idx % colors.length];
+        const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+        const initials = App.initials(r.student_name);
+        return `
+          <div class="testimonial-card">
+            <div class="t-stars" style="color: #F59E0B">${stars}</div>
+            <div class="t-text">"${r.comment || 'Ajoyib kurs, tavsiya qilaman!'}"</div>
+            <div class="t-author">
+              <div class="t-avatar" style="background:${col.bg};color:${col.color}">${initials}</div>
+              <div>
+                <div class="t-name">${r.student_name}</div>
+                <div class="t-meta">${new Date(r.created_at).toLocaleDateString('uz-UZ')}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } catch (e) {
+      console.error("Fikrlar yuklashda xatolik:", e);
+    }
+  },
+
   async init() {
     this.bindFilters();
-    await Promise.all([this.loadCourses(), this.loadTeachers()]);
+    await Promise.all([this.loadCourses(), this.loadTeachers(), this.loadReviews()]);
   },
 };
 

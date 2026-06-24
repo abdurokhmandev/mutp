@@ -470,7 +470,20 @@ class LessonResourceCreateView(APIView):
 
 
 class ReviewCreateView(APIView):
-    permission_classes = [IsAuthenticated]
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def get(self, request, slug):
+        try:
+            course = Course.objects.get(slug=slug)
+        except Course.DoesNotExist:
+            return error_response(message="Kurs topilmadi", status_code=404)
+
+        reviews = Review.objects.filter(enrollment__course=course).order_by('-created_at')
+        serializer = ReviewSerializer(reviews, many=True, context={'request': request})
+        return success_response(data=serializer.data, message="Kurs bo'yicha fikrlar")
 
     def post(self, request, slug):
         try:
@@ -495,6 +508,17 @@ class ReviewCreateView(APIView):
             serializer.save(enrollment=enrollment)
             return success_response(data=serializer.data, message="Fikringiz uchun rahmat", status_code=201)
         return error_response(message="Xatolik yuz berdi", errors=serializer.errors, status_code=400)
+
+
+class GlobalReviewListView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        reviews = Review.objects.filter(
+            enrollment__course__status='published'
+        ).order_by('-created_at')[:10]
+        serializer = ReviewSerializer(reviews, many=True, context={'request': request})
+        return success_response(data=serializer.data, message="Oxirgi fikrlar ro'yxati")
 
 
 class CertificateView(APIView):
