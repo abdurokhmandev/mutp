@@ -10,7 +10,23 @@ class EduPlayer {
     
     // Resume from last watched if provided
     if (this.options.lastWatched) {
-      this.video.currentTime = this.options.lastWatched;
+      const setTime = () => {
+        try {
+          if (this.video.duration && this.options.lastWatched >= this.video.duration) {
+            this.video.currentTime = 0;
+          } else {
+            this.video.currentTime = this.options.lastWatched;
+          }
+        } catch (e) {
+          console.error("Failed to set currentTime:", e);
+        }
+      };
+
+      if (this.video.readyState >= 1) {
+        setTime();
+      } else {
+        this.video.addEventListener('loadedmetadata', setTime, { once: true });
+      }
     }
   }
 
@@ -76,7 +92,7 @@ class EduPlayer {
     this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
     
     // Simulate sending progress
-    setInterval(() => {
+    this.progressInterval = setInterval(() => {
       if(!this.video.paused && this.options.onProgress) {
         this.options.onProgress(this.video.currentTime);
       }
@@ -123,6 +139,18 @@ class EduPlayer {
     } else {
       document.exitFullscreen();
     }
+  }
+
+  destroy() {
+    if (this.progressInterval) {
+      clearInterval(this.progressInterval);
+    }
+    if (this.controls) {
+      this.controls.remove();
+    }
+    try {
+      this.video.pause();
+    } catch (e) {}
   }
 }
 window.EduPlayer = EduPlayer;

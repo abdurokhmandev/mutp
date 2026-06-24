@@ -48,6 +48,10 @@ class IsEnrolledStudent(BasePermission):
         return request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
+        # Allow staff and superusers
+        if request.user.is_staff or request.user.is_superuser:
+            return True
+
         # obj can be a Lesson or Course
         # If Lesson
         if hasattr(obj, 'is_free_preview') and obj.is_free_preview:
@@ -59,6 +63,10 @@ class IsEnrolledStudent(BasePermission):
         elif hasattr(obj, 'course'):  # Module
             course = obj.course
             
+        # Allow course author (teacher)
+        if course.teacher == request.user:
+            return True
+
         from apps.courses.models import Enrollment
         return Enrollment.objects.filter(
             student=request.user,

@@ -26,11 +26,13 @@ class LessonSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'order', 'lesson_type', 'duration_seconds', 'duration_display', 'is_free_preview', 'video_url', 'video_file', 'is_completed']
 
     def get_video_url(self, obj):
-        # Only show video_url if lesson is free preview or user is enrolled
+        # Only show video_url if lesson is free preview or user is enrolled/teacher
         request = self.context.get('request')
         if obj.is_free_preview:
             return obj.video_url
         if request and request.user and request.user.is_authenticated:
+            if request.user.is_staff or request.user.is_superuser or obj.module.course.teacher == request.user:
+                return obj.video_url
             if Enrollment.objects.filter(student=request.user, course=obj.module.course).exists():
                 return obj.video_url
         return None
@@ -41,7 +43,9 @@ class LessonSerializer(serializers.ModelSerializer):
             return None
         show_video = obj.is_free_preview
         if not show_video and request and request.user and request.user.is_authenticated:
-            if Enrollment.objects.filter(student=request.user, course=obj.module.course).exists():
+            if request.user.is_staff or request.user.is_superuser or obj.module.course.teacher == request.user:
+                show_video = True
+            elif Enrollment.objects.filter(student=request.user, course=obj.module.course).exists():
                 show_video = True
         if show_video:
             if request is not None:

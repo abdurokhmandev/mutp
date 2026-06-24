@@ -203,6 +203,15 @@ const LessonPage = {
   },
 
   renderLessonPlayer(lesson) {
+    if (this.player && typeof this.player.destroy === 'function') {
+      try {
+        this.player.destroy();
+      } catch (e) {
+        console.error(e);
+      }
+      this.player = null;
+    }
+
     const videoEl = document.getElementById('videoPlayer');
     const ytContainer = document.getElementById('ytPlayerContainer');
     const textContainer = document.getElementById('textLessonContainer');
