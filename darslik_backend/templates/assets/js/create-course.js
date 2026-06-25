@@ -1,5 +1,28 @@
 // create-course.js — kurs yaratish va darslar qo'shish
 const CreateCourse = {
+  showConfirm(title, message) {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('customConfirmModal');
+      const titleEl = document.getElementById('confirmModalTitle');
+      const msgEl = document.getElementById('confirmModalMessage');
+      const cancelBtn = document.getElementById('confirmModalCancelBtn');
+      const confirmBtn = document.getElementById('confirmModalConfirmBtn');
+
+      titleEl.textContent = title;
+      msgEl.textContent = message;
+      modal.style.display = 'flex';
+
+      const cleanUp = (result) => {
+        modal.style.display = 'none';
+        cancelBtn.onclick = null;
+        confirmBtn.onclick = null;
+        resolve(result);
+      };
+
+      cancelBtn.onclick = () => cleanUp(false);
+      confirmBtn.onclick = () => cleanUp(true);
+    });
+  },
   course: null,
   thumbFile: null,
   categories: [],
@@ -293,7 +316,10 @@ const CreateCourse = {
       window.toast?.show("O'chiriladigan kurs topilmadi!", 'error');
       return;
     }
-    const confirmed = confirm(`"${this.course.title}" kursini o'chirmoqchimisiz?\n\nBarcha darslar, modullar va vazifalar ham o'chib ketadi!`);
+    const confirmed = await this.showConfirm(
+      "Kursni o'chirish",
+      `"${this.course.title}" kursini o'chirmoqchimisiz?\n\nBarcha darslar, modullar va vazifalar ham o'chib ketadi!`
+    );
     if (!confirmed) return;
 
     try {
@@ -368,7 +394,7 @@ const CreateCourse = {
   },
 
   async deleteLesson(lessonId) {
-    if (!confirm("Haqiqatan ham ushbu darsni o'chirmoqchimisiz?")) return;
+    if (!await this.showConfirm("Darsni o'chirish", "Haqiqatan ham ushbu darsni o'chirmoqchimisiz?")) return;
     try {
       await API.delete(`/courses/lessons/${lessonId}/update/`);
       window.toast?.show("Dars o'chirildi", 'success');
@@ -751,7 +777,7 @@ const CreateCourse = {
   },
 
   async deleteResource(id) {
-    if (!confirm("Haqiqatan ham ushbu resursni o'chirmoqchimisiz?")) return;
+    if (!await this.showConfirm("Materialni o'chirish", "Haqiqatan ham ushbu resursni o'chirmoqchimisiz?")) return;
     try {
       await API.delete(`/courses/lessons/resources/${id}/`);
       window.toast?.show("Resurs o'chirildi", 'success');
@@ -1058,7 +1084,7 @@ const CreateCourse = {
         
         // Add regen button listener
         document.getElementById('btnRegenInviteEdit').onclick = async (e) => {
-          if (!confirm("Eski taklif havolasi o'chiriladi. Davom etasizmi?")) return;
+          if (!await this.showConfirm("Havolani yangilash", "Eski taklif havolasi o'chiriladi. Davom etasizmi?")) return;
           const btn = e.target;
           btn.disabled = true;
           btn.textContent = '⏳ Yaratilmoqda...';
@@ -1200,7 +1226,7 @@ const CreateCourse = {
   },
 
   async deleteLink(token) {
-    if (!confirm("Haqiqatan ham bu havolani o'chirmoqchisiz?")) return;
+    if (!await this.showConfirm("Havolani o'chirish", "Haqiqatan ham bu havolani o'chirmoqchisiz?")) return;
     try {
       await API.delete(`/courses/${this.course.slug}/invite/${token}/`);
       this.loadInviteLinks();
@@ -1309,7 +1335,7 @@ const CreateCourse = {
   },
 
   async deleteHomework(id) {
-    if (!confirm("Haqiqatan ham ushbu vazifani o'chirmoqchimisiz?")) return;
+    if (!await this.showConfirm("Vazifani o'chirish", "Haqiqatan ham ushbu vazifani o'chirmoqchimisiz?")) return;
     try {
       await API.delete(`/courses/teacher/courses/homeworks/${id}/`);
       window.toast?.show("Vazifa o'chirildi", 'success');
@@ -1322,6 +1348,7 @@ const CreateCourse = {
   openHomeworkModal(homeworkId = null) {
     this.currentHomeworkId = homeworkId;
     this.homeworkResources = [];
+    this.localHwResources = [];
 
     // Reset form
     document.getElementById('homeworkForm').reset();
@@ -1373,10 +1400,9 @@ const CreateCourse = {
   },
 
   toggleHomeworkResourceFields() {
-    const hasHwId = !!this.currentHomeworkId;
-    document.getElementById('hwResourceNotSavedWarning').style.display = hasHwId ? 'none' : 'block';
-    document.getElementById('hwResourceList').style.display = hasHwId ? 'block' : 'none';
-    document.getElementById('hwResourceAddRow').style.display = hasHwId ? 'flex' : 'none';
+    document.getElementById('hwResourceNotSavedWarning').style.display = 'none';
+    document.getElementById('hwResourceList').style.display = 'block';
+    document.getElementById('hwResourceAddRow').style.display = 'flex';
   },
 
   initHomeworkModalEvents() {
@@ -1388,11 +1414,6 @@ const CreateCourse = {
 
     // Add Homework Resource Click
     document.getElementById('addHwResourceBtn').onclick = async () => {
-      if (!this.currentHomeworkId) {
-        window.toast?.show("Avval vazifani saqlab oling!", 'warning');
-        return;
-      }
-
       const rType = document.getElementById('hwResourceType').value;
       const rTitle = document.getElementById('hwResourceTitle').value.trim();
       
@@ -1400,10 +1421,6 @@ const CreateCourse = {
         window.toast?.show("Material nomini kiriting!", 'error');
         return;
       }
-
-      const fd = new FormData();
-      fd.append('title', rTitle);
-      fd.append('resource_type', rType);
 
       if (rType === 'file') {
         const fileInput = document.getElementById('hwResourceFile');
@@ -1422,30 +1439,63 @@ const CreateCourse = {
           window.toast?.show("Fayl formati noto'g'ri!", 'error');
           return;
         }
-        fd.append('file', file);
+
+        if (this.currentHomeworkId) {
+          try {
+            window.toast?.show("Yuklanmoqda...", "info");
+            const fd = new FormData();
+            fd.append('title', rTitle);
+            fd.append('resource_type', rType);
+            fd.append('file', file);
+            const res = await API.post(`/courses/homeworks/${this.currentHomeworkId}/resources/`, fd);
+            window.toast?.show("Material qo'shildi!", "success");
+            this.homeworkResources.push(res.data);
+            this.renderHwResourceList();
+          } catch (err) {
+            window.toast?.show(err.message, 'error');
+          }
+        } else {
+          this.localHwResources.push({
+            title: rTitle,
+            resource_type: rType,
+            file: file
+          });
+          this.renderHwResourceList();
+        }
       } else {
         const url = document.getElementById('hwResourceUrl').value.trim();
         if (!url) {
           window.toast?.show("Havolani kiriting!", 'error');
           return;
         }
-        fd.append('url', url);
+
+        if (this.currentHomeworkId) {
+          try {
+            window.toast?.show("Yuklanmoqda...", "info");
+            const fd = new FormData();
+            fd.append('title', rTitle);
+            fd.append('resource_type', rType);
+            fd.append('url', url);
+            const res = await API.post(`/courses/homeworks/${this.currentHomeworkId}/resources/`, fd);
+            window.toast?.show("Material qo'shildi!", "success");
+            this.homeworkResources.push(res.data);
+            this.renderHwResourceList();
+          } catch (err) {
+            window.toast?.show(err.message, 'error');
+          }
+        } else {
+          this.localHwResources.push({
+            title: rTitle,
+            resource_type: rType,
+            url: url
+          });
+          this.renderHwResourceList();
+        }
       }
 
-      try {
-        window.toast?.show("Yuklanmoqda...", "info");
-        const res = await API.post(`/courses/homeworks/${this.currentHomeworkId}/resources/`, fd);
-        window.toast?.show("Material qo'shildi!", "success");
-        
-        this.homeworkResources.push(res.data);
-        this.renderHwResourceList();
-
-        document.getElementById('hwResourceTitle').value = '';
-        document.getElementById('hwResourceFile').value = '';
-        document.getElementById('hwResourceUrl').value = '';
-      } catch (err) {
-        window.toast?.show(err.message, 'error');
-      }
+      document.getElementById('hwResourceTitle').value = '';
+      document.getElementById('hwResourceFile').value = '';
+      document.getElementById('hwResourceUrl').value = '';
     };
 
     // Save Homework Form
@@ -1469,11 +1519,28 @@ const CreateCourse = {
       };
 
       try {
+        let savedHwId = this.currentHomeworkId;
         if (this.currentHomeworkId) {
           await API.patch(`/courses/teacher/courses/homeworks/${this.currentHomeworkId}/`, payload);
         } else {
           const res = await API.post(`/courses/teacher/courses/${this.course.slug}/homeworks/`, payload);
-          this.currentHomeworkId = res.data.id;
+          savedHwId = res.data.id;
+        }
+
+        // Upload staged local homework resources
+        if (this.localHwResources && this.localHwResources.length > 0) {
+          for (const localRes of this.localHwResources) {
+            const resFd = new FormData();
+            resFd.append('title', localRes.title);
+            resFd.append('resource_type', localRes.resource_type);
+            if (localRes.resource_type === 'file') {
+              resFd.append('file', localRes.file);
+            } else {
+              resFd.append('url', localRes.url);
+            }
+            await API.post(`/courses/homeworks/${savedHwId}/resources/`, resFd);
+          }
+          this.localHwResources = [];
         }
 
         window.toast?.show("Vazifa saqlandi!", 'success');
@@ -1489,21 +1556,39 @@ const CreateCourse = {
     const container = document.getElementById('hwResourceList');
     if (!container) return;
 
-    if (this.homeworkResources.length === 0) {
+    const totalCount = this.homeworkResources.length + this.localHwResources.length;
+    if (totalCount === 0) {
       container.innerHTML = '<p class="empty-state" style="padding: 8px;">Materiallar yo\'q.</p>';
       return;
     }
 
-    container.innerHTML = this.homeworkResources.map(r => `
+    let html = '';
+    // Render already saved resources
+    html += this.homeworkResources.map(r => `
       <div class="resource-builder-item" style="display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom: 6px;">
         <span class="title" style="font-size: 13px; font-weight: 600;">${r.title} (${r.resource_type === 'link' ? 'Havola' : 'Fayl'})</span>
         <button type="button" class="remove-btn" onclick="CreateCourse.deleteHwResource(${r.id})" style="color: var(--rose); cursor: pointer; border: none; background: none;">✕</button>
       </div>
     `).join('');
+
+    // Render locally staged resources (not yet saved)
+    html += this.localHwResources.map((r, idx) => `
+      <div class="resource-builder-item" style="display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; border: 1px dashed var(--accent);">
+        <span class="title" style="font-size: 13px; font-weight: 600;">${r.title} (${r.resource_type === 'link' ? 'Havola' : 'Fayl'}) <em style="font-size: 11px; color:var(--muted)">(Saqlanmagan)</em></span>
+        <button type="button" class="remove-btn" onclick="CreateCourse.removeLocalHwResource(${idx})" style="color: var(--rose); cursor: pointer; border: none; background: none;">✕</button>
+      </div>
+    `).join('');
+
+    container.innerHTML = html;
+  },
+
+  removeLocalHwResource(idx) {
+    this.localHwResources.splice(idx, 1);
+    this.renderHwResourceList();
   },
 
   async deleteHwResource(id) {
-    if (!confirm("Haqiqatan ham ushbu materialni o'chirmoqchimisiz?")) return;
+    if (!await this.showConfirm("Materialni o'chirish", "Haqiqatan ham ushbu materialni o'chirmoqchimisiz?")) return;
     try {
       await API.delete(`/courses/homeworks/resources/${id}/`);
       window.toast?.show("Material o'chirildi", 'success');
@@ -1555,7 +1640,7 @@ const CreateCourse = {
   },
 
   async removeStudent(studentId) {
-    if (!confirm("Haqiqatan ham ushbu o'quvchini kursdan chiqarmoqchisiz?")) return;
+    if (!await this.showConfirm("Kursdan chiqarish", "Haqiqatan ham ushbu o'quvchini kursdan chiqarmoqchisiz?")) return;
     try {
       await API.delete(`/courses/${this.course.slug}/enrolled-students/?student_id=${studentId}`);
       window.toast?.show("O'quvchi kursdan chiqarildi", 'success');
