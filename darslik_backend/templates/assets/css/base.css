@@ -1269,8 +1269,35 @@ select.form-control { cursor: pointer; }
    RESPONSIVE
    ══════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  .nav { padding: 12px 20px; }
-  .nav-links { display: none; }
+  .nav { padding: 12px 20px; position: relative; }
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border-bottom: 2px solid var(--line);
+    padding: 16px 20px;
+    gap: 12px;
+    box-shadow: var(--sh-md);
+    z-index: 1000;
+  }
+  .nav-links.active {
+    display: flex;
+  }
+  .mobile-nav-toggle {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 20px;
+  }
   .hero { padding: 48px 20px 40px; }
   .hero-stats { flex-direction: column; width: 100%; }
   .stat-item { border-right: none !important; border-bottom: 2px solid var(--border); padding: 14px 20px; }

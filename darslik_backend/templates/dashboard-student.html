@@ -112,8 +112,40 @@
       .metrics-grid { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 720px) {
-      .sidebar { display: none; }
+      .sidebar {
+        display: none;
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 1000;
+        width: 250px;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+      }
+      .sidebar.active {
+        display: flex !important;
+      }
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 999;
+      }
+      .sidebar-overlay.active {
+        display: block !important;
+      }
+      #sidebarToggleBtn {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+      }
       .content { padding: 16px; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+      .hw-stats-row { flex-direction: column; }
     }
 
     /* Homeworks Styles */
@@ -191,12 +223,18 @@
     </div>
   </aside>
 
+  <!-- Sidebar overlay for clicking outside mobile sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
   <!-- Main Content -->
   <div class="main">
-    <div class="topbar">
-      <div>
-        <div class="page-title welcome-text">Boshqaruv paneli</div>
-        <p class="page-sub">O'rganishni davom ettiramizmi?</p>
+    <div class="topbar" style="gap:10px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button onclick="toggleSidebar()" class="btn-icon" style="display:none; width:36px; height:36px;" id="sidebarToggleBtn"><i class="ti ti-menu-2"></i></button>
+        <div>
+          <div class="page-title welcome-text">Boshqaruv paneli</div>
+          <p class="page-sub">O'rganishni davom ettiramizmi?</p>
+        </div>
       </div>
       <div class="topbar-right" style="display:flex; align-items:center; gap:16px;">
         <!-- Notification bell -->
@@ -372,5 +410,27 @@
 <script src="/assets/js/auth.js"></script>
 <script src="/assets/js/animations.js"></script>
 <script src="/assets/js/dashboard-student.js"></script>
+<script>
+  function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+  }
+
+  // Hook into tab switches to auto-close sidebar on mobile
+  const originalSwitchTab = DashboardStudent.switchTab;
+  DashboardStudent.switchTab = function(tab) {
+    if (originalSwitchTab) {
+      originalSwitchTab.call(DashboardStudent, tab);
+    }
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    if (sidebar.classList.contains('active')) {
+      sidebar.classList.remove('active');
+      overlay.classList.remove('active');
+    }
+  };
+</script>
 </body>
 </html>

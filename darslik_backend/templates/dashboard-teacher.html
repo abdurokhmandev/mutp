@@ -170,9 +170,42 @@
       .metrics-grid { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 720px) {
-      .sidebar { display: none; }
+      .sidebar {
+        display: none;
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 1000;
+        width: 250px;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+      }
+      .sidebar.active {
+        display: flex !important;
+      }
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 999;
+      }
+      .sidebar-overlay.active {
+        display: block !important;
+      }
+      #sidebarToggleBtn {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+      }
       .metrics-grid { grid-template-columns: 1fr 1fr; }
       .content { padding: 16px; }
+      /* Responsive tables */
+      .card { overflow-x: auto; }
+      table { min-width: 600px; }
     }
 
     /* Request Card Styles */
@@ -219,12 +252,18 @@
     </div>
   </aside>
 
+  <!-- Sidebar overlay for clicking outside mobile sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
   <!-- Main -->
   <div class="main">
-    <div class="topbar">
-      <div class="dashboard-header">
-        <div class="page-title">Boshqaruv paneli</div>
-        <p class="page-sub">Yuklanmoqda...</p>
+    <div class="topbar" style="gap:10px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button onclick="toggleSidebar()" class="btn-icon" style="display:none; width:36px; height:36px;" id="sidebarToggleBtn"><i class="ti ti-menu-2"></i></button>
+        <div class="dashboard-header">
+          <div class="page-title">Boshqaruv paneli</div>
+          <p class="page-sub">Yuklanmoqda...</p>
+        </div>
       </div>
       <div class="topbar-right">
         <div class="btn-icon"><i class="ti ti-search"></i></div>
@@ -457,5 +496,25 @@
 <script src="/assets/js/auth.js"></script>
 <script src="/assets/js/animations.js"></script>
 <script src="/assets/js/dashboard-teacher.js"></script>
+<script>
+  function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
+  }
+
+  // Hook sidebar clicks to close sidebar on mobile
+  document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const sidebar = document.querySelector('.sidebar');
+      const overlay = document.querySelector('.sidebar-overlay');
+      if (sidebar.classList.contains('active')) {
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+      }
+    });
+  });
+</script>
 </body>
 </html>

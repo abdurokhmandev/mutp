@@ -74,14 +74,15 @@
   <!-- Navbar -->
   <nav class="nav">
     <a class="nav-logo" href="index.html"><span class="logo-dot"></span>MUTP</a>
-    <div class="nav-links">
+    <div class="nav-links" id="navLinks">
       <a href="courses.html" class="active">Kurslar</a>
       <a href="index.html#teachers">O'qituvchilar</a>
       <a href="index.html#faq">FAQ</a>
     </div>
-    <div id="nav-auth" style="display:flex;gap:8px">
+    <div id="nav-auth" style="display:flex;gap:8px;align-items:center;">
       <a href="auth.html" class="btn-secondary">Kirish</a>
       <a href="auth.html" class="btn-primary">Ro'yxatdan o'tish</a>
+      <button class="mobile-nav-toggle" style="display:none;" onclick="document.getElementById('navLinks').classList.toggle('active')"><i class="ti ti-menu-2"></i></button>
     </div>
   </nav>
 

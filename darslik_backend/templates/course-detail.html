@@ -81,6 +81,7 @@
       .detail-layout { flex-direction: column; margin-top: 32px; padding: 0 20px;}
       .right-sidebar { width: 100%; position: static; order: -1; }
       .learning-grid { grid-template-columns: 1fr; }
+    }
     
     /* Loading Skeleton */
     .detail-hero, .detail-layout {
@@ -123,13 +124,14 @@
   <!-- Navbar -->
   <nav class="nav">
     <a class="nav-logo" href="index.html"><span class="logo-dot"></span>MUTP</a>
-    <div class="nav-links">
+    <div class="nav-links" id="navLinks">
       <a href="courses.html">Kurslar</a>
       <a href="index.html#teachers">O'qituvchilar</a>
     </div>
-    <div id="nav-auth" style="display:flex;gap:8px">
+    <div id="nav-auth" style="display:flex;gap:8px;align-items:center;">
       <a href="auth.html" class="btn-secondary">Kirish</a>
       <a href="auth.html" class="btn-primary">Ro'yxatdan o'tish</a>
+      <button class="mobile-nav-toggle" style="display:none;" onclick="document.getElementById('navLinks').classList.toggle('active')"><i class="ti ti-menu-2"></i></button>
     </div>
   </nav>
 

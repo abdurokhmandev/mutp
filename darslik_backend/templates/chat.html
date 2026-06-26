@@ -127,6 +127,8 @@
       .chat-sidebar { width: 100%; position: absolute; z-index: 10; height: 100%; transform: translateX(0); transition: transform .25s; }
       .chat-sidebar.hidden { transform: translateX(-100%); }
       .chat-main { width: 100%; }
+      .mobile-only { display: flex !important; }
+      .chat-placeholder { display: none !important; }
     }
   </style>
 </head>
@@ -171,6 +173,9 @@
     <!-- Active conversation -->
     <div id="chatActive" style="display:none; flex-direction:column; height:100%;">
       <div class="chat-header" id="chatHeader">
+        <!-- Back button for mobile view -->
+        <button onclick="document.getElementById('chatSidebar').classList.remove('hidden'); document.getElementById('chatPlaceholder').style.display='flex'; document.getElementById('chatActive').style.display='none';" class="btn-back mobile-only" style="border:none; font-size:18px; cursor:pointer; display:none;" title="Orqaga"><i class="ti ti-arrow-left"></i></button>
+
         <div class="chat-header-av" id="headerAv" onclick="ChatApp.openGroupSettings()">?</div>
         <div style="flex:1; cursor:pointer;" onclick="ChatApp.openGroupSettings()">
           <div class="chat-header-name" id="headerName">—</div>
@@ -526,6 +531,10 @@ const ChatApp = {
     document.getElementById('chatPlaceholder').style.display = 'none';
     const activeEl = document.getElementById('chatActive');
     activeEl.style.display = 'flex';
+
+    if (window.innerWidth <= 700) {
+      document.getElementById('chatSidebar').classList.add('hidden');
+    }
 
     document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
     const convEl = document.getElementById(`conv-${convId}`);

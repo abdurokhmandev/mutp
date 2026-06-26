@@ -21,15 +21,16 @@
     <span class="logo-dot"></span>
     MUTP
   </a>
-  <div class="nav-links">
+  <div class="nav-links" id="navLinks">
     <a href="courses.html">Kurslar</a>
     <a href="#teachers">O'qituvchilar</a>
     <a href="#features">Imkoniyatlar</a>
     <a href="#faq">FAQ</a>
   </div>
-  <div id="nav-auth" style="display:flex;gap:8px">
+  <div id="nav-auth" style="display:flex;gap:8px;align-items:center;">
     <a href="/auth.html?tab=login" class="btn-secondary">Kirish</a>
     <a href="/auth.html?role=student&tab=register" class="btn-primary">Bepul boshlash</a>
+    <button class="mobile-nav-toggle" style="display:none;" onclick="document.getElementById('navLinks').classList.toggle('active')"><i class="ti ti-menu-2"></i></button>
   </div>
 </nav>
 
