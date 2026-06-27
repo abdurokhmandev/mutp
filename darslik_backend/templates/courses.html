@@ -95,7 +95,7 @@
         <a href="auth.html" class="btn-secondary">Kirish</a>
         <a href="auth.html" class="btn-primary">Ro'yxatdan o'tish</a>
       </div>
-      <button class="mobile-nav-toggle" style="display:none;" id="mobileMenuBtn" aria-label="Menyu"><i class="ti ti-menu-2"></i></button>
+      <button class="mobile-menu-btn" onclick="window.openMobileNav()" aria-label="Menyu"><i class="ti ti-menu-2"></i></button>
     </div>
   </nav>
 
@@ -345,5 +345,15 @@
 
     Courses.initCatalogPage();
   </script>
+  <!-- Mobil nav overlay -->
+  <div class="mobile-nav" id="mobileNav">
+    <button class="mobile-nav-close" onclick="window.closeMobileNav()">
+      <i class="ti ti-x"></i>
+    </button>
+    <a href="/" class="mobile-nav-link">Bosh sahifa</a>
+    <a href="/courses.html" class="mobile-nav-link">Kurslar</a>
+    <a href="/auth.html" class="mobile-nav-link">Kirish</a>
+    <a href="/auth.html" class="mobile-nav-link btn-primary" style="text-align:center; color: white;">Ro'yxatdan o'tish</a>
+  </div>
 </body>
 </html>

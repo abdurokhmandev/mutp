@@ -1809,9 +1809,222 @@ body {
     transition: width 0.5s ease, height 0.5s ease, opacity 0.5s;
     opacity: 0;
 }
-.btn-primary:active::before {
-    width: 200px;
-    height: 200px;
-    opacity: 0;
+
+/* ═══════════════════════════════════
+   TABLET (768px - 1024px)
+═══════════════════════════════════ */
+@media (max-width: 1024px) {
+    /* Kurs grids */
+    .courses-grid,
+    .courses-row { grid-template-columns: repeat(2, 1fr) !important; }
+
+    /* Hero */
+    .hero-inner,
+    .hero-content { flex-direction: column; gap: 32px; }
+    .hero-visual, .hero-card-wrap { display: none; }
+
+    /* Teacher CTA */
+    .teacher-cta,
+    .cta-grid { grid-template-columns: 1fr !important; }
+
+    /* Testimonials */
+    .testimonials-grid { grid-template-columns: 1fr 1fr; }
+
+    /* Footer */
+    .footer-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ═══════════════════════════════════
+   MOBIL (max 768px)
+═══════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Nav */
+    .nav { padding: 12px 16px; }
+    .nav-links { display: none; }
+    .nav-actions .btn-secondary { display: none; }
+
+    /* Section */
+    .section { padding: 40px 16px; }
+
+    /* Hero */
+    .hero { padding: 48px 16px; }
+    .hero h1 { font-size: clamp(24px, 6vw, 36px); }
+    .hero-search-wrap { flex-direction: column; }
+    .hero-stats { flex-wrap: wrap; gap: 16px; }
+    .hero-stats > div { min-width: 80px; }
+
+    /* Grids — hammasi 1 ustun */
+    .courses-grid,
+    .courses-row,
+    .cat-grid,
+    .teacher-grid,
+    .testimonials-grid,
+    .stats-row { grid-template-columns: 1fr !important; }
+
+    /* Kategori chips — scroll bo'lsin */
+    .filter-chips {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        padding-bottom: 8px;
+        -webkit-overflow-scrolling: touch;
+    }
+    .filter-chip { flex-shrink: 0; }
+
+    /* Dashboard layout */
+    .dashboard-layout {
+        grid-template-columns: 1fr !important;
+    }
+    .dashboard-sidebar {
+        display: none; /* Mobilda yashiriladi */
+    }
+    /* Mobil sidebar tugmasi */
+    .mobile-menu-btn { display: flex !important; }
+
+    /* Lesson sahifasi */
+    .lesson-layout {
+        grid-template-columns: 1fr !important;
+        flex-direction: column;
+    }
+    .lesson-sidebar {
+        order: 2; /* Video tepada, sidebar pastda */
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    .player-wrapper { order: 1; }
+
+    /* Jadval (table) — scroll */
+    .table-wrap { overflow-x: auto; }
+    table { min-width: 600px; }
+
+    /* Footer */
+    .footer {
+        padding: 32px 16px;
+        flex-direction: column;
+        gap: 24px;
+    }
+    .footer-grid { grid-template-columns: 1fr !important; }
+    .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+
+    /* Modal */
+    .modal {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 16px 16px 0 0 !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        /* Bottom sheet uslubi */
+    }
+    .modal-overlay {
+        align-items: flex-end !important;
+    }
+
+    /* Auth sahifasi */
+    .auth-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .auth-left-panel { display: none; }
+
+    /* Create course wizard */
+    .wizard-steps { overflow-x: auto; }
+    .step-label { display: none; } /* Faqat raqam ko'rinadi */
+
+    /* Buttons — keng bo'lsin */
+    .hero .btn-primary,
+    .hero .btn-secondary { width: 100%; justify-content: center; }
+
+    /* OTP inputlar */
+    .otp-wrap { gap: 6px; }
+    .otp-input { width: 42px; height: 50px; font-size: 20px; }
+
+    /* Kurs detail */
+    .course-detail-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .course-sidebar-card {
+        position: static !important; /* Sticky o'chirish */
+    }
+
+    /* Chat */
+    .chat-layout { grid-template-columns: 1fr !important; }
+    .chat-sidebar {
+        display: none; /* Alohida "back" tugmasi bilan ochiladi */
+    }
+}
+
+/* ═══════════════════════════════════
+   KICHIK MOBIL (max 480px)
+═══════════════════════════════════ */
+@media (max-width: 480px) {
+    body { font-size: 15px; }
+
+    .section-title { font-size: 22px; }
+
+    /* Kurs karta */
+    .course-card .course-body { padding: 12px; }
+    .course-title { font-size: 13px; }
+
+    /* Dashboard stat kartalar — 2 ustun */
+    .stats-row {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px;
+    }
+
+    /* Nav logo */
+    .nav-logo span:not(.logo-dot) { font-size: 16px; }
+}
+
+/* ═══════════════════════════════════
+   MOBIL HAMBURGER MENYU
+═══════════════════════════════════ */
+.mobile-menu-btn {
+    display: none; /* Desktop da yashiriladi */
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: var(--ink);
+    font-size: 22px;
+}
+
+/* Mobil nav menyu (ochilganda) */
+.mobile-nav {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--white);
+    z-index: 500;
+    flex-direction: column;
+    padding: 20px;
+    gap: 8px;
+    overflow-y: auto;
+}
+.mobile-nav.open { display: flex; }
+.mobile-nav-link {
+    padding: 14px 16px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ink);
+    border-radius: 8px;
+    text-decoration: none;
+    border-bottom: 0.5px solid var(--border);
+}
+.mobile-nav-close {
+    align-self: flex-end;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    margin-bottom: 16px;
+}
+
 

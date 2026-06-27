@@ -32,7 +32,7 @@
       <a href="/auth.html?tab=login" class="btn-secondary">Kirish</a>
       <a href="/auth.html?role=student&tab=register" class="btn-primary">Bepul boshlash</a>
     </div>
-    <button class="mobile-nav-toggle" style="display:none;" id="mobileMenuBtn" aria-label="Menyu">
+    <button class="mobile-menu-btn" onclick="window.openMobileNav()" aria-label="Menyu">
       <i class="ti ti-menu-2"></i>
     </button>
   </div>
@@ -482,5 +482,15 @@ function toggleFaq(btn) {
 <script src="/assets/js/courses.js"></script>
 <script src="/assets/js/animations.js"></script>
 <script src="/assets/js/index.js"></script>
+  <!-- Mobil nav overlay -->
+  <div class="mobile-nav" id="mobileNav">
+    <button class="mobile-nav-close" onclick="window.closeMobileNav()">
+      <i class="ti ti-x"></i>
+    </button>
+    <a href="/" class="mobile-nav-link">Bosh sahifa</a>
+    <a href="/courses.html" class="mobile-nav-link">Kurslar</a>
+    <a href="/auth.html" class="mobile-nav-link">Kirish</a>
+    <a href="/auth.html" class="mobile-nav-link btn-primary" style="text-align:center; color: white;">Ro'yxatdan o'tish</a>
+  </div>
 </body>
 </html>

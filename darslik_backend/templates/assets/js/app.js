@@ -313,6 +313,29 @@ const App = {
 
 window.App = App;
 
+// Mobile Navigation
+window.openMobileNav = function() {
+  const mobileNav = document.getElementById('mobileNav');
+  if (mobileNav) {
+    mobileNav.classList.add('open');
+    mobileNav.style.display = 'flex';
+  }
+  document.body.style.overflow = 'hidden';
+};
+
+window.closeMobileNav = function() {
+  const mobileNav = document.getElementById('mobileNav');
+  if (mobileNav) {
+    mobileNav.classList.remove('open');
+    mobileNav.style.display = 'none';
+  }
+  document.body.style.overflow = '';
+};
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') window.closeMobileNav();
+});
+
 document.addEventListener('DOMContentLoaded', () => {
   App.updateNavAuth();
   App.initTheme();

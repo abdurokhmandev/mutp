@@ -1683,11 +1683,11 @@ const CreateCourse = {
       publicCheck.textContent = '○';
       publicCheck.style.color = '#D1D5DB';
 
-      privateCard.style.borderColor = '#16A34A';
-      privateCard.style.background = '#F0FDF4';
-      privateCard.style.color = '#16A34A';
+      privateCard.style.borderColor = 'var(--primary)';
+      privateCard.style.background = 'var(--primary-light)';
+      privateCard.style.color = 'var(--primary)';
       privateCheck.textContent = '✓';
-      privateCheck.style.color = '#16A34A';
+      privateCheck.style.color = 'var(--primary)';
 
       document.getElementById('privateSettingsFields').style.display = 'flex';
       document.getElementById('publicHelpInfo').style.display = 'none';
@@ -1697,11 +1697,11 @@ const CreateCourse = {
         btnAction.innerHTML = `O'QUVCHILAR <i class="ti ti-arrow-right"></i>`;
       }
     } else {
-      publicCard.style.borderColor = '#16A34A';
-      publicCard.style.background = '#F0FDF4';
-      publicCard.style.color = '#16A34A';
+      publicCard.style.borderColor = 'var(--primary)';
+      publicCard.style.background = 'var(--primary-light)';
+      publicCard.style.color = 'var(--primary)';
       publicCheck.textContent = '✓';
-      publicCheck.style.color = '#16A34A';
+      publicCheck.style.color = 'var(--primary)';
 
       privateCard.style.borderColor = '#D1D5DB';
       privateCard.style.background = 'white';
@@ -1758,9 +1758,9 @@ const CreateCourse = {
 
     if (wrap) {
       if (requireApproval) {
-        wrap.style.borderColor = '#16A34A';
-        wrap.style.background = '#F0FDF4';
-        wrap.style.color = '#16A34A';
+        wrap.style.borderColor = 'var(--primary)';
+        wrap.style.background = 'var(--primary-light)';
+        wrap.style.color = 'var(--primary)';
       } else {
         wrap.style.borderColor = '#D1D5DB';
         wrap.style.background = 'white';

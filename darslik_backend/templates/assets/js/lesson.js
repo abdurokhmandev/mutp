@@ -266,8 +266,8 @@ const LessonPage = {
           if (nextBtn) nextBtn.style.display = 'flex';
         } else {
           completeBtn.innerHTML = '<i class="ti ti-checkbox"></i> Darsni tugatdim';
-          completeBtn.style.background = 'var(--duo-green)';
-          completeBtn.style.boxShadow = '0 4px 0 var(--duo-green-dark)';
+          completeBtn.style.background = 'var(--primary)';
+          completeBtn.style.boxShadow = '0 4px 0 var(--primary-hover)';
           completeBtn.disabled = false;
           completeBtn.onclick = () => this.completeLessonProgress(true);
         }
@@ -276,7 +276,7 @@ const LessonPage = {
       if (textContainer) {
         textContainer.style.display = 'flex';
         textContainer.innerHTML = `
-          <i class="ti ti-help" style="font-size: 80px; color: var(--duo-green); margin-bottom: 20px;"></i>
+          <i class="ti ti-help" style="font-size: 80px; color: var(--primary); margin-bottom: 20px;"></i>
           <h2 style="font-family:'Plus Jakarta Sans';">Dars Testi</h2>
           <p style="margin-top: 10px; opacity:0.8; max-width: 500px;">Ushbu dars testdan iborat. Darsni tamomlash uchun pastdagi "Uyga vazifa" tabiga o'tib savollarga javob bering.</p>
         `;
@@ -292,7 +292,7 @@ const LessonPage = {
             <p style="font-size: 14px; opacity:0.9; max-width: 500px; margin-bottom: 12px;">${lesson.homework_description || "Vazifa tasviri kiritilmagan."}</p>
             ${lesson.homework_deadline_days ? `<span class="deadline-badge">⏰ ${lesson.homework_deadline_days} kun ichida</span>` : ''}
             <div style="margin-top: 12px;">
-              <button id="markHomeworkDone" class="btn" style="background:${isDone ? 'var(--muted)' : 'var(--duo-green)'}; border:none; color:white; padding:12px 24px; border-radius:16px; font-weight:700; cursor:${isDone ? 'default' : 'pointer'}; box-shadow:${isDone ? 'none' : '0 4px 0 var(--duo-green-dark)'};" ${isDone ? 'disabled' : ''}>
+              <button id="markHomeworkDone" class="btn" style="background:${isDone ? 'var(--muted)' : 'var(--primary)'}; border:none; color:white; padding:12px 24px; border-radius:16px; font-weight:700; cursor:${isDone ? 'default' : 'pointer'}; box-shadow:${isDone ? 'none' : '0 4px 0 var(--primary-hover)'};" ${isDone ? 'disabled' : ''}>
                 ${isDone ? 'Vazifa bajarildi ✓' : 'Vazifani bajardim ✓'}
               </button>
             </div>
@@ -308,13 +308,28 @@ const LessonPage = {
   },
 
   isYouTubeUrl(url) {
-    return url.includes('youtube.com') || url.includes('youtu.be');
+    if (!url) return false;
+    const cleanUrl = url.toLowerCase();
+    return cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be');
   },
 
   getYouTubeEmbedUrl(url) {
-    let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    if (!url) return null;
+    const patterns = [
+      /youtube\.com\/watch\?v=([^&\s]+)/i,
+      /youtu\.be\/([^?\s]+)/i,
+      /youtube\.com\/embed\/([^?\s]+)/i,
+      /youtube\.com\/shorts\/([^?\s]+)/i
+    ];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return `https://www.youtube.com/embed/${match[1]}?enablejsapi=1&rel=0`;
+      }
+    }
+    let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/i;
     let match = url.match(regExp);
-    if (match && match[2].length === 11) {
+    if (match && match[2] && match[2].length === 11) {
       return `https://www.youtube.com/embed/${match[2]}?enablejsapi=1&rel=0`;
     }
     return null;

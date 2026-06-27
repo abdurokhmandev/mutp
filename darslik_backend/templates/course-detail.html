@@ -138,7 +138,7 @@
         <a href="auth.html" class="btn-secondary">Kirish</a>
         <a href="auth.html" class="btn-primary">Ro'yxatdan o'tish</a>
       </div>
-      <button class="mobile-nav-toggle" style="display:none;" id="mobileMenuBtn" aria-label="Menyu"><i class="ti ti-menu-2"></i></button>
+      <button class="mobile-menu-btn" onclick="window.openMobileNav()" aria-label="Menyu"><i class="ti ti-menu-2"></i></button>
     </div>
   </nav>
 
@@ -155,7 +155,7 @@
         </div>
       </div>
       <div style="display:flex; gap:12px; align-items:center;">
-        <a id="btnEditCourseBanner" href="#" class="btn-primary" style="background:#16A34A; color:white; border-color:#16A34A; padding:8px 16px; font-size:13px; border-radius:8px; display:flex; align-items:center; gap:4px; text-decoration:none;">
+        <a id="btnEditCourseBanner" href="#" class="btn-primary" style="background:var(--primary); color:white; border-color:var(--primary-dark); padding:8px 16px; font-size:13px; border-radius:8px; display:flex; align-items:center; gap:4px; text-decoration:none;">
           <i class="ti ti-edit"></i> Tahrirlash
         </a>
         <a id="btnAnalyticsCourseBanner" href="#" class="btn-secondary" style="padding:8px 16px; font-size:13px; border-radius:8px; display:flex; align-items:center; gap:4px; text-decoration:none; background:var(--white); color:var(--ink); border:1px solid var(--border);">
@@ -251,7 +251,7 @@
 
       <!-- Vazifalar bo'limi -->
       <div class="content-block" id="courseHomeworksBlock" style="display: none; margin-top: 48px;">
-        <h2 class="block-title">📋 Kurs vazifalari</h2>
+        <h2 class="block-title"><i class="ti ti-clipboard-list"></i> Kurs vazifalari</h2>
         <div id="courseHomeworksList" style="display: flex; flex-direction: column; gap: 12px;">
         </div>
       </div>
@@ -259,7 +259,7 @@
       <!-- Kurs Muhokamalari (Forum) -->
       <div class="content-block" id="courseForumBlock" style="margin-top: 48px; display: none; font-family:'Plus Jakarta Sans', sans-serif;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-          <h2 class="block-title" style="margin:0;">💬 Kurs Muhokamalari (Forum)</h2>
+          <h2 class="block-title" style="margin:0;"><i class="ti ti-message"></i> Kurs Muhokamalari (Forum)</h2>
           <button onclick="CourseDetail.showForumForm()" class="btn-primary" style="padding:8px 16px; border-radius:10px; font-size:13px; font-weight:600; cursor:pointer; background:var(--purple); border:none; color:white;">+ Yangi mavzu</button>
         </div>
 
@@ -348,5 +348,15 @@
   <script src="/assets/js/animations.js"></script>
   <script src="/assets/js/course-detail.js"></script>
   <script>CourseDetail.init();</script>
+  <!-- Mobil nav overlay -->
+  <div class="mobile-nav" id="mobileNav">
+    <button class="mobile-nav-close" onclick="window.closeMobileNav()">
+      <i class="ti ti-x"></i>
+    </button>
+    <a href="/" class="mobile-nav-link">Bosh sahifa</a>
+    <a href="/courses.html" class="mobile-nav-link">Kurslar</a>
+    <a href="/auth.html" class="mobile-nav-link">Kirish</a>
+    <a href="/auth.html" class="mobile-nav-link btn-primary" style="text-align:center; color: white;">Ro'yxatdan o'tish</a>
+  </div>
 </body>
 </html>

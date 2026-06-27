@@ -9,6 +9,11 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <link rel="stylesheet" href="/assets/css/base.css">
   <style>
+    :root {
+      --duo-green: var(--primary);
+      --duo-green-bg: var(--primary-light);
+      --duo-green-dark: var(--primary-hover);
+    }
     body { background: var(--surface); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; margin: 0; }
     
     .auth-card { background: var(--white); border-radius: 20px; overflow: hidden; display: flex; max-width: 960px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.08); }
@@ -86,7 +91,7 @@
     }
     .otp-input:not(:placeholder-shown) {
         border-color: var(--duo-green);
-        background: #f4fbf0;
+        background: var(--primary-light);
     }
     .error-msg {
         color: #ef4444;
@@ -303,11 +308,11 @@
         <label class="form-label" style="font-weight: 600; margin-bottom: 8px; display: block;">Rolingiz</label>
         <div class="role-cards" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
           <div class="role-card active" onclick="selectRole('student')" data-role="student" id="roleCardStudent" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 12px; border: 2px solid var(--border-2); border-radius: 12px; cursor: pointer; transition: all 0.15s; text-align: center; background: var(--surface);">
-            <span class="role-icon" style="font-size: 28px;">📚</span>
+            <i class="ti ti-book" style="font-size: 28px; color: var(--primary);"></i>
             <span class="role-title" style="font-size: 14px; font-weight: 700; color: var(--ink);">O'quvchi</span>
           </div>
           <div class="role-card" onclick="selectRole('teacher')" data-role="teacher" id="roleCardTeacher" style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 12px; border: 2px solid var(--border-2); border-radius: 12px; cursor: pointer; transition: all 0.15s; text-align: center; background: var(--surface);">
-            <span class="role-icon" style="font-size: 28px;">👨‍🏫</span>
+            <i class="ti ti-school" style="font-size: 28px; color: var(--primary);"></i>
             <span class="role-title" style="font-size: 14px; font-weight: 700; color: var(--ink);">O'qituvchi</span>
           </div>
         </div>

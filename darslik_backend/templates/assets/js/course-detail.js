@@ -231,8 +231,8 @@ const CourseDetail = {
             </div>
             <div class="inst-bio" style="font-size:13px;line-height:1.5;color:var(--muted);">${instructor.bio || "Bu o'qituvchi hali bio qo'shmagan."}</div>
             <div class="instructor-actions" style="margin-top:12px; display:flex; gap:8px;">
-              <button onclick="window.location.href='/profile.html?id=${instructor.id}'" class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:8px; cursor:pointer; width:auto; border:1px solid var(--border);">👤 Profil</button>
-              <button onclick="openDirectChat(${instructor.id}, event)" class="btn-primary btn-message" style="padding:6px 12px; font-size:12px; border-radius:8px; cursor:pointer; width:auto; margin:0; background:var(--duo-green); border-color:var(--duo-green); color:white;">💬 Xabar yozish</button>
+              <button onclick="window.location.href='/profile.html?id=${instructor.id}'" class="btn-secondary" style="padding:6px 12px; font-size:12px; border-radius:8px; cursor:pointer; width:auto; border:1px solid var(--border); display:flex; align-items:center; gap:4px;"><i class="ti ti-user"></i> Profil</button>
+              <button onclick="openDirectChat(${instructor.id}, event)" class="btn-primary btn-message" style="padding:6px 12px; font-size:12px; border-radius:8px; cursor:pointer; width:auto; margin:0; background:var(--primary); border-color:var(--primary); color:white; display:flex; align-items:center; gap:4px;"><i class="ti ti-message"></i> Xabar yozish</button>
             </div>
           </div>
         `;
