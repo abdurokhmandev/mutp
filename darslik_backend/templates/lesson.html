@@ -76,9 +76,22 @@
     .sidebar-lesson.done .sidebar-lesson-icon { color: var(--green); }
     
     @media(max-width: 900px) {
-      .lesson-layout { flex-direction: column; overflow-y: auto; }
+      body { overflow: auto; }
+      .lesson-layout { flex-direction: column; overflow-y: visible; height: auto; }
       .lesson-main { flex: none; }
-      .lesson-sidebar { width: 100%; flex: none; border-left: none; border-top: 1px solid var(--border); }
+      .player-wrapper { aspect-ratio: 16/9; max-height: none; }
+      .lesson-sidebar { width: 100%; flex: none; border-left: none; border-top: 1px solid var(--border); height: auto; max-height: 400px; overflow-y: auto; }
+      .lesson-info { padding: 20px; }
+      .lesson-title-lg { font-size: 20px; }
+    }
+    @media(max-width: 600px) {
+      body { overflow: auto; }
+      .lesson-nav { padding: 10px 14px; flex-wrap: wrap; gap: 8px; }
+      .lesson-title-nav { font-size: 13px; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .lesson-info { padding: 16px; }
+      .lesson-tabs { overflow-x: auto; padding-bottom: 4px; }
+      .tab-btn { white-space: nowrap; font-size: 13px; padding: 7px 12px; }
+      .player-wrapper { aspect-ratio: 16/9; }
     }
     
     /* Quiz & Interactive Styles */
@@ -134,7 +147,7 @@
       transform: translate(-50%, -50%);
       font-size: 16px;
       font-weight: 600;
-      color: var(--duo-green);
+      color: var(--primary);
       font-family: 'Plus Jakarta Sans', sans-serif;
       display: flex;
       flex-direction: column;
@@ -146,7 +159,7 @@
 </head>
 <body>
   <div id="loadingSpinner">
-    <div class="spinner-icon" style="width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--duo-green); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <div class="spinner-icon" style="width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
     <span>Yuklanmoqda...</span>
   </div>
 

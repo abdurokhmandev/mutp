@@ -13,7 +13,7 @@
     .page-header { background: var(--ink); color: white; padding: 48px 40px; }
     .page-title { font-size: 32px; margin-bottom: 8px; color: white; }
     .breadcrumb { font-size: 13px; color: var(--muted-2); }
-    .breadcrumb a { color: var(--duo-green-light); text-decoration: none; }
+    .breadcrumb a { color: rgba(255,255,255,0.6); text-decoration: none; }
     
     .catalog-container { display: flex; align-items: flex-start; gap: 32px; padding: 40px; }
     
@@ -22,50 +22,61 @@
     .filter-group { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 24px; }
     .filter-group-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; font-family: 'Plus Jakarta Sans', sans-serif;}
     .filter-item { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 14px; color: var(--ink-2); cursor: pointer; }
-    .filter-item input[type="checkbox"], .filter-item input[type="radio"] { accent-color: var(--duo-green); width: 16px; height: 16px; cursor: pointer; }
+    .filter-item input[type="checkbox"], .filter-item input[type="radio"] { accent-color: var(--primary); width: 16px; height: 16px; cursor: pointer; }
     
-    .range-slider { width: 100%; margin: 10px 0; accent-color: var(--duo-green); }
+    .range-slider { width: 100%; margin: 10px 0; accent-color: var(--primary); }
     .range-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
     
-    .clear-filters { color: var(--rose); font-size: 13px; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 10px; }
+    .clear-filters { color: var(--danger); font-size: 13px; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 10px; }
     
     /* Main Content */
-    .main-content { flex: 1; }
+    .main-content { flex: 1; min-width: 0; }
     .sort-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
     .results-count { font-size: 14px; color: var(--muted); font-weight: 500; }
-    .sort-select { padding: 8px 12px; border: 2px solid var(--border-2); border-radius: 16px; font-size: 14px; outline: none; font-family: 'Inter'; background: var(--white); }
+    .sort-select { padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-md); font-size: 14px; outline: none; font-family: 'Inter'; background: var(--white); }
     
-    .courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px; }
+    .courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
     
-    /* Course Card specific mapping from index */
-    .course-card{background:var(--white);border:2px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s;display:flex;flex-direction:column}
-    .course-card:hover{transform:translateY(-3px);box-shadow:0 10px 32px rgba(88,204,2,0.1);border-color:var(--duo-green-light)}
+    /* Course Card */
+    .course-card{background:var(--white);border:0.5px solid var(--line);border-radius:var(--r-lg);overflow:hidden;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s,border-color 0.15s;display:flex;flex-direction:column}
+    .course-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,0.08);border-color:var(--ink-soft)}
     .course-thumb{height:140px;display:flex;align-items:center;justify-content:center;font-size:48px;position:relative}
     .thumb-blue{background:linear-gradient(135deg,#EFF6FF,#DBEAFE)}
     .thumb-green{background:linear-gradient(135deg,#ECFDF5,#D1FAE5)}
-    .course-badge-abs{position:absolute;top:12px;right:12px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px}
-    .badge-free{background:var(--green);color:#fff}
+    .course-badge-abs{position:absolute;top:12px;right:12px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px}
+    .badge-free{background:var(--success-light);color:var(--success);}
     .badge-paid{background:rgba(15,23,42,0.65);color:#fff;backdrop-filter:blur(6px)}
     .course-body{padding:16px;display:flex;flex-direction:column;gap:8px;flex:1}
-    .course-cat{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em; color:var(--duo-green);}
+    .course-cat{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em; color:var(--primary);}
     .course-title{font-size:15px;font-weight:700;color:var(--ink);line-height:1.4;flex:1}
     .course-instructor{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
-    .avatar-xs{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0; background:#DBEAFE;color:#1D4ED8;}
-    .course-foot{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:2px solid var(--border);margin-top:auto}
+    .avatar-xs{width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0; background:var(--primary-light);color:var(--primary);}
+    .course-foot{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--line);margin-top:auto}
     .rating{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:700;color:var(--ink)}
-    .star{color:var(--amber)}
+    .star{color:var(--warning)}
     .course-price{font-size:15px; font-weight:700; color:var(--ink);}
-    .course-price.free{color:var(--green);}
+    .course-price.free{color:var(--success);}
     
     /* Pagination */
     .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 48px; }
-    .page-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 2px solid var(--border); border-radius: 16px; font-size: 14px; color: var(--ink-2); text-decoration: none; transition: all 0.2s; }
-    .page-btn:hover { background: var(--surface-2); }
-    .page-btn.active { background: var(--duo-green); color: white; border-color: var(--duo-green); box-shadow: 0 4px 0 var(--duo-green-dark); }
+    .page-btn { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: var(--r-md); font-size: 14px; color: var(--ink-soft); text-decoration: none; transition: all 0.2s; }
+    .page-btn:hover { background: var(--surface); }
+    .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* Mobile filter toggle */
+    .filter-toggle-btn { display: none; align-items: center; gap: 8px; background: var(--white); border: 1px solid var(--line); border-radius: var(--r-md); padding: 9px 16px; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--ink); margin-bottom: 16px; }
     
     @media(max-width: 900px) {
-      .catalog-container { flex-direction: column; }
-      .sidebar { width: 100%; position: static; }
+      .catalog-container { flex-direction: column; padding: 20px 16px; }
+      .sidebar { width: 100%; position: static; display: none; }
+      .sidebar.open { display: block; }
+      .filter-toggle-btn { display: flex; }
+      .courses-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+    }
+    @media(max-width: 480px) {
+      .page-header { padding: 32px 16px; }
+      .page-title { font-size: 24px; }
+      .courses-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
     }
   </style>
 </head>
@@ -79,19 +90,28 @@
       <a href="index.html#teachers">O'qituvchilar</a>
       <a href="index.html#faq">FAQ</a>
     </div>
-    <div id="nav-auth" style="display:flex;gap:8px;align-items:center;">
-      <a href="auth.html" class="btn-secondary">Kirish</a>
-      <a href="auth.html" class="btn-primary">Ro'yxatdan o'tish</a>
-      <button class="mobile-nav-toggle" style="display:none;" onclick="document.getElementById('navLinks').classList.toggle('active')"><i class="ti ti-menu-2"></i></button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div id="nav-auth" style="display:flex;gap:8px;align-items:center;">
+        <a href="auth.html" class="btn-secondary">Kirish</a>
+        <a href="auth.html" class="btn-primary">Ro'yxatdan o'tish</a>
+      </div>
+      <button class="mobile-nav-toggle" style="display:none;" id="mobileMenuBtn" aria-label="Menyu"><i class="ti ti-menu-2"></i></button>
     </div>
   </nav>
 
   <!-- Page Header -->
-  <header class="page-header">
+  <header class="page-header" style="padding: 40px 40px;">
     <div class="breadcrumb"><a href="index.html">Bosh sahifa</a> <i class="ti ti-chevron-right" style="font-size:10px;margin:0 4px"></i> Barcha kurslar</div>
     <h1 class="page-title">Barcha kurslar</h1>
-    <p style="color:var(--muted-2); font-size:15px;">Eng yaxshi ustozlardan sifatli bilim oling</p>
+    <p style="color:rgba(255,255,255,0.6); font-size:15px;">Eng yaxshi ustozlardan sifatli bilim oling</p>
   </header>
+
+  <!-- Mobile filter toggle -->
+  <div style="padding: 12px 16px; display:none;" class="mobile-filter-wrap">
+    <button class="filter-toggle-btn" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+      <i class="ti ti-adjustments-horizontal"></i> Filterlar
+    </button>
+  </div>
 
   <!-- Main Catalog -->
   <div class="catalog-container">
@@ -301,6 +321,26 @@
     const nav = document.querySelector('.nav');
     window.addEventListener('scroll', () => {
       nav.classList.toggle('scrolled', window.scrollY > 30);
+    });
+
+    // Mobile menu
+    const mobileBtn = document.getElementById('mobileMenuBtn');
+    if (mobileBtn) {
+      mobileBtn.addEventListener('click', () => {
+        document.getElementById('navLinks').classList.toggle('active');
+        mobileBtn.querySelector('i').className =
+          document.getElementById('navLinks').classList.contains('active') ? 'ti ti-x' : 'ti ti-menu-2';
+      });
+    }
+
+    // Show filter toggle wrapper on mobile
+    if (window.innerWidth <= 900) {
+      const filterWrap = document.querySelector('.mobile-filter-wrap');
+      if (filterWrap) filterWrap.style.display = 'block';
+    }
+    window.addEventListener('resize', () => {
+      const filterWrap = document.querySelector('.mobile-filter-wrap');
+      if (filterWrap) filterWrap.style.display = window.innerWidth <= 900 ? 'block' : 'none';
     });
 
     Courses.initCatalogPage();

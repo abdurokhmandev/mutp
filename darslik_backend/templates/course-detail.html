@@ -12,7 +12,7 @@
     /* Hero section for detail page */
     .detail-hero { background: var(--ink); padding: 48px 40px 64px; color: white; }
     .breadcrumb { font-size: 13px; color: rgba(255,255,255,0.6); margin-bottom: 24px; }
-    .breadcrumb a { color: var(--duo-green-light); text-decoration: none; }
+    .breadcrumb a { color: rgba(255,255,255,0.6); text-decoration: none; }
     
     .course-title-lg { font-size: clamp(32px, 4vw, 42px); font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.2; margin-bottom: 16px; max-width: 800px; }
     .course-desc { font-size: 16px; color: rgba(255,255,255,0.8); line-height: 1.6; max-width: 700px; margin-bottom: 24px; }
@@ -21,7 +21,7 @@
     .hero-meta .rating { display: flex; align-items: center; gap: 4px; color: var(--amber); font-weight: 600; }
     
     .instructor-row { display: flex; align-items: center; gap: 12px; }
-    .avatar-md { width: 40px; height: 40px; border-radius: 50%; background: var(--duo-green); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+    .avatar-md { width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
     
     /* Layout */
     .detail-layout { display: flex; gap: 48px; padding: 0 40px; margin-top: -32px; align-items: flex-start; max-width: 1280px; margin-left: auto; margin-right: auto;}
@@ -33,15 +33,15 @@
     .preview-video { width: 100%; aspect-ratio: 16/9; background: var(--ink-2); position: relative; display: flex; align-items: center; justify-content: center; cursor: pointer; }
     .preview-video img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; }
     .play-btn { position: absolute; width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.4); color: white; font-size: 24px; transition: transform 0.2s; }
-    .preview-video:hover .play-btn { transform: scale(1.1); background: var(--duo-green); border-color: var(--duo-green); }
+    .preview-video:hover .play-btn { transform: scale(1.1); background: var(--primary); border-color: var(--primary); }
     
     .buy-card-body { padding: 24px; }
     .price-tag { font-size: 32px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--ink); margin-bottom: 20px; }
-    .price-tag.free { color: var(--green); }
+    .price-tag.free { color: var(--success); }
     
     .includes-list { margin-top: 24px; list-style: none; font-size: 14px; color: var(--ink-2); display: flex; flex-direction: column; gap: 12px; }
     .includes-list li { display: flex; align-items: center; gap: 10px; }
-    .includes-list .ti { color: var(--duo-green); font-size: 18px; }
+    .includes-list .ti { color: var(--primary); font-size: 18px; }
     
     /* Content Blocks */
     .content-block { margin-top: 48px; }
@@ -50,7 +50,7 @@
     /* What you will learn */
     .learning-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; background: var(--surface); padding: 32px; border-radius: 16px; border: 1px solid var(--border); }
     .learn-item { display: flex; align-items: flex-start; gap: 12px; font-size: 14px; line-height: 1.6; color: var(--ink-2); }
-    .learn-item .ti { color: var(--green); flex-shrink: 0; margin-top: 2px; }
+    .learn-item .ti { color: var(--success); flex-shrink: 0; margin-top: 2px; }
     
     /* Accordion / Lessons */
     .accordion { border: 2px solid var(--border); border-radius: 16px; overflow: hidden; }
@@ -67,20 +67,25 @@
     .lesson-item:last-child { border-bottom: none; }
     .lesson-name { display: flex; align-items: center; gap: 12px; color: var(--ink-2); }
     .lesson-name .ti { color: var(--muted); }
-    .lesson-item a { color: var(--duo-green); text-decoration: none; font-weight: 500; font-size: 13px; }
+    .lesson-item a { color: var(--primary); text-decoration: none; font-weight: 500; font-size: 13px; }
     
     /* Instructor */
     .inst-box { display: flex; gap: 24px; }
-    .inst-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: var(--duo-green-light); }
+    .inst-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; background: var(--primary-light); }
     .inst-info h4 { font-size: 18px; margin-bottom: 4px; }
     .inst-info p { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
     .inst-stats { display: flex; gap: 24px; font-size: 14px; font-weight: 500; margin-bottom: 16px; }
     .inst-bio { font-size: 15px; color: var(--ink-3); line-height: 1.6; }
     
     @media(max-width: 900px) {
-      .detail-layout { flex-direction: column; margin-top: 32px; padding: 0 20px;}
+      .detail-layout { flex-direction: column; margin-top: 0; padding: 0 16px; }
       .right-sidebar { width: 100%; position: static; order: -1; }
       .learning-grid { grid-template-columns: 1fr; }
+      .detail-hero { padding: 32px 16px 48px; }
+    }
+    @media(max-width: 480px) {
+      .inst-box { flex-direction: column; gap: 16px; }
+      .course-title-lg { font-size: 26px; }
     }
     
     /* Loading Skeleton */
@@ -98,7 +103,7 @@
       transform: translate(-50%, -50%);
       font-size: 16px;
       font-weight: 600;
-      color: var(--duo-green);
+      color: var(--primary);
       font-family: 'Plus Jakarta Sans', sans-serif;
       display: flex;
       flex-direction: column;
@@ -111,7 +116,7 @@
 <body>
   
   <div id="loadingSpinner">
-    <div class="spinner-icon" style="width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--duo-green); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <div class="spinner-icon" style="width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
     <span>Yuklanmoqda...</span>
   </div>
 
@@ -128,15 +133,17 @@
       <a href="courses.html">Kurslar</a>
       <a href="index.html#teachers">O'qituvchilar</a>
     </div>
-    <div id="nav-auth" style="display:flex;gap:8px;align-items:center;">
-      <a href="auth.html" class="btn-secondary">Kirish</a>
-      <a href="auth.html" class="btn-primary">Ro'yxatdan o'tish</a>
-      <button class="mobile-nav-toggle" style="display:none;" onclick="document.getElementById('navLinks').classList.toggle('active')"><i class="ti ti-menu-2"></i></button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div id="nav-auth" style="display:flex;gap:8px;align-items:center;">
+        <a href="auth.html" class="btn-secondary">Kirish</a>
+        <a href="auth.html" class="btn-primary">Ro'yxatdan o'tish</a>
+      </div>
+      <button class="mobile-nav-toggle" style="display:none;" id="mobileMenuBtn" aria-label="Menyu"><i class="ti ti-menu-2"></i></button>
     </div>
   </nav>
 
   <!-- Teacher Workspace Banner -->
-  <div id="teacherCourseBanner" style="display:none; background:var(--duo-green-bg); border-bottom:2px solid var(--duo-green); padding:16px 40px; font-family:'Plus Jakarta Sans', sans-serif;">
+  <div id="teacherCourseBanner" style="display:none; background:var(--primary-light); border-bottom:1px solid var(--primary-mid); padding:12px 40px; font-family:'Plus Jakarta Sans', sans-serif;">
     <div style="max-width:1280px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
       <div style="display:flex; align-items:center; gap:8px;">
         <span style="font-size:20px;">🔧</span>

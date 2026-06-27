@@ -27,10 +27,14 @@
     <a href="#features">Imkoniyatlar</a>
     <a href="#faq">FAQ</a>
   </div>
-  <div id="nav-auth" style="display:flex;gap:8px;align-items:center;">
-    <a href="/auth.html?tab=login" class="btn-secondary">Kirish</a>
-    <a href="/auth.html?role=student&tab=register" class="btn-primary">Bepul boshlash</a>
-    <button class="mobile-nav-toggle" style="display:none;" onclick="document.getElementById('navLinks').classList.toggle('active')"><i class="ti ti-menu-2"></i></button>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <div id="nav-auth" style="display:flex;gap:8px;align-items:center;">
+      <a href="/auth.html?tab=login" class="btn-secondary">Kirish</a>
+      <a href="/auth.html?role=student&tab=register" class="btn-primary">Bepul boshlash</a>
+    </div>
+    <button class="mobile-nav-toggle" style="display:none;" id="mobileMenuBtn" aria-label="Menyu">
+      <i class="ti ti-menu-2"></i>
+    </button>
   </div>
 </nav>
 
@@ -356,12 +360,12 @@
 
 <!-- ── FOOTER ── -->
 <footer class="footer">
-  <div style="max-width:320px; display:flex; flex-direction:column; gap:12px;">
-    <div class="footer-logo">
+  <div style="max-width:260px; display:flex; flex-direction:column; gap:12px;">
+    <a class="footer-logo" href="/">
       <span class="logo-dot"></span> MUTP
-    </div>
-    <p style="color:#a4db89; font-size:13px; line-height:1.6; margin:0 0 16px 0;">O'zbekistonning №1 premium ta'lim platformasi. Eng yaxshi ustozlardan zamonaviy kasblar va bilimlar.</p>
-    <div style="display:flex; gap:12px;">
+    </a>
+    <p style="color:var(--ink-soft); font-size:13px; line-height:1.6; margin:0 0 16px 0;">O'zbekistonning №1 premium ta'lim platformasi. Eng yaxshi ustozlardan zamonaviy kasblar va bilimlar.</p>
+    <div style="display:flex; gap:10px;">
       <a href="#" class="footer-social-btn"><i class="ti ti-brand-instagram"></i></a>
       <a href="#" class="footer-social-btn"><i class="ti ti-brand-telegram"></i></a>
       <a href="#" class="footer-social-btn"><i class="ti ti-brand-youtube"></i></a>
@@ -403,6 +407,26 @@
 </footer>
 
 <script>
+// ── MOBILE MENU ──
+const mobileBtn = document.getElementById('mobileMenuBtn');
+if (mobileBtn) {
+  mobileBtn.addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('active');
+    mobileBtn.querySelector('i').className =
+      document.getElementById('navLinks').classList.contains('active')
+        ? 'ti ti-x'
+        : 'ti ti-menu-2';
+  });
+}
+
+// Close menu on nav link click
+document.querySelectorAll('#navLinks a').forEach(link => {
+  link.addEventListener('click', () => {
+    document.getElementById('navLinks').classList.remove('active');
+    if (mobileBtn) mobileBtn.querySelector('i').className = 'ti ti-menu-2';
+  });
+});
+
 // ── SCROLL NAV ──
 const nav = document.getElementById('mainNav');
 window.addEventListener('scroll', () => {
