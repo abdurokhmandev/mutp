@@ -28,16 +28,7 @@ const CreateCourse = {
   categories: [],
 
   getMediaUrl(url) {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    const apiBase = window.APP_CONFIG?.API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
-    try {
-      const origin = new URL(apiBase).origin;
-      return origin + url;
-    } catch(e) {
-      if (apiBase.startsWith('/')) return url;
-      return apiBase.split('/api')[0] + url;
-    }
+    return App.getMediaUrl(url);
   },
 
   async init() {

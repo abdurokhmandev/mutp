@@ -53,7 +53,7 @@ const Courses = {
 
     let thumbHtml = '';
     if (course.thumbnail) {
-      thumbHtml = `<img src="${course.thumbnail}" alt="${course.title}" style="width:100%;height:100%;object-fit:cover;border-radius:16px 16px 0 0;">`;
+      thumbHtml = `<img src="${App.getMediaUrl(course.thumbnail)}" alt="${course.title}" style="width:100%;height:100%;object-fit:cover;border-radius:16px 16px 0 0;">`;
     } else {
       // Clean modern gradient placeholder with course category name or MUTP
       thumbHtml = `<div style="width:100%;height:100%;background:linear-gradient(135deg, #10B981, #059669);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-family:'Plus Jakarta Sans';font-size:20px;">MUTP</div>`;

@@ -182,7 +182,7 @@ const CourseDetail = {
         instructorRow.onmouseout = () => { instructorRow.style.background = 'transparent'; };
         
         let avatarHtml = instructor.avatar 
-          ? `<img src="${instructor.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+          ? `<img src="${App.getMediaUrl(instructor.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
           : App.initials(instructor.full_name);
         
         instructorRow.innerHTML = `
@@ -216,7 +216,7 @@ const CourseDetail = {
         }
 
         let avatarHtml = instructor.avatar 
-          ? `<img src="${instructor.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
+          ? `<img src="${App.getMediaUrl(instructor.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`
           : App.initials(instructor.full_name);
 
         instBox.innerHTML = `
@@ -323,7 +323,7 @@ const CourseDetail = {
 
         if (imageUrl) {
           preview.innerHTML = `
-            <img id="previewThumbImg" src="${imageUrl}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:12px;position:absolute;top:0;left:0;z-index:1;">
+            <img id="previewThumbImg" src="${App.getMediaUrl(imageUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:12px;position:absolute;top:0;left:0;z-index:1;">
             <div class="play-btn" style="z-index:2;"><i class="ti ti-player-play-filled"></i></div>
             <div id="previewFallback" style="background: linear-gradient(135deg, var(--duo-green-bg), var(--duo-green)); display:none; align-items:center; justify-content:center; height:100%; width:100%; border-radius:12px; position:absolute; top:0; left:0; z-index:1;">
               <span style="font-size:48px;">📚</span>

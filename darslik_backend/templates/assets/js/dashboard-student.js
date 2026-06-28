@@ -19,7 +19,7 @@ const StudentDashboard = {
       }
       if (userAvatarEl) {
         if (currentUser.avatar) {
-          userAvatarEl.innerHTML = `<img src="${currentUser.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+          userAvatarEl.innerHTML = `<img src="${App.getMediaUrl(currentUser.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
         } else {
           userAvatarEl.textContent = App.initials(currentUser.full_name || currentUser.username);
         }
@@ -37,7 +37,7 @@ const StudentDashboard = {
       }
       if (userAvatarEl) {
         if (user.avatar) {
-          userAvatarEl.innerHTML = `<img src="${user.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+          userAvatarEl.innerHTML = `<img src="${App.getMediaUrl(user.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
         } else {
           userAvatarEl.textContent = App.initials(user.full_name || user.username);
         }

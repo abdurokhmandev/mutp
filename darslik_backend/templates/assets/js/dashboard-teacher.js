@@ -52,7 +52,13 @@ const TeacherDashboard = {
     const nameEl = document.querySelector('[data-user-name]');
     const avatarEl = document.querySelector('[data-user-avatar]');
     if (nameEl) nameEl.textContent = user.full_name || user.email;
-    if (avatarEl) avatarEl.textContent = App.initials(user.full_name);
+    if (avatarEl) {
+      if (user.avatar) {
+        avatarEl.innerHTML = `<img src="${App.getMediaUrl(user.avatar)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+      } else {
+        avatarEl.textContent = App.initials(user.full_name);
+      }
+    }
   },
 
   renderDashboard(data) {
@@ -484,7 +490,7 @@ const TeacherDashboard = {
     
     const fileLink = document.getElementById('reviewAnswerFile');
     if (fileAnswer) {
-      fileLink.href = fileAnswer;
+      fileLink.href = App.getMediaUrl(fileAnswer);
       fileLink.style.display = 'inline-block';
     } else {
       fileLink.style.display = 'none';

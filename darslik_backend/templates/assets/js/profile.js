@@ -40,7 +40,7 @@ const ProfilePage = {
     if (nameEl) nameEl.textContent = user.full_name;
     if (avatarEl) {
       if (user.avatar) {
-        avatarEl.innerHTML = `<img src="${user.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+        avatarEl.innerHTML = `<img src="${App.getMediaUrl(user.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
       } else {
         avatarEl.textContent = App.initials(user.full_name);
       }

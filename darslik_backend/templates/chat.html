@@ -491,9 +491,9 @@ const ChatApp = {
       
       let avatarHtml = '';
       if (isDirect && c.other_user?.avatar) {
-        avatarHtml = `<img src="${c.other_user.avatar}">`;
+        avatarHtml = `<img src="${App.getMediaUrl(c.other_user.avatar)}">`;
       } else if (!isDirect && c.image) {
-        avatarHtml = `<img src="${c.image}">`;
+        avatarHtml = `<img src="${App.getMediaUrl(c.image)}">`;
       } else {
         avatarHtml = this.initials(displayName);
       }
@@ -551,9 +551,9 @@ const ChatApp = {
       
       let avatarHtml = '';
       if (isDirect && conv.other_user?.avatar) {
-        avatarHtml = `<img src="${conv.other_user.avatar}">`;
+        avatarHtml = `<img src="${App.getMediaUrl(conv.other_user.avatar)}">`;
       } else if (!isDirect && conv.image) {
-        avatarHtml = `<img src="${conv.image}">`;
+        avatarHtml = `<img src="${App.getMediaUrl(conv.image)}">`;
       } else {
         avatarHtml = this.initials(displayName);
       }
@@ -853,13 +853,15 @@ const ChatApp = {
       
       let fileHtml = '';
       if (m.file && m.message_type === 'voice') {
-        fileHtml = `<div style="margin-top:6px;"><audio src="${m.file}" controls style="max-width:100%; border-radius:8px; display:block;"></audio></div>`;
+        const fileUrl = App.getMediaUrl(m.file);
+        fileHtml = `<div style="margin-top:6px;"><audio src="${fileUrl}" controls style="max-width:100%; border-radius:8px; display:block;"></audio></div>`;
       } else if (m.file) {
+        const fileUrl = App.getMediaUrl(m.file);
         const isImage = m.file.match(/\.(jpeg|jpg|gif|png|webp)/i);
         if (isImage) {
-          fileHtml = `<div style="margin-top:6px; max-width:200px;"><img src="${m.file}" style="width:100%; border-radius:8px; display:block; cursor:pointer;" onclick="window.open('${m.file}', '_blank'); event.stopPropagation();"></div>`;
+          fileHtml = `<div style="margin-top:6px; max-width:200px;"><img src="${fileUrl}" style="width:100%; border-radius:8px; display:block; cursor:pointer;" onclick="window.open('${fileUrl}', '_blank'); event.stopPropagation();"></div>`;
         } else {
-          fileHtml = `<div style="margin-top:6px;"><a href="${m.file}" target="_blank" onclick="event.stopPropagation();" style="color:${isMine ? '#fff' : 'var(--purple)'}; text-decoration:underline; font-size:12px; display:flex; align-items:center; gap:4px;"><i class="ti ti-download"></i> ${m.file_name || 'Faylni yuklash'}</a></div>`;
+          fileHtml = `<div style="margin-top:6px;"><a href="${fileUrl}" target="_blank" onclick="event.stopPropagation();" style="color:${isMine ? '#fff' : 'var(--purple)'}; text-decoration:underline; font-size:12px; display:flex; align-items:center; gap:4px;"><i class="ti ti-download"></i> ${m.file_name || 'Faylni yuklash'}</a></div>`;
         }
       }
 
@@ -904,7 +906,7 @@ const ChatApp = {
       });
 
       const avatarSrc = m.sender_avatar 
-        ? `<img src="${m.sender_avatar}">` 
+        ? `<img src="${App.getMediaUrl(m.sender_avatar)}">` 
         : this.initials(m.sender_name);
 
       return `
@@ -1140,9 +1142,10 @@ const ChatApp = {
       // Render images
       const imgDiv = document.getElementById('sharedMediaImages');
       if (media.images && media.images.length > 0) {
-        imgDiv.innerHTML = media.images.map(img => `
-          <img src="${img.file}" onclick="window.open('${img.file}', '_blank')">
-        `).join('');
+        imgDiv.innerHTML = media.images.map(img => {
+          const fileUrl = App.getMediaUrl(img.file);
+          return `<img src="${fileUrl}" onclick="window.open('${fileUrl}', '_blank')">`;
+        }).join('');
       } else {
         imgDiv.innerHTML = '<div style="grid-column: span 3; font-size:11px; color:var(--text-3); text-align:center;">Rasm yo\'q</div>';
       }
@@ -1150,12 +1153,14 @@ const ChatApp = {
       // Render files
       const fileDiv = document.getElementById('sharedMediaFiles');
       if (media.files && media.files.length > 0) {
-        fileDiv.innerHTML = media.files.map(f => `
-          <a href="${f.file}" target="_blank" class="shared-media-item">
-            <i class="ti ti-file"></i> 
-            <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${f.file_name || 'Fayl'}</span>
-          </a>
-        `).join('');
+        fileDiv.innerHTML = media.files.map(f => {
+          const fileUrl = App.getMediaUrl(f.file);
+          return `
+            <a href="${fileUrl}" target="_blank" class="shared-media-item">
+              <i class="ti ti-file"></i> 
+              <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${f.file_name || 'Fayl'}</span>
+            </a>`;
+        }).join('');
       } else {
         fileDiv.innerHTML = '<div style="font-size:11px; color:var(--text-3); text-align:center;">Fayllar yo\'q</div>';
       }
@@ -1196,7 +1201,7 @@ const ChatApp = {
       const logoImg = document.getElementById('groupSettingsLogoImg');
       const logoInitials = document.getElementById('groupSettingsInitials');
       if (data.image) {
-        logoImg.src = data.image;
+        logoImg.src = App.getMediaUrl(data.image);
         logoImg.style.display = 'block';
         logoInitials.style.display = 'none';
       } else {
@@ -1226,7 +1231,7 @@ const ChatApp = {
   renderGroupSettingsMembers(isAdmin) {
     const list = document.getElementById('groupSettingsMembersList');
     list.innerHTML = this.groupSettingsMembers.map(m => {
-      const avatar = m.avatar ? `<img src="${m.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : this.initials(m.full_name);
+      const avatar = m.avatar ? `<img src="${App.getMediaUrl(m.avatar)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : this.initials(m.full_name);
       const isMe = m.id === this.currentUser?.id;
       const kickBtn = (isAdmin && !isMe) 
         ? `<button onclick="ChatApp.kickMember(${m.id})" style="background:transparent; border:none; color:#DC2626; font-size:11px; cursor:pointer; font-weight:600;"><i class="ti ti-user-minus"></i> Haydash</button>` 
@@ -1402,7 +1407,7 @@ const ChatApp = {
         return `
           <div style="display:flex; gap:10px; align-items:flex-start;">
             <div style="width:24px; height:24px; border-radius:50%; background:var(--purple-light); color:var(--purple); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; overflow:hidden;">
-              ${r.sender_avatar ? `<img src="${r.sender_avatar}" style="width:100%;height:100%;object-fit:cover;">` : this.initials(r.sender_name)}
+              ${r.sender_avatar ? `<img src="${App.getMediaUrl(r.sender_avatar)}" style="width:100%;height:100%;object-fit:cover;">` : this.initials(r.sender_name)}
             </div>
             <div style="flex:1;">
               <div style="display:flex; justify-content:space-between; align-items:center;">
